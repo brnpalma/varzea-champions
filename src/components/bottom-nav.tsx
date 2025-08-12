@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Settings, LogIn, LogOut, Palette } from "lucide-react";
+import { Home, User, Settings, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
@@ -34,7 +34,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home, requiresAuth: false },
     { href: "/profile", label: "Perfil", icon: User, requiresAuth: true },
-    { href: "/appearance", label: "Aparência", icon: Palette, requiresAuth: false },
+    { href: "/settings", label: "Configurações", icon: Settings, requiresAuth: false },
   ];
 
   const visibleNavItems = navItems.filter(item => !item.requiresAuth || user);

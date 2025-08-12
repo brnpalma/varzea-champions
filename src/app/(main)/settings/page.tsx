@@ -5,19 +5,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Moon, Sun } from "lucide-react"
 
-export default function AppearancePage() {
+export default function SettingsPage() {
   const { setTheme, theme } = useTheme()
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl">Aparência</CardTitle>
+          <CardTitle className="text-2xl">Configurações</CardTitle>
           <CardDescription>
-            Personalize a aparência do aplicativo. Alterne entre o modo claro e escuro.
+            Gerencie as configurações da sua conta e preferências do aplicativo.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+            <h3 className="text-lg font-medium text-foreground">Aparência</h3>
             <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                     <p className="text-sm font-medium">
