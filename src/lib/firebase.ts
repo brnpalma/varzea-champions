@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 
 // IMPORTANT: Replace with your Firebase project's configuration
 const firebaseConfig = {
-  apiKey: "API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  projectId: "varzeachampions",
+  appId: "1:737579860217:web:16bc7e600c7b571a446228",
+  storageBucket: "varzeachampions.appspot.com",
+  apiKey: "AIzaSyC4LO3fxf2b0br5qzrdfeKhliYEO97qdGk",
+  authDomain: "varzeachampions.firebaseapp.com",
+  messagingSenderId: "737579860217"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
