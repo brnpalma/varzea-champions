@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[--primary-bg] text-[--primary-text] hover:brightness-110 transition-all",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -43,23 +43,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, style, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
-    const buttonStyles = {
-        ...style,
-        '--primary-bg': 'hsl(var(--primary))',
-        '--primary-text': 'hsl(var(--primary-foreground))',
-    } as React.CSSProperties;
-
-    const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
-
-    if (variant === 'default' && isDarkMode) {
-      buttonStyles['--primary-bg'] = `linear-gradient(to right, hsl(var(--primary-gradient-start)), hsl(var(--primary-gradient-end)))`;
-    }
-
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        style={buttonStyles}
+        style={style}
         {...props}
       />
     )
