@@ -6,8 +6,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { BottomNav } from '@/components/bottom-nav';
 
 export const metadata: Metadata = {
-  title: 'AuthFlow',
-  description: 'Autenticação transparente com Firebase',
+  title: 'Varzea Champions Manager',
+  description: 'Gerencie seu time na várzea',
 };
 
 export default function RootLayout({

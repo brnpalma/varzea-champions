@@ -78,7 +78,7 @@ export function BottomNav() {
             <div className="p-2 bg-primary rounded-lg">
               <LogIn className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">AuthFlow</h1>
+            <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
