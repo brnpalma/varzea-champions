@@ -9,7 +9,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  OAuthProvider,
 } from "firebase/auth";
 import { Apple } from "lucide-react";
 
@@ -34,6 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { Icons } from "@/components/icons";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -62,29 +62,22 @@ export function LoginForm() {
       toast({
         variant: "destructive",
         title: "Falha no Login",
-        description: error.message,
+        description: "E-mail ou senha incorretos. Por favor, tente novamente.",
       });
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleSocialLogin = async (provider: "google" | "apple") => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      let authProvider;
-      if (provider === "google") {
-        authProvider = new GoogleAuthProvider();
-      } else {
-        authProvider = new OAuthProvider("apple.com");
-        authProvider.addScope('email');
-        authProvider.addScope('name');
-      }
+      const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Falha no Login",
+        title: "Falha no Login com Google",
         description: error.message,
       });
     } finally {
@@ -139,7 +132,7 @@ export function LoginForm() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? "Entrando..." : "Entrar com E-mail"}
             </Button>
           </form>
         </Form>
@@ -156,20 +149,31 @@ export function LoginForm() {
         <div className="grid grid-cols-2 gap-4">
           <Button
             variant="outline"
-            onClick={() => handleSocialLogin("google")}
+            onClick={handleGoogleLogin}
             disabled={isLoading}
           >
             <Icons.google className="mr-2 h-4 w-4" />
             Google
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleSocialLogin("apple")}
-            disabled={isLoading}
-          >
-            <Apple className="mr-2 h-4 w-4" />
-            Apple
-          </Button>
+           <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button
+                      variant="outline"
+                      disabled
+                      className="w-full"
+                    >
+                      <Apple className="mr-2 h-4 w-4" />
+                      Apple
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Login com Apple será implementado em breve.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
         </div>
       </CardContent>
       <CardFooter className="justify-center">

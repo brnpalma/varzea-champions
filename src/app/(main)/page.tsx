@@ -13,10 +13,10 @@ export default function HomePage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-4 mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-          Bem-vindo de volta, {user?.displayName || "Usuário"}!
+          {user ? `Bem-vindo de volta, ${user.displayName || 'Usuário'}!` : 'Bem-vindo ao AuthFlow!'}
         </h1>
         <p className="text-muted-foreground text-lg">
-          Aqui está o seu painel. Pronto para começar?
+          {user ? 'Aqui está o seu painel. Pronto para começar?' : 'Explore o app. Faça login para uma experiência completa.'}
         </p>
       </div>
 
@@ -30,11 +30,11 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Visualize e gerencie suas informações pessoais e detalhes de autenticação.
+              {user ? 'Visualize e gerencie suas informações pessoais.' : 'Faça login para visualizar seu perfil.'}
             </p>
             <Button asChild>
-              <Link href="/profile">
-                Ir para o Perfil <ArrowRight className="ml-2 h-4 w-4" />
+              <Link href={user ? "/profile" : "/login"}>
+                {user ? 'Ir para o Perfil' : 'Fazer Login'} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -43,7 +43,7 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <Settings className="h-6 w-6 text-accent" />
-              <span>Configurações do App</span>
+              <span>Configurações</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -51,8 +51,8 @@ export default function HomePage() {
               Personalize suas preferências e configurações do aplicativo.
             </p>
             <Button asChild variant="secondary">
-              <Link href="/settings">
-                Ir para Configurações <ArrowRight className="ml-2 h-4 w-4" />
+              <Link href="/appearance">
+                Ir para Aparência <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>

@@ -37,9 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const isAuthPage = pathname === "/login" || pathname === "/signup";
 
-    if (!user && !isAuthPage) {
-      router.push("/login");
-    } else if (user && isAuthPage) {
+    if (user && isAuthPage) {
       router.push("/");
     }
   }, [user, loading, pathname, router]);
@@ -57,8 +55,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
   }
 
+  // This logic is now simplified. We only block rendering if a logged-in
+  // user is on an auth page, to avoid a flash of content during redirect.
   const isAuthPage = pathname === "/login" || pathname === "/signup";
-  if ((!user && !isAuthPage) || (user && isAuthPage)) {
+  if (user && isAuthPage) {
     return null; // Render nothing while redirecting
   }
 
