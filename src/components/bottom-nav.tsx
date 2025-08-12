@@ -10,9 +10,9 @@ import { auth } from "@/lib/firebase";
 import { Button } from "./ui/button";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/profile", label: "Profile", icon: User },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "Início", icon: Home },
+  { href: "/profile", label: "Perfil", icon: User },
+  { href: "/settings", label: "Config.", icon: Settings },
 ];
 
 export function BottomNav() {
@@ -75,13 +75,13 @@ export function BottomNav() {
               <User className="h-10 w-10 rounded-full bg-secondary p-2 text-secondary-foreground" />
               <div className="flex-1 truncate">
                 <p className="text-sm font-semibold text-foreground truncate">
-                  {user.displayName || "User"}
+                  {user.displayName || "Usuário"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
                   {user.email}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
+              <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sair">
                 <Lock className="h-5 w-5" />
               </Button>
             </div>

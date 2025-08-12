@@ -36,10 +36,10 @@ import { auth } from "@/lib/firebase";
 import { Icons } from "@/components/icons";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
   password: z
     .string()
-    .min(6, { message: "Password must be at least 6 characters." }),
+    .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
 export function LoginForm() {
@@ -61,7 +61,7 @@ export function LoginForm() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login Failed",
+        title: "Falha no Login",
         description: error.message,
       });
     } finally {
@@ -84,7 +84,7 @@ export function LoginForm() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login Failed",
+        title: "Falha no Login",
         description: error.message,
       });
     } finally {
@@ -95,9 +95,9 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome Back!</CardTitle>
+        <CardTitle className="text-2xl">Bem-vindo de Volta!</CardTitle>
         <CardDescription>
-          Sign in to your account to continue.
+          Faça login na sua conta para continuar.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -111,7 +111,7 @@ export function LoginForm() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="you@example.com"
+                      placeholder="voce@exemplo.com"
                       {...field}
                       disabled={isLoading}
                     />
@@ -125,7 +125,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Senha</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -139,7 +139,7 @@ export function LoginForm() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing In..." : "Sign In"}
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
         </Form>
@@ -149,7 +149,7 @@ export function LoginForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              Or continue with
+              Ou continue com
             </span>
           </div>
         </div>
@@ -174,12 +174,12 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          Não tem uma conta?{" "}
           <Link
             href="/signup"
             className="font-semibold text-primary hover:underline"
           >
-            Sign up
+            Cadastre-se
           </Link>
         </p>
       </CardFooter>

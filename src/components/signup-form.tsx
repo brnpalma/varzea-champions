@@ -30,14 +30,14 @@ import { auth } from "@/lib/firebase";
 
 const formSchema = z
   .object({
-    email: z.string().email({ message: "Please enter a valid email." }),
+    email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
     password: z
       .string()
-      .min(6, { message: "Password must be at least 6 characters." }),
+      .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "As senhas não correspondem",
     path: ["confirmPassword"],
   });
 
@@ -61,7 +61,7 @@ export function SignupForm() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Sign Up Failed",
+        title: "Falha ao Cadastrar",
         description: error.message,
       });
     } finally {
@@ -72,9 +72,9 @@ export function SignupForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create an Account</CardTitle>
+        <CardTitle className="text-2xl">Crie uma Conta</CardTitle>
         <CardDescription>
-          Enter your details below to get started.
+          Insira seus dados abaixo para começar.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,7 +88,7 @@ export function SignupForm() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="you@example.com"
+                      placeholder="voce@exemplo.com"
                       {...field}
                       disabled={isLoading}
                     />
@@ -102,7 +102,7 @@ export function SignupForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Senha</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -120,7 +120,7 @@ export function SignupForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>Confirmar Senha</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -134,19 +134,19 @@ export function SignupForm() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Account"}
+              {isLoading ? "Criando Conta..." : "Criar Conta"}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Já tem uma conta?{" "}
           <Link
             href="/login"
             className="font-semibold text-primary hover:underline"
           >
-            Sign in
+            Entrar
           </Link>
         </p>
       </CardFooter>

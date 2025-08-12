@@ -13,10 +13,10 @@ export default function HomePage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-4 mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-          Welcome back, {user?.displayName || "User"}!
+          Bem-vindo de volta, {user?.displayName || "Usuário"}!
         </h1>
         <p className="text-muted-foreground text-lg">
-          Here&apos;s your dashboard. Ready to dive in?
+          Aqui está o seu painel. Pronto para começar?
         </p>
       </div>
 
@@ -25,17 +25,16 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <User className="h-6 w-6 text-primary" />
-              <span>Your Profile</span>
+              <span>Seu Perfil</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              View and manage your personal information and authentication
-              details.
+              Visualize e gerencie suas informações pessoais e detalhes de autenticação.
             </p>
             <Button asChild>
               <Link href="/profile">
-                Go to Profile <ArrowRight className="ml-2 h-4 w-4" />
+                Ir para o Perfil <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -44,16 +43,16 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <Settings className="h-6 w-6 text-accent" />
-              <span>App Settings</span>
+              <span>Configurações do App</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Customize your application preferences and settings.
+              Personalize suas preferências e configurações do aplicativo.
             </p>
             <Button asChild variant="secondary">
               <Link href="/settings">
-                Go to Settings <ArrowRight className="ml-2 h-4 w-4" />
+                Ir para Configurações <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>

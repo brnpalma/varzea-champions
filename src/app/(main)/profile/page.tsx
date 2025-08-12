@@ -16,13 +16,13 @@ export default function ProfilePage() {
     try {
       await signOut(auth);
       toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
+        title: "Sessão Encerrada",
+        description: "Você foi desconectado com sucesso.",
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Logout Failed",
+        title: "Falha ao Sair",
         description: error.message,
       });
     }
@@ -41,8 +41,8 @@ export default function ProfilePage() {
           <div className="flex items-center space-x-4">
              <User className="h-16 w-16 rounded-full bg-secondary p-4 text-secondary-foreground"/>
             <div>
-                <CardTitle className="text-2xl">{user.displayName || "User Profile"}</CardTitle>
-                <CardDescription>View and manage your profile details.</CardDescription>
+                <CardTitle className="text-2xl">{user.displayName || "Perfil do Usuário"}</CardTitle>
+                <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -55,13 +55,13 @@ export default function ProfilePage() {
                 <div className="flex items-center">
                     <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="text-foreground">
-                        Authenticated via <span className="font-medium capitalize text-primary">{providerId.replace('.com', '')}</span>
+                        Autenticado via <span className="font-medium capitalize text-primary">{providerId.replace('.com', '')}</span>
                     </span>
                 </div>
             </div>
             <Button onClick={handleLogout} className="w-full sm:w-auto" variant="destructive">
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                Sair
             </Button>
         </CardContent>
       </Card>
