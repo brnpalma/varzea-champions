@@ -43,7 +43,7 @@ const formSchema = z.object({
 });
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState<"email" | "google" | "apple" | false>(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,7 +55,7 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+    setIsLoading("email");
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
     } catch (error: any) {
@@ -63,6 +63,7 @@ export function LoginForm() {
         variant: "destructive",
         title: "Falha no Login",
         description: "E-mail ou senha incorretos. Por favor, tente novamente.",
+        duration: 2000,
       });
     } finally {
       setIsLoading(false);
@@ -70,15 +71,20 @@ export function LoginForm() {
   }
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setIsLoading("google");
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
     } catch (error: any) {
+      // Don't show an error if the user closes the popup
+      if (error.code === 'auth/popup-closed-by-user') {
+        return;
+      }
       toast({
         variant: "destructive",
         title: "Falha no Login com Google",
-        description: error.message,
+        description: "Ocorreu um erro. Por favor, tente novamente.",
+        duration: 2000,
       });
     } finally {
       setIsLoading(false);
@@ -106,7 +112,7 @@ export function LoginForm() {
                     <Input
                       placeholder="voce@exemplo.com"
                       {...field}
-                      disabled={isLoading}
+                      disabled={!!isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -124,15 +130,15 @@ export function LoginForm() {
                       type="password"
                       placeholder="••••••••"
                       {...field}
-                      disabled={isLoading}
+                      disabled={!!isLoading}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Entrando..." : "Entrar com E-mail"}
+            <Button type="submit" className="w-full" disabled={!!isLoading}>
+              {isLoading === 'email' ? "Entrando..." : "Entrar com E-mail"}
             </Button>
           </form>
         </Form>
@@ -150,9 +156,14 @@ export function LoginForm() {
           <Button
             variant="outline"
             onClick={handleGoogleLogin}
-            disabled={isLoading}
+            disabled={!!isLoading}
           >
-            <Icons.google className="mr-2 h-4 w-4" />
+            {isLoading === 'google' ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-current" />
+              ) : (
+                <Icons.google className="mr-2 h-4 w-4" />
+              )
+            }
             Google
           </Button>
            <TooltipProvider>
