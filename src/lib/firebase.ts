@@ -3,12 +3,13 @@ import { getAuth } from "firebase/auth";
 
 // IMPORTANT: Replace with your Firebase project's configuration
 const firebaseConfig = {
-  projectId: "varzeachampions",
-  appId: "1:737579860217:web:16bc7e600c7b571a446228",
-  storageBucket: "varzeachampions.appspot.com",
-  apiKey: "AIzaSyC4LO3fxf2b0br5qzrdfeKhliYEO97qdGk",
-  authDomain: "varzeachampions.firebaseapp.com",
-  messagingSenderId: "737579860217"
+  apiKey: "AIzaSyC7LcRr6Rc9UR5J42VgSVvYPfKhMPx3VSs",
+  authDomain: "varzea-champions-manager.firebaseapp.com",
+  projectId: "varzea-champions-manager",
+  storageBucket: "varzea-champions-manager.firebasestorage.app",
+  messagingSenderId: "842794376801",
+  appId: "1:842794376801:web:89f4c9f93afc892b385420",
+  measurementId: "G-VJ9NYC343G"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
