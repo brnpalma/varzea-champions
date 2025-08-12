@@ -72,10 +72,14 @@ export function LoginForm() {
   const handleSocialLogin = async (provider: "google" | "apple") => {
     setIsLoading(true);
     try {
-      const authProvider =
-        provider === "google"
-          ? new GoogleAuthProvider()
-          : new OAuthProvider("apple.com");
+      let authProvider;
+      if (provider === "google") {
+        authProvider = new GoogleAuthProvider();
+      } else {
+        authProvider = new OAuthProvider("apple.com");
+        authProvider.addScope('email');
+        authProvider.addScope('name');
+      }
       await signInWithPopup(auth, authProvider);
     } catch (error: any) {
       toast({
