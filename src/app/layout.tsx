@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/components/auth-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { BottomNav } from '@/components/bottom-nav';
 
 export const metadata: Metadata = {
   title: 'AuthFlow',
@@ -29,7 +30,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <div className="flex min-h-screen bg-background">
+              <BottomNav />
+              <main className="flex-1 pb-24 md:pb-0 md:ml-64">
+                {children}
+              </main>
+            </div>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>
