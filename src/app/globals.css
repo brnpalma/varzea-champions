@@ -43,44 +43,44 @@ body {
   }
  
   .dark {
-    --background: 0 0% 2%;
-    --foreground: 80 100% 90%;
-    --card: 0 0% 8%;
-    --card-foreground: 80 100% 90%;
-    --popover: 0 0% 2%;
-    --popover-foreground: 80 100% 90%;
-    --primary: 80 90% 50%;
-    --primary-foreground: 80 90% 10%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 80 90% 50%;
-    --accent-foreground: 80 90% 10%;
+    --background: 223 23% 9%;
+    --foreground: 210 40% 98%;
+    --card: 223 23% 13%;
+    --card-foreground: 210 40% 98%;
+    --popover: 223 23% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 260 85% 66%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 45 93% 47%;
+    --accent-foreground: 226 25% 15%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 80 40% 20%;
-    --input: 80 40% 20%;
-    --ring: 80 90% 50%;
-    --chart-1: 80 90% 50%;
-    --chart-2: 100 60% 45%;
-    --chart-3: 120 80% 55%;
-    --chart-4: 90 65% 60%;
-    --chart-5: 70 75% 55%;
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 80 90% 50%;
-    --sidebar-primary-foreground: 80 90% 10%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 80 90% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 260 85% 66%;
+    --chart-1: 45 93% 47%;
+    --chart-2: 260 85% 66%;
+    --chart-3: 180 85% 66%;
+    --chart-4: 30 85% 66%;
+    --chart-5: 0 85% 66%;
+    --sidebar-background: 223 23% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 260 85% 66%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 223 23% 13%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 223 23% 13%;
+    --sidebar-ring: 260 85% 66%;
 
     /* Gradient Colors */
-    --primary-gradient-start: 90 95% 55%;
-    --primary-gradient-end: 130 80% 45%;
-    --primary-gradient-hover-start: 90 95% 65%;
-    --primary-gradient-hover-end: 130 80% 55%;
+    --primary-gradient-start: 260 85% 66%;
+    --primary-gradient-end: 280 85% 70%;
+    --primary-gradient-hover-start: 260 85% 70%;
+    --primary-gradient-hover-end: 280 85% 74%;
   }
 }
  
