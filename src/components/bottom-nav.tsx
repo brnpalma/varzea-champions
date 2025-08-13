@@ -35,15 +35,18 @@ export function BottomNav() {
   };
   
   const navItems = [
-    { href: "/", label: "Início", icon: Home, requiresAuth: true },
-    { href: "/players", label: "Jogadores", icon: Users, requiresAuth: true, allowedRoles: [UserType.JOGADOR, UserType.GESTOR_GRUPO] },
-    { href: "/profile", label: "Perfil", icon: User, requiresAuth: true },
-    { href: "/settings", label: "Configurações", icon: Settings, requiresAuth: true, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
+    { href: "/", label: "Início", icon: Home },
+    { href: "/players", label: "Jogadores", icon: Users },
+    { href: "/profile", label: "Perfil", icon: User },
+    { href: "/settings", label: "Configurações", icon: Settings, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
   ];
 
   const visibleNavItems = navItems.filter(item => {
-    if (!item.requiresAuth) return true;
-    if (!user) return false;
+    // Show all items if user is not logged in, except settings which is manager-only
+    if (!user) {
+        return item.href !== '/settings';
+    }
+    // For logged in users, filter by role
     if (item.allowedRoles && !item.allowedRoles.includes(user.userType)) {
       return false;
     }

@@ -7,36 +7,38 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Calendar, Check, Users, X, Trophy, LogIn } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [confirmed, setConfirmed] = useState<boolean | null>(null);
 
-  if (!user) {
-    return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col items-center justify-center text-center space-y-6 bg-card shadow-lg rounded-2xl p-8">
-          <div className="space-y-4">
-             <Trophy className="h-16 w-16 text-amber-500 mx-auto" />
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              Bem-vindo ao Várzea Champions!
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Gerencie seu time, confirme presenças, acompanhe o ranking e muito mais. Faça login ou crie sua conta para começar.
-            </p>
-             <Button asChild size="lg">
-              <Link href="/login">
-                <LogIn className="mr-2" />
-                Fazer Login ou Criar Conta
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handlePresenceClick = () => {
+    if (!user) {
+      router.push('/login');
+    } else {
+      // Logic to handle presence confirmation would go here
+    }
+  };
 
-  if (user.userType === UserType.GESTOR_QUADRA) {
+  const handleConfirm = () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    setConfirmed(true);
+  };
+
+  const handleDecline = () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    setConfirmed(false);
+  };
+  
+  if (user && user.userType === UserType.GESTOR_QUADRA) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center text-center space-y-6">
@@ -52,9 +54,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const handleConfirm = () => setConfirmed(true);
-  const handleDecline = () => setConfirmed(false);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
