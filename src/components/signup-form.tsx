@@ -30,7 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { auth, firestore } from "@/lib/firebase";
-import { UserType } from "@/hooks/use-auth";
+import { UserType, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Camera } from "lucide-react";
 import { UserAvatar } from "./user-avatar";
 
@@ -44,6 +44,7 @@ const formSchema = z
       .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
     confirmPassword: z.string(),
     userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
+    playerSubscriptionType: z.nativeEnum(PlayerSubscriptionType, { required_error: "Por favor, selecione uma opção." }),
     photo: z.instanceof(File).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -134,24 +135,30 @@ export function SignupForm() {
         }
       }
 
+      // TODO: Get groupName from invitation link
       const userProfile = {
         displayName: values.displayName,
         userType: values.userType,
+        playerSubscriptionType: values.playerSubscriptionType,
         photoURL: photoURL,
+        groupName: "Grupo Padrão" // Placeholder
       };
 
       await setDoc(doc(firestore, "users", user.uid), {
         uid: user.uid,
         email: values.email,
         createdAt: new Date().toISOString(),
-        displayName: userProfile.displayName,
-        userType: userProfile.userType,
-        photoURL: userProfile.photoURL,
+        ...userProfile,
       });
 
-      await updateProfile(user, {
-        displayName: userProfile.displayName,
-      });
+      // Update auth profile but ignore photoURL errors
+      try {
+        await updateProfile(user, {
+            displayName: userProfile.displayName,
+        });
+      } catch(authError: any) {
+         console.error("Could not update Firebase Auth profile display name:", authError);
+      }
       
     } catch (error: any) {
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
@@ -233,6 +240,28 @@ export function SignupForm() {
                     </FormControl>
                     <SelectContent>
                       {Object.values(UserType).map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="playerSubscriptionType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Jogador</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione seu plano" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(PlayerSubscriptionType).map((type) => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>

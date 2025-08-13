@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useAuth, UserType } from "@/hooks/use-auth";
+import { useAuth, UserType, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { signOut, updateProfile } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,6 +61,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
+  const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,6 +72,7 @@ export default function ProfilePage() {
     if (user) {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
+      setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
@@ -97,6 +99,7 @@ export default function ProfilePage() {
      if (wasEditing && user) {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
+      setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
       setPhotoFile(null);
       setPhotoPreview(user.photoURL || null);
     }
@@ -114,7 +117,7 @@ export default function ProfilePage() {
     if (!user) return;
 
     setIsSaving(true);
-    let newPhotoURL = photoPreview;
+    let newPhotoURL = user.photoURL;
 
     try {
         if (photoFile) {
@@ -124,6 +127,7 @@ export default function ProfilePage() {
         const userProfile = {
             displayName,
             userType,
+            playerSubscriptionType,
             photoURL: newPhotoURL,
         };
 
@@ -133,6 +137,7 @@ export default function ProfilePage() {
         await setDoc(userDocRef, {
             displayName: userProfile.displayName,
             userType: userProfile.userType,
+            playerSubscriptionType: userProfile.playerSubscriptionType,
             photoURL: userProfile.photoURL
         }, { merge: true });
 
@@ -235,6 +240,19 @@ export default function ProfilePage() {
                     </SelectContent>
                   </Select>
                </div>
+                <div>
+                 <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Jogador</label>
+                  <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
+                    <SelectTrigger id="playerSubscriptionType">
+                      <SelectValue placeholder="Selecione seu plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(PlayerSubscriptionType).map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
             </div>
           ) : (
             <div className="space-y-4 text-sm">
@@ -245,6 +263,18 @@ export default function ProfilePage() {
                 <div className="flex items-center">
                     <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="font-medium text-foreground">{user.email}</span>
+                </div>
+                <div className="flex items-center">
+                    <Users className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="text-foreground">
+                        Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "N/A"}</span>
+                    </span>
+                </div>
+                <div className="flex items-center">
+                    <WalletCards className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="text-foreground">
+                        Tipo de Jogador: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
+                    </span>
                 </div>
                  <div className="flex items-center">
                     <Shield className="h-5 w-5 mr-3 text-muted-foreground" />

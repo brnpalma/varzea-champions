@@ -1,6 +1,7 @@
+
 "use client";
 import { useContext } from "react";
-import { AuthContext, type AuthContextType, UserType } from "@/components/auth-provider";
+import { AuthContext, type AuthContextType, UserType, PlayerSubscriptionType } from "@/components/auth-provider";
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -10,4 +11,4 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-export { UserType };
+export { UserType, PlayerSubscriptionType };

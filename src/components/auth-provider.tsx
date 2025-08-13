@@ -14,10 +14,17 @@ export enum UserType {
   GESTOR_QUADRA = "Gestor da Quadra",
 }
 
+export enum PlayerSubscriptionType {
+    MENSAL = "Mensal",
+    AVULSO = "Avulso",
+}
+
 export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   userType: UserType;
+  groupName: string | null;
+  playerSubscriptionType: PlayerSubscriptionType;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -60,6 +67,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
               photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
               userType: userProfileData.userType || UserType.JOGADOR,
+              groupName: userProfileData.groupName || null,
+              playerSubscriptionType: userProfileData.playerSubscriptionType || PlayerSubscriptionType.AVULSO,
             });
           } else {
             // Fallback if the firestore doc doesn't exist for some reason
@@ -68,6 +77,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               displayName: firebaseUser.displayName || "Usuário",
               photoURL: firebaseUser.photoURL || null,
               userType: UserType.JOGADOR, // Default value
+              groupName: null,
+              playerSubscriptionType: PlayerSubscriptionType.AVULSO,
             });
           }
           setLoading(false);
