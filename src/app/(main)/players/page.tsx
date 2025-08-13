@@ -25,16 +25,18 @@ import {
 import Link from 'next/link';
 
 export default function PlayersPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
-  const groupId = user?.userType === UserType.GESTOR_GRUPO ? user.uid : user?.groupId;
+  const groupId = user?.groupId;
 
 
   useEffect(() => {
+    if (loading) return; 
+
     if (!groupId) {
       setIsLoading(false);
       return;
@@ -64,11 +66,11 @@ export default function PlayersPage() {
     });
 
     return () => unsubscribe();
-  }, [groupId, toast]);
+  }, [groupId, toast, loading]);
 
   const handleShareLink = () => {
-    if (!user) return;
-    const inviteLink = `${window.location.origin}/signup?group_id=${user?.uid}`;
+    if (!user || !isManager) return;
+    const inviteLink = `${window.location.origin}/login?group_id=${user?.groupId}`;
     navigator.clipboard.writeText(inviteLink).then(() => {
       toast({
         variant: 'success',
@@ -92,7 +94,6 @@ export default function PlayersPage() {
       const playerDocRef = doc(firestore, "users", playerToRemove.uid);
       await updateDoc(playerDocRef, {
         groupId: null,
-        groupName: null,
       });
 
       toast({
@@ -109,6 +110,33 @@ export default function PlayersPage() {
       });
     }
   };
+  
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <Skeleton className="h-8 w-2/5" />
+            <Skeleton className="h-4 w-4/5" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
 
   if (!user) {
      return (
@@ -116,7 +144,7 @@ export default function PlayersPage() {
         <Card className="max-w-2xl mx-auto shadow-lg text-center">
           <CardHeader>
             <CardTitle>Gerencie seu Grupo</CardTitle>
-            <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores.</CardDescription>
+            <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores, ou como jogador para ver os membros do seu time.</CardDescription>
           </CardHeader>
           <CardContent>
              <Button asChild size="lg">
@@ -131,10 +159,28 @@ export default function PlayersPage() {
     );
   }
 
+  if (!groupId) {
+     return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="max-w-2xl mx-auto shadow-lg text-center">
+          <CardHeader>
+            <CardTitle>Você não está em um grupo</CardTitle>
+            <CardDescription>Para ver e gerenciar jogadores, você precisa fazer parte de um grupo.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {isManager ? "Vá para as configurações para criar um grupo." : "Peça o link de convite ao gestor do seu grupo."}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>Jogadores do Grupo</CardTitle>
             <CardDescription>
@@ -142,7 +188,7 @@ export default function PlayersPage() {
             </CardDescription>
           </div>
           {isManager && (
-            <Button onClick={handleShareLink}>
+            <Button onClick={handleShareLink} className="w-full sm:w-auto">
               <Share2 className="mr-2 h-4 w-4" />
               Compartilhar link
             </Button>

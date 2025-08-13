@@ -125,38 +125,21 @@ export default function ProfilePage() {
         if (photoFile) {
             newPhotoURL = await resizeAndEncodeImage(photoFile);
         }
-
-        const userProfile = {
-            displayName,
-            userType,
-            playerSubscriptionType,
-            photoURL: newPhotoURL,
-        };
-
+        
         const userDocRef = doc(firestore, "users", user.uid);
         
-        // Save to firestore first
         await setDoc(userDocRef, {
-            displayName: userProfile.displayName,
-            userType: userProfile.userType,
-            playerSubscriptionType: userProfile.playerSubscriptionType,
-            photoURL: userProfile.photoURL
+            displayName: displayName,
+            userType: userType,
+            playerSubscriptionType: playerSubscriptionType,
+            photoURL: newPhotoURL,
         }, { merge: true });
 
-        // Then try to update auth profile (display name only)
-        if (auth.currentUser && auth.currentUser.displayName !== userProfile.displayName) {
-            try {
-                await updateProfile(auth.currentUser, {
-                    displayName: userProfile.displayName,
-                });
-            } catch (authProfileError: any) {
-                console.error("Could not update Firebase Auth profile display name:", authProfileError);
-                toast({
-                    variant: "destructive",
-                    title: "Aviso",
-                    description: "Seu nome não pode ser sincronizado com o sistema de autenticação, mas foi salvo em seu perfil.",
-                });
-            }
+        if (auth.currentUser) {
+            await updateProfile(auth.currentUser, {
+                displayName: displayName,
+                photoURL: newPhotoURL,
+            });
         }
 
         toast({
@@ -168,7 +151,7 @@ export default function ProfilePage() {
         setPhotoFile(null);
 
     } catch (error: any) {
-        console.error("Failed to save profile to Firestore:", error);
+        console.error("Failed to save profile:", error);
         toast({
             variant: "destructive",
             title: "Erro ao Salvar",
@@ -251,31 +234,33 @@ export default function ProfilePage() {
                     placeholder="Seu nome ou apelido"
                   />
                </div>
-               <div>
-                 <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
-                  <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
-                    <SelectTrigger id="userType">
-                      <SelectValue placeholder="Selecione o tipo de usuário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(UserType).map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-               </div>
-                <div>
-                 <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
-                  <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
-                    <SelectTrigger id="playerSubscriptionType">
-                      <SelectValue placeholder="Selecione seu plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(PlayerSubscriptionType).map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
+                      <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
+                        <SelectTrigger id="userType">
+                          <SelectValue placeholder="Selecione o tipo de usuário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(UserType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
+                    <div>
+                    <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
+                      <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
+                        <SelectTrigger id="playerSubscriptionType">
+                          <SelectValue placeholder="Selecione seu plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(PlayerSubscriptionType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
                </div>
             </div>
           ) : (
@@ -291,7 +276,7 @@ export default function ProfilePage() {
                 <div className="flex items-center">
                     <Users className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="text-foreground">
-                        Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "N/A"}</span>
+                        Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "Nenhum grupo"}</span>
                     </span>
                 </div>
                 <div className="flex items-center">

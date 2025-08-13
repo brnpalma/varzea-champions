@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
+import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -95,9 +95,8 @@ function SignupFormComponent() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const groupId = searchParams.get('group_id');
-  const [groupName, setGroupName] = React.useState<string | null>("Grupo Padrão");
-
+  const groupIdFromUrl = searchParams.get('group_id');
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -105,29 +104,16 @@ function SignupFormComponent() {
       email: "",
       password: "",
       confirmPassword: "",
+      userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
     },
   });
 
   React.useEffect(() => {
-    async function fetchGroupName() {
-      if (groupId) {
-        try {
-          // In Firestore, a group is represented by the user who is the group manager.
-          const groupAdminDocRef = doc(firestore, "users", groupId);
-          const docSnap = await getDoc(groupAdminDocRef);
-          if (docSnap.exists() && docSnap.data().groupName) {
-            setGroupName(docSnap.data().groupName);
-          } else {
-             setGroupName("Grupo não encontrado");
-          }
-        } catch (error) {
-          console.error("Error fetching group name:", error);
-          setGroupName("Erro ao buscar grupo");
-        }
-      }
+    if (groupIdFromUrl) {
+      form.setValue('userType', UserType.JOGADOR);
     }
-    fetchGroupName();
-  }, [groupId]);
+  }, [groupIdFromUrl, form]);
+
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -137,25 +123,19 @@ function SignupFormComponent() {
     }
   };
 
-  const createGroupForManager = async (userId: string, displayName: string): Promise<string> => {
-    // A group name can be derived from the manager's name, e.g., "Grupo do João"
-    const newGroupName = `Grupo de ${displayName}`;
-    
-    // Check if a group with this name already exists to avoid duplicates
-    const groupsRef = collection(firestore, "users");
-    const q = query(groupsRef, where("groupName", "==", newGroupName));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-        // If a group with the same name exists, append a number or a short unique ID
-        return `${newGroupName} ${Math.floor(Math.random() * 100)}`;
-    }
-    
-    return newGroupName;
-  };
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+
+    if (values.userType === UserType.JOGADOR && !groupIdFromUrl) {
+       toast({
+        variant: "destructive",
+        title: "Falha no Cadastro",
+        description: "Jogadores só podem se cadastrar através de um link de convite válido.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
@@ -174,41 +154,71 @@ function SignupFormComponent() {
         }
       }
 
-      let finalGroupName = groupName;
-      if (values.userType === UserType.GESTOR_GRUPO && !groupId) {
-         finalGroupName = await createGroupForManager(user.uid, values.displayName);
-      } else if (values.userType === UserType.JOGADOR && !groupId) {
-         finalGroupName = null; // Players should only join via link
-      }
-
-      if (values.userType === UserType.JOGADOR && !finalGroupName) {
-        throw new Error("Jogadores só podem se cadastrar através de um link de convite.");
-      }
-
-      const userProfile = {
+      await updateProfile(user, {
         displayName: values.displayName,
-        userType: values.userType,
-        playerSubscriptionType: values.playerSubscriptionType,
-        photoURL: photoURL,
-        groupName: finalGroupName, 
-        groupId: values.userType === UserType.GESTOR_GRUPO ? user.uid : groupId,
-      };
-
-      await setDoc(doc(firestore, "users", user.uid), {
-        uid: user.uid,
-        email: values.email,
-        createdAt: new Date().toISOString(),
-        ...userProfile,
+        photoURL: photoURL
       });
 
-      // Update auth profile but ignore photoURL errors
-      try {
-        await updateProfile(user, {
-            displayName: userProfile.displayName,
+      const userDocRef = doc(firestore, "users", user.uid);
+      
+      const batch = writeBatch(firestore);
+
+      if (values.userType === UserType.GESTOR_GRUPO) {
+        const groupName = `Grupo de ${values.displayName}`;
+        const groupDocRef = doc(firestore, "groups", user.uid);
+
+        batch.set(groupDocRef, {
+            name: groupName,
+            managerId: user.uid,
+            createdAt: new Date().toISOString(),
+            gameDays: {}
         });
-      } catch(authError: any) {
-         console.error("Could not update Firebase Auth profile display name:", authError);
+
+        batch.set(userDocRef, {
+          uid: user.uid,
+          email: values.email,
+          displayName: values.displayName,
+          photoURL: photoURL,
+          userType: values.userType,
+          playerSubscriptionType: values.playerSubscriptionType,
+          groupId: user.uid,
+          createdAt: new Date().toISOString(),
+        });
+
+      } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
+        const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
+        const groupDocSnap = await getDoc(groupDocRef);
+
+        if (!groupDocSnap.exists()) {
+          throw new Error("O grupo do convite não foi encontrado.");
+        }
+
+        batch.set(userDocRef, {
+          uid: user.uid,
+          email: values.email,
+          displayName: values.displayName,
+          photoURL: photoURL,
+          userType: values.userType,
+          playerSubscriptionType: values.playerSubscriptionType,
+          groupId: groupIdFromUrl,
+          createdAt: new Date().toISOString(),
+        });
+
+      } else {
+         // Handle other user types if they don't belong to a group by default
+         batch.set(userDocRef, {
+            uid: user.uid,
+            email: values.email,
+            displayName: values.displayName,
+            photoURL: photoURL,
+            userType: values.userType,
+            playerSubscriptionType: values.playerSubscriptionType,
+            groupId: null,
+            createdAt: new Date().toISOString(),
+        });
       }
+
+      await batch.commit();
       
     } catch (error: any) {
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
@@ -277,20 +287,21 @@ function SignupFormComponent() {
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Tipo de Usuário</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading || !!groupId}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value} 
+                      disabled={isLoading || !!groupIdFromUrl}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {groupId ? (
-                        <SelectItem value={UserType.JOGADOR}>{UserType.JOGADOR}</SelectItem>
-                        ) : (
-                            Object.values(UserType).map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))
-                        )}
+                        {Object.values(UserType).map((type) => (
+                          <SelectItem key={type} value={type} disabled={groupIdFromUrl && type !== UserType.JOGADOR}>
+                            {type}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                     </Select>
                     <FormMessage />

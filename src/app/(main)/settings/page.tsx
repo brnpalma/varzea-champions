@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -31,7 +31,7 @@ interface GameDaySetting {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
 
   const [settings, setSettings] = useState<{
@@ -43,36 +43,39 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
+  const groupId = user?.groupId;
+
 
   useEffect(() => {
-    if (!user || !isManager) {
+    if (loading) return;
+    
+    if (!user || !isManager || !groupId) {
       setIsLoading(false);
       return;
     }
 
-    const fetchSettings = async () => {
-      setIsLoading(true);
-      const userDocRef = doc(firestore, "users", user.uid);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists() && docSnap.data().groupSettings) {
-        const loadedSettings = docSnap.data().groupSettings;
-        // Merge loaded settings with default to ensure all days are present
-        const initialGameDays: Record<string, GameDaySetting> = {};
+    setIsLoading(true);
+    const groupDocRef = doc(firestore, "groups", groupId);
+    
+    const unsubscribe = onSnapshot(groupDocRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().gameDays) {
+        const loadedSettings = docSnap.data().gameDays;
+        
+        const mergedGameDays: Record<string, GameDaySetting> = {};
         daysOfWeek.forEach(day => {
-            initialGameDays[day.id] = loadedSettings.gameDays?.[day.id] || { selected: false, time: '' };
+            mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
         });
-
-        setSettings(prev => ({
-            ...prev,
-            gameDays: initialGameDays,
-        }));
-
+        
+        setSettings({ gameDays: mergedGameDays });
       }
-      setIsLoading(false);
-    };
+       setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching settings:", error);
+        setIsLoading(false);
+    });
 
-    fetchSettings();
-  }, [user, isManager]);
+    return () => unsubscribe();
+  }, [user, isManager, groupId, loading]);
 
   const handleDayChange = (dayId: string) => {
     setSettings(prev => ({ 
@@ -101,7 +104,7 @@ export default function SettingsPage() {
   };
   
   const handleSave = async () => {
-    if (!user || !isManager) return;
+    if (!user || !isManager || !groupId) return;
 
     // Validation
     for (const day of daysOfWeek) {
@@ -118,8 +121,8 @@ export default function SettingsPage() {
 
     setIsSaving(true);
     try {
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, { groupSettings: settings }, { merge: true });
+      const groupDocRef = doc(firestore, "groups", groupId);
+      await setDoc(groupDocRef, { gameDays: settings.gameDays }, { merge: true });
       toast({
         variant: "success",
         title: "Salvo!",
@@ -137,6 +140,30 @@ export default function SettingsPage() {
     }
   };
 
+
+  if (loading) {
+     return (
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/4" />
+                    <Skeleton className="h-4 w-2/4" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-6 pt-4">
+                     <Skeleton className="h-6 w-1/3" />
+                     <div className="space-y-4">
+                       {daysOfWeek.map(day => <Skeleton key={day.id} className="h-10 w-full" />)}
+                     </div>
+                     <div className="flex justify-end pt-2">
+                        <Skeleton className="h-10 w-40" />
+                     </div>
+                   </div>
+                </CardContent>
+            </Card>
+        </div>
+     )
+  }
 
   if (!user) {
      return (
@@ -164,7 +191,7 @@ export default function SettingsPage() {
       {isManager ? (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle>Grupo</CardTitle>
+                <CardTitle>Grupo {user.groupName ? `"${user.groupName}"` : ""}</CardTitle>
                 <CardDescription>
                     Gerencie as configurações dos jogos do seu grupo.
                 </CardDescription>
@@ -221,7 +248,19 @@ export default function SettingsPage() {
                 )}
             </CardContent>
         </Card>
-      ) : null}
+      ) : (
+         <Card className="shadow-lg text-center">
+            <CardHeader>
+                <CardTitle>Acesso Restrito</CardTitle>
+                <CardDescription>
+                    Apenas gestores podem editar as configurações.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Você está vendo esta página porque é um jogador. As configurações do seu grupo são gerenciadas pelo gestor.</p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-lg">
           <CardHeader>

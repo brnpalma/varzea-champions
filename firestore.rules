@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -11,30 +12,53 @@ service cloud.firestore {
     function isUser(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
 
-    function isManagerOfGroup(groupId) {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    function isGroupManager(groupId) {
+      let group = get(/databases/$(database)/documents/groups/$(groupId)).data;
+      return isSignedIn() && request.auth.uid == group.managerId;
     }
 
     function isMemberOfGroup(groupId) {
-       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+        return isSignedIn() && getUserData(request.auth.uid).groupId == groupId;
     }
 
+    // USERS COLLECTION
     match /users/{userId} {
-      // Allow user to create their own profile upon signup
+      // READ: 
+      // 1. A user can read their own document.
+      // 2. A user can read the documents of other users in the same group.
+      allow read: if isUser(userId) || (isSignedIn() && getUserData(request.auth.uid).groupId != null && getUserData(request.auth.uid).groupId == resource.data.groupId);
+      
+      // CREATE: A user can create their own document when signing up.
       allow create: if isUser(userId);
 
-      // Allow user to read their own profile
-      // Allow any signed-in user to read profiles of users in the same group
-      allow read: if isUser(userId) || (isMemberOfGroup(resource.data.groupId) && resource.data.groupId != null);
-
-      // Allow user to update their own data
-      // Allow a group manager to remove a player from their group (updating groupId and groupName)
+      // UPDATE:
+      // 1. A user can update their own profile data.
+      // 2. A group manager can remove a player from a group (updating their groupId to null).
       allow update: if isUser(userId) || 
-                    (isManagerOfGroup(resource.data.groupId) && request.resource.data.keys().hasAll(['groupId', 'groupName']));
-      
-      // Prevent users from deleting their own account from the database directly
+                       (isGroupManager(getUserData(userId).groupId) && request.resource.data.groupId == null);
+                       
+      // DELETE: Deleting user documents is disallowed to prevent data loss.
       allow delete: if false;
+    }
+
+    // GROUPS COLLECTION
+    match /groups/{groupId} {
+       // READ: Any authenticated member of the group can read the group document.
+       allow read: if isMemberOfGroup(groupId);
+
+       // CREATE: Only authenticated users can create a group (will be set as manager).
+       allow create: if isSignedIn() && request.auth.uid == request.resource.data.managerId;
+       
+       // UPDATE: Only the manager of the group can update its settings.
+       allow update: if isGroupManager(groupId);
+
+       // DELETE: Deleting groups is disallowed for now to prevent accidental data loss.
+       allow delete: if false;
     }
   }
 }

@@ -51,7 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let profileUnsubscribe: (() => void) | undefined;
 
     const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // If a profile listener is active, unsubscribe from it
       if (profileUnsubscribe) {
         profileUnsubscribe();
       }
@@ -60,25 +59,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(true);
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
-        profileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const userProfileData = docSnap.data() as UserProfile;
+        profileUnsubscribe = onSnapshot(userDocRef, async (userDocSnap) => {
+          if (userDocSnap.exists()) {
+            const userProfileData = userDocSnap.data() as UserProfile;
+            
+            let groupName = null;
+            if (userProfileData.groupId) {
+              const groupDocRef = doc(firestore, "groups", userProfileData.groupId);
+              const groupDocSnap = await getDoc(groupDocRef);
+              if (groupDocSnap.exists()) {
+                groupName = groupDocSnap.data().name || null;
+              }
+            }
+
             setUser({
               ...firebaseUser,
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
               photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
               userType: userProfileData.userType || UserType.JOGADOR,
-              groupName: userProfileData.groupName || null,
+              groupName: groupName,
               playerSubscriptionType: userProfileData.playerSubscriptionType || PlayerSubscriptionType.AVULSO,
               groupId: userProfileData.groupId || null,
             });
           } else {
-            // Fallback if the firestore doc doesn't exist for some reason
             setUser({
               ...firebaseUser,
               displayName: firebaseUser.displayName || "Usuário",
               photoURL: firebaseUser.photoURL || null,
-              userType: UserType.JOGADOR, // Default value
+              userType: UserType.JOGADOR,
               groupName: null,
               playerSubscriptionType: PlayerSubscriptionType.AVULSO,
               groupId: null,
@@ -86,7 +94,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setLoading(false);
         }, (error) => {
-          // Handle potential errors, e.g., permissions
           console.error("Error fetching user profile:", error);
           setUser(null);
           setLoading(false);
@@ -97,7 +104,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    // Cleanup function
     return () => {
       authUnsubscribe();
       if (profileUnsubscribe) {
@@ -115,12 +121,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       router.push("/");
     }
 
-    // Comentado para permitir navegação sem login
-    // if (!user && !isAuthPage) {
-    //   router.push("/login");
-    // }
-
   }, [user, loading, pathname, router]);
+
 
   if (loading && (pathname === "/login" || pathname.startsWith("/signup"))) {
     return (
@@ -134,6 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       </div>
     );
   }
+
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
