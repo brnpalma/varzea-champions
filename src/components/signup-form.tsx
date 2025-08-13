@@ -129,7 +129,12 @@ export function SignupForm() {
           photoURL = await resizeAndEncodeImage(values.photo);
         } catch (photoError) {
            console.error("Error processing photo:", photoError);
-           // We can still proceed without a photo
+           // We can still proceed without a photo, show a toast to user
+            toast({
+              variant: "destructive",
+              title: "Erro na Imagem",
+              description: "Não foi possível processar sua foto, mas seu perfil foi criado.",
+            });
         }
       }
 
@@ -155,6 +160,7 @@ export function SignupForm() {
         });
       } catch (authProfileError: any) {
        console.error("Could not update Firebase Auth profile:", authProfileError);
+        // This is not a critical error, so we just log it. The primary data is in Firestore.
       }
       
     } catch (error: any) {
