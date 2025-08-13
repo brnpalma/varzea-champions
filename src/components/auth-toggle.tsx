@@ -13,7 +13,7 @@ export function AuthToggle({ authMode, setAuthMode }: AuthToggleProps) {
     <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
       <div
         className={cn(
-          "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-background rounded-full transition-transform duration-300 ease-in-out",
+          "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
           authMode === "signup" && "translate-x-full"
         )}
       />
@@ -22,7 +22,7 @@ export function AuthToggle({ authMode, setAuthMode }: AuthToggleProps) {
         onClick={() => setAuthMode("login")}
         className={cn(
           "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-          authMode === "login" ? "text-foreground" : "text-muted-foreground"
+          authMode === "login" ? "text-primary-foreground" : "text-muted-foreground"
         )}
       >
         Login
@@ -32,7 +32,7 @@ export function AuthToggle({ authMode, setAuthMode }: AuthToggleProps) {
         onClick={() => setAuthMode("signup")}
         className={cn(
           "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-          authMode === "signup" ? "text-foreground" : "text-muted-foreground"
+          authMode === "signup" ? "text-primary-foreground" : "text-muted-foreground"
         )}
       >
         Cadastrar

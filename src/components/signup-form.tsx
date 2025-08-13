@@ -231,44 +231,45 @@ function SignupFormComponent() {
   return (
     <div className="pt-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="flex justify-center mb-4">
-              <div className="relative">
-                <UserAvatar src={photoPreview} size={96} />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors"
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                  accept="image/*"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            <FormField
-            control={form.control}
-            name="displayName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome / Apelido</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Seu nome ou apelido"
-                    {...field}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="flex items-end gap-4">
+               <div className="relative shrink-0">
+                  <UserAvatar src={photoPreview} size={80} />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full hover:bg-primary/90 transition-colors"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                    accept="image/*"
                     disabled={isLoading}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+               </div>
+               <FormField
+                control={form.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Nome / Apelido</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Seu nome ou apelido"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+               />
+            </div>
+            
             <FormField
             control={form.control}
             name="userType"
@@ -300,7 +301,7 @@ function SignupFormComponent() {
             name="playerSubscriptionType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tipo de Jogador</FormLabel>
+                <FormLabel>Compromisso</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                   <FormControl>
                     <SelectTrigger>
@@ -334,43 +335,45 @@ function SignupFormComponent() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Senha</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    {...field}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirmar Senha</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    {...field}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Senha</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
             {isLoading ? "Criando Conta..." : "Criar Conta"}
           </Button>
         </form>

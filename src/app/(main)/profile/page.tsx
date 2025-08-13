@@ -265,7 +265,7 @@ export default function ProfilePage() {
                   </Select>
                </div>
                 <div>
-                 <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Jogador</label>
+                 <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
                   <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
                     <SelectTrigger id="playerSubscriptionType">
                       <SelectValue placeholder="Selecione seu plano" />
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                 <div className="flex items-center">
                     <WalletCards className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="text-foreground">
-                        Tipo de Jogador: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
+                        Compromisso: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
                     </span>
                 </div>
                  <div className="flex items-center">
