@@ -21,6 +21,7 @@ export function BottomNav() {
     try {
       await signOut(auth);
       toast({
+        variant: "success",
         title: "Sessão Encerrada",
         description: "Você foi desconectado com sucesso.",
       });

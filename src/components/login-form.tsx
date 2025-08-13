@@ -58,6 +58,12 @@ export function LoginForm() {
     setIsLoading("email");
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        variant: "success",
+        title: "Login bem-sucedido!",
+        description: "Bem-vindo de volta!",
+        duration: 2000,
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -75,9 +81,16 @@ export function LoginForm() {
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
+       toast({
+        variant: "success",
+        title: "Login bem-sucedido!",
+        description: "Bem-vindo!",
+        duration: 2000,
+      });
     } catch (error: any) {
       // Don't show an error if the user closes the popup
       if (error.code === 'auth/popup-closed-by-user') {
+        setIsLoading(false);
         return;
       }
       toast({

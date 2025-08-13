@@ -78,6 +78,7 @@ export default function SettingsPage() {
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, { groupSettings: settings }, { merge: true });
       toast({
+        variant: "success",
         title: "Salvo!",
         description: "Suas configurações foram salvas com sucesso.",
       });

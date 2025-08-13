@@ -81,6 +81,7 @@ export default function ProfilePage() {
     try {
       await signOut(auth);
       toast({
+        variant: "success",
         title: "Sessão Encerrada",
         description: "Você foi desconectado com sucesso.",
       });
@@ -158,6 +159,7 @@ export default function ProfilePage() {
         }
 
         toast({
+            variant: "success",
             title: "Perfil Atualizado",
             description: "Suas informações foram salvas com sucesso.",
         });
