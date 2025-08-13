@@ -149,7 +149,7 @@ export default function HomePage() {
     }).format(date).replace(',', ' às');
     
     return {
-      line1: `${weekday.charAt(0).toUpperCase() + weekday.slice(1)},`,
+      line1: weekday.charAt(0).toUpperCase() + weekday.slice(1),
       line2: dateTime
     }
   };
@@ -179,7 +179,7 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col">
-                    <span>{formattedDate.line1}</span>
+                    <span className="text-2xl font-bold">{formattedDate.line1}</span>
                     {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
                   </div>
                 )}
