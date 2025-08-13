@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Settings, LogIn, LogOut, Users } from "lucide-react";
+import { Home, User, Settings, LogIn, LogOut, Users, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, UserType } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
@@ -48,6 +48,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home },
     { href: "/players", label: "Jogadores", icon: Users },
+    { href: "/ranking", label: "Ranking", icon: Trophy },
     { href: "/settings", label: "Ajustes", icon: Settings, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
   ];
 
