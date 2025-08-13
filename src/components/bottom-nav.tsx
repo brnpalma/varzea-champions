@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Settings, LogIn, LogOut, Users, Trophy } from "lucide-react";
+import { Home, User, Settings, LogIn, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, UserType } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
@@ -11,10 +11,21 @@ import { auth } from "@/lib/firebase";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "./user-avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -37,22 +48,21 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home },
     { href: "/players", label: "Jogadores", icon: Users },
-    { href: "/ranking", label: "Ranking", icon: Trophy },
-    { href: "/profile", label: "Perfil", icon: User },
-    { href: "/settings", label: "Configurações", icon: Settings, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
+    { href: "/settings", label: "Ajustes", icon: Settings, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
   ];
 
   const visibleNavItems = navItems.filter(item => {
-    // Show all items if user is not logged in, except settings which is manager-only
-    if (!user) {
-        return item.href !== '/settings';
-    }
+    if (loading) return false;
     // For logged in users, filter by role
-    if (item.allowedRoles && !item.allowedRoles.includes(user.userType)) {
+    if (item.allowedRoles && (!user || !item.allowedRoles.includes(user.userType))) {
       return false;
     }
     return true;
   });
+
+  const profileItem = user ? 
+    { href: "/profile", label: "Perfil", icon: User, photoURL: user.photoURL } : 
+    { href: "/login", label: "Login", icon: LogIn };
 
   return (
     <>
@@ -72,6 +82,21 @@ export function BottomNav() {
               <span className="text-xs font-medium">{item.label}</span>
             </Link>
           ))}
+          <Link
+              key={profileItem.href}
+              href={profileItem.href}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary",
+                pathname === profileItem.href && "text-primary bg-secondary"
+              )}
+            >
+              {user ? (
+                <UserAvatar src={user.photoURL} size={20} />
+              ) : (
+                <profileItem.icon className="h-5 w-5" />
+              )}
+              <span className="text-xs font-medium">{profileItem.label}</span>
+            </Link>
         </div>
       </nav>
 
@@ -80,7 +105,7 @@ export function BottomNav() {
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
-              <Trophy className="h-6 w-6 text-primary-foreground" />
+              <Users className="h-6 w-6 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
@@ -103,18 +128,41 @@ export function BottomNav() {
         <div className="p-4 border-t">
           {user ? (
             <div className="flex items-center gap-3">
-              <UserAvatar src={user.photoURL} size={40} />
-              <div className="flex-1 truncate">
-                <p className="text-sm font-semibold text-foreground truncate">
-                  {user.displayName || "Usuário"}
-                </p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {user.email}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sair">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <Link href="/profile" className="flex-1 flex items-center gap-3 truncate">
+                <UserAvatar src={user.photoURL} size={40} />
+                <div className="flex-1 truncate">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {user.displayName || "Usuário"}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Sair">
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleLogout}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Sair
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
             </div>
           ) : (
              <Button asChild className="w-full">

@@ -53,14 +53,12 @@ export function LoginForm() {
       toast({
         variant: "success",
         title: "Bem-vindo ao Várzea Champions",
-        duration: 2000,
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Falha no Login",
         description: "E-mail ou senha incorretos. Por favor, tente novamente.",
-        duration: 2000,
       });
     } finally {
       setIsLoading(false);
@@ -76,7 +74,6 @@ export function LoginForm() {
         variant: "success",
         title: "Login bem-sucedido!",
         description: "Bem-vindo!",
-        duration: 2000,
       });
     } catch (error: any) {
       // Don't show an error if the user closes the popup
@@ -88,7 +85,6 @@ export function LoginForm() {
         variant: "destructive",
         title: "Falha no Login com Google",
         description: "Ocorreu um erro. Por favor, tente novamente.",
-        duration: 2000,
       });
     } finally {
       setIsLoading(false);

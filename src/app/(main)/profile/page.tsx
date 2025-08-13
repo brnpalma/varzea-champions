@@ -14,6 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { doc, setDoc } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -299,10 +310,31 @@ export default function ProfilePage() {
                    {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
                  </Button>
              ) : (
-                <Button onClick={handleLogout} variant="destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sair
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleLogout}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Sair
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
              )}
           </div>
         </CardContent>

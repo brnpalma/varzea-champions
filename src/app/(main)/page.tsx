@@ -1,24 +1,116 @@
 
 "use client";
 
-import { useAuth, UserType } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, Users, X, Trophy, LogIn } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Calendar, Check, Users, X, Trophy } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface GameDaySetting {
+  selected: boolean;
+  time: string;
+}
+
+const dayOfWeekMap: Record<string, number> = {
+  domingo: 0,
+  segunda: 1,
+  terca: 2,
+  quarta: 3,
+  quinta: 4,
+  sexta: 5,
+  sabado: 6,
+};
+
+function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null {
+  if (!gameDays || Object.keys(gameDays).length === 0) return null;
+
+  const now = new Date();
+  let nextGameDate: Date | null = null;
+
+  for (let i = 0; i < 7; i++) {
+    const checkingDate = new Date(now);
+    checkingDate.setDate(now.getDate() + i);
+    const dayOfWeek = checkingDate.getDay();
+
+    const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
+
+    if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+      const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
+      const gameTime = new Date(checkingDate);
+      gameTime.setHours(hours, minutes, 0, 0);
+
+      if (gameTime > now) {
+        if (!nextGameDate || gameTime < nextGameDate) {
+          nextGameDate = gameTime;
+        }
+      }
+    }
+  }
+  
+  // If no game this week, check next week
+  if (!nextGameDate) {
+     for (let i = 7; i < 14; i++) {
+        const checkingDate = new Date(now);
+        checkingDate.setDate(now.getDate() + i);
+        const dayOfWeek = checkingDate.getDay();
+
+        const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
+
+        if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+          const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
+          const gameTime = new Date(checkingDate);
+          gameTime.setHours(hours, minutes, 0, 0);
+
+           if (!nextGameDate || gameTime < nextGameDate) {
+              nextGameDate = gameTime;
+           }
+        }
+    }
+  }
+
+
+  return nextGameDate;
+}
+
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [confirmed, setConfirmed] = useState<boolean | null>(null);
+  const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
+  const [isGameDateLoading, setIsGameDateLoading] = useState(true);
+
+  useEffect(() => {
+    if (loading) return;
+
+    async function fetchGameSettings() {
+      if (!user?.groupId) {
+        setIsGameDateLoading(false);
+        return;
+      }
+      setIsGameDateLoading(true);
+      const groupDocRef = doc(firestore, "groups", user.groupId);
+      const docSnap = await getDoc(groupDocRef);
+      if (docSnap.exists()) {
+        const groupData = docSnap.data();
+        const gameDate = getNextGameDate(groupData.gameDays);
+        setNextGameDate(gameDate);
+      }
+      setIsGameDateLoading(false);
+    }
+
+    fetchGameSettings();
+  }, [user, loading]);
 
   const handlePresenceClick = () => {
     if (!user) {
       router.push('/login');
-    } else {
-      // Logic to handle presence confirmation would go here
     }
   };
 
@@ -38,22 +130,16 @@ export default function HomePage() {
     setConfirmed(false);
   };
   
-  if (user && user.userType === UserType.GESTOR_QUADRA) {
-    return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col items-center justify-center text-center space-y-6">
-          <div className="space-y-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {`Bem-vindo, ${user.displayName}!`}
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Painel de gestão da quadra.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formattedDate = nextGameDate
+    ? new Intl.DateTimeFormat('pt-BR', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }).format(nextGameDate)
+    : "Nenhuma partida agendada.";
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -69,9 +155,13 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+            <CardTitle className="flex items-center gap-3 capitalize">
               <Calendar className="h-6 w-6 text-primary" />
-              <span>Sábado, 20/07/2024 às 10:00</span>
+               {isGameDateLoading ? (
+                  <Skeleton className="h-6 w-4/5" />
+                ) : (
+                  <span>{formattedDate}</span>
+                )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -81,6 +171,7 @@ export default function HomePage() {
                 size="lg" 
                 onClick={handleConfirm} 
                 className={`bg-green-600 hover:bg-green-700 text-white ${confirmed === true ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                disabled={!user}
               >
                 <Check className="mr-2 h-5 w-5" /> Sim
               </Button>
@@ -89,6 +180,7 @@ export default function HomePage() {
                 onClick={handleDecline} 
                 variant="destructive"
                 className={`${confirmed === false ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
+                disabled={!user}
               >
                 <X className="mr-2 h-5 w-5" /> Não
               </Button>
