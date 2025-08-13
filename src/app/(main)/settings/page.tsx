@@ -8,10 +8,12 @@ import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { doc, getDoc, setDoc } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Save } from "lucide-react"
 
 const daysOfWeek = [
   { id: "segunda", label: "Segunda-feira" },
@@ -36,30 +38,6 @@ export default function SettingsPage() {
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
 
-  const saveSettings = useCallback(async (newSettings: typeof settings) => {
-    if (!user || !isManager) return;
-    setIsSaving(true);
-    try {
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, { groupSettings: newSettings }, { merge: true });
-      toast({
-        title: "Salvo!",
-        description: "Suas configurações foram salvas automaticamente.",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("Error saving settings: ", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível salvar suas configurações.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [user, isManager, toast]);
-  
-  // Fetch settings on component mount
   useEffect(() => {
     if (!user || !isManager) {
       setIsLoading(false);
@@ -83,18 +61,6 @@ export default function SettingsPage() {
     fetchSettings();
   }, [user, isManager]);
 
-  // Autosave on settings change
-  useEffect(() => {
-    if (isLoading) return; // Don't save on initial load
-    const handler = setTimeout(() => {
-      saveSettings(settings);
-    }, 1000); // Debounce saves by 1 second
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [settings, isLoading, saveSettings]);
-
   const handleDayChange = (dayId: string) => {
     setSettings(prev => ({ 
         ...prev, 
@@ -105,6 +71,29 @@ export default function SettingsPage() {
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSettings(prev => ({ ...prev, gameTime: e.target.value }));
   };
+  
+  const handleSave = async () => {
+    if (!user || !isManager) return;
+    setIsSaving(true);
+    try {
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, { groupSettings: settings }, { merge: true });
+      toast({
+        title: "Salvo!",
+        description: "Suas configurações foram salvas com sucesso.",
+      });
+    } catch (error) {
+      console.error("Error saving settings: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar suas configurações.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -116,7 +105,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-            {isManager && (
+            {isManager ? (
               <div>
                 <h3 className="text-lg font-medium text-foreground">Grupo</h3>
                 <Separator className="my-2" />
@@ -128,6 +117,7 @@ export default function SettingsPage() {
                      </div>
                      <Skeleton className="h-6 w-1/3 mt-4" />
                      <Skeleton className="h-10 w-32" />
+                     <Skeleton className="h-10 w-40 mt-4" />
                    </div>
                 ) : (
                   <div className="space-y-6 pt-4">
@@ -159,10 +149,16 @@ export default function SettingsPage() {
                         className="max-w-xs"
                       />
                     </div>
+                     <div className="pt-2">
+                        <Button onClick={handleSave} disabled={isSaving}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {isSaving ? "Salvando..." : "Salvar Configurações do Grupo"}
+                        </Button>
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
             <div>
               <h3 className="text-lg font-medium text-foreground">Aplicativo</h3>
