@@ -105,7 +105,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-            {isManager ? (
+             {isManager ? (
               <div>
                 <h3 className="text-lg font-medium text-foreground">Grupo</h3>
                 <Separator className="my-2" />
