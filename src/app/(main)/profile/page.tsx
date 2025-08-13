@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth, UserType } from "@/hooks/use-auth";
@@ -75,46 +76,79 @@ export default function ProfilePage() {
 
     setIsUploading(true);
     let photoURL = user.photoURL;
+    let success = true;
 
     try {
       // 1. Upload new photo if one was selected
       if (photoFile) {
-        const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-        await uploadBytes(storageRef, photoFile);
-        photoURL = await getDownloadURL(storageRef);
+        try {
+            const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+            await uploadBytes(storageRef, photoFile);
+            photoURL = await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error("Error uploading photo:", error);
+            toast({
+                variant: "destructive",
+                title: "Falha no Upload",
+                description: "Não foi possível carregar a nova foto.",
+            });
+            success = false;
+        }
       }
 
-      // 2. Prepare data for Firestore and Auth
-      const userProfile = {
-        displayName,
-        userType,
-        photoURL,
-      };
+      // Proceed only if photo upload was successful or not needed
+      if (success) {
+        // 2. Prepare data for Firestore and Auth
+        const userProfile = {
+          displayName,
+          userType,
+          photoURL,
+        };
 
-      // 3. Update Firestore document
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, userProfile, { merge: true });
+        // 3. Update Firestore document
+        try {
+            const userDocRef = doc(firestore, "users", user.uid);
+            await setDoc(userDocRef, userProfile, { merge: true });
+        } catch (error) {
+            console.error("Error updating Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Falha ao Salvar",
+                description: "Não foi possível salvar os dados no perfil.",
+            });
+            success = false;
+        }
 
-      // 4. Update Firebase Auth profile
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { displayName, photoURL });
+        // 4. Update Firebase Auth profile
+        try {
+          if (auth.currentUser) {
+            await updateProfile(auth.currentUser, { displayName, photoURL });
+          }
+        } catch (error) {
+            console.error("Error updating Auth profile:", error);
+            // This error might not be critical for the user, but we can log it.
+            // We won't set success to false here, as Firestore is the source of truth.
+        }
       }
-      
-      toast({
-        title: "Perfil Atualizado",
-        description: "Suas informações foram salvas com sucesso.",
-      });
-      setIsEditing(false);
+
+      if (success) {
+        toast({
+          title: "Perfil Atualizado",
+          description: "Suas informações foram salvas com sucesso.",
+        });
+        setIsEditing(false);
+      }
 
     } catch (error: any) {
+      // General catch block for any other unexpected errors
       console.error("Failed to save profile:", error);
       toast({
         variant: "destructive",
-        title: "Falha ao Salvar",
-        description: "Não foi possível salvar as alterações. Verifique suas permissões ou tente novamente.",
+        title: "Erro Inesperado",
+        description: "Ocorreu um erro ao salvar o perfil. Tente novamente.",
       });
     } finally {
-      // Ensure the loading state is always turned off
+      // This will always run, ensuring the button is re-enabled.
       setIsUploading(false);
     }
   };
