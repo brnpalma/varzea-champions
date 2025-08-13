@@ -56,12 +56,16 @@ export default function SettingsPage() {
       if (docSnap.exists() && docSnap.data().groupSettings) {
         const loadedSettings = docSnap.data().groupSettings;
         // Merge loaded settings with default to ensure all days are present
+        const initialGameDays: Record<string, GameDaySetting> = {};
+        daysOfWeek.forEach(day => {
+            initialGameDays[day.id] = loadedSettings.gameDays?.[day.id] || { selected: false, time: '' };
+        });
+
         setSettings(prev => ({
-          gameDays: {
-            ...prev.gameDays,
-            ...loadedSettings.gameDays,
-          }
+            ...prev,
+            gameDays: initialGameDays,
         }));
+
       }
       setIsLoading(false);
     };
@@ -97,6 +101,20 @@ export default function SettingsPage() {
   
   const handleSave = async () => {
     if (!user || !isManager) return;
+
+    // Validation
+    for (const day of daysOfWeek) {
+        const setting = settings.gameDays[day.id];
+        if (setting.selected && !setting.time) {
+            toast({
+                variant: "destructive",
+                title: "Campo Obrigatório",
+                description: `Por favor, defina um horário para ${day.label}.`,
+            });
+            return;
+        }
+    }
+
     setIsSaving(true);
     try {
       const userDocRef = doc(firestore, "users", user.uid);
