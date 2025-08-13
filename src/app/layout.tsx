@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { BottomNav } from '@/components/bottom-nav';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export const metadata: Metadata = {
   title: 'Varzea Champions Manager',
@@ -35,6 +36,7 @@ export default function RootLayout({
               <main className="flex-1 pb-24 md:pb-0 md:ml-64">
                 {children}
               </main>
+              <ThemeToggle />
             </div>
           </AuthProvider>
           <Toaster />
