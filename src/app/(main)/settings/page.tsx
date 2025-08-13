@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button"
 import { doc, setDoc, onSnapshot } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
-import { Skeleton } from "@/components/ui/skeleton"
 import { LogIn, Save } from "lucide-react"
 import Link from "next/link"
+import { FootballSpinner } from "@/components/ui/football-spinner"
 
 const daysOfWeek = [
   { id: "segunda", label: "Segunda-feira" },
@@ -169,24 +169,8 @@ export default function SettingsPage() {
 
   if (loading) {
      return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-4 w-2/4" />
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6 pt-4">
-                     <Skeleton className="h-6 w-1/3" />
-                     <div className="space-y-4">
-                       {daysOfWeek.map(day => <Skeleton key={day.id} className="h-10 w-full" />)}
-                     </div>
-                     <div className="flex justify-end pt-2">
-                        <Skeleton className="h-10 w-40" />
-                     </div>
-                   </div>
-                </CardContent>
-            </Card>
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
+           <FootballSpinner />
         </div>
      );
   }
@@ -224,16 +208,9 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
                 {isLoading ? (
-                   <div className="space-y-6 pt-4">
-                     {isGroupManager && <Skeleton className="h-10 w-full" />}
-                     <Skeleton className="h-6 w-1/3" />
-                     <div className="space-y-4">
-                       {daysOfWeek.map(day => <Skeleton key={day.id} className="h-10 w-full" />)}
-                     </div>
-                     <div className="flex justify-end pt-2">
-                        <Skeleton className="h-10 w-40" />
-                     </div>
-                   </div>
+                  <div className="flex justify-center items-center py-8">
+                    <FootballSpinner />
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     {isGroupManager && (

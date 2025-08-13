@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FootballSpinner } from "./ui/football-spinner";
 
 export enum UserType {
   JOGADOR = "Jogador",
@@ -125,14 +125,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
   if (loading && (pathname === "/login" || pathname.startsWith("/signup"))) {
-    return (
+     return (
       <div className="flex items-center justify-center h-screen bg-background">
-        <div className="w-full max-w-sm p-8 space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
+        <FootballSpinner />
       </div>
     );
   }

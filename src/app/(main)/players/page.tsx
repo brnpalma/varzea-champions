@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Share2, Trash2, Copy, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
+import { FootballSpinner } from '@/components/ui/football-spinner';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
@@ -113,26 +113,8 @@ export default function PlayersPage() {
   
   if (loading) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <Skeleton className="h-8 w-2/5" />
-            <Skeleton className="h-4 w-4/5" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
+        <FootballSpinner />
       </div>
     );
   }
@@ -196,16 +178,8 @@ export default function PlayersPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-             <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                  </div>
-                </div>
-              ))}
+             <div className="flex justify-center items-center py-8">
+              <FootballSpinner />
             </div>
           ) : (
             <ul className="space-y-4">

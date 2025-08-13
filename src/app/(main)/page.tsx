@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FootballSpinner } from "@/components/ui/football-spinner";
 
 interface GameDaySetting {
   selected: boolean;
@@ -146,10 +146,10 @@ export default function HomePage() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date).replace(',', ' às');
+    }).format(date).replace(' ', '');
     
     return {
-      line1: weekday.charAt(0).toUpperCase() + weekday.slice(1),
+      line1: weekday.charAt(0).toUpperCase() + weekday.slice(1).replace(',', ''),
       line2: dateTime
     }
   };
@@ -173,9 +173,8 @@ export default function HomePage() {
             <CardTitle className="flex items-start gap-3">
               <Calendar className="h-6 w-6 text-primary mt-1" />
                {isGameDateLoading ? (
-                  <div className="w-4/5 space-y-2">
-                    <Skeleton className="h-6 w-3/5" />
-                    <Skeleton className="h-5 w-4/5" />
+                  <div className="w-full flex justify-center items-center py-4">
+                    <FootballSpinner />
                   </div>
                 ) : (
                   <div className="flex flex-col">

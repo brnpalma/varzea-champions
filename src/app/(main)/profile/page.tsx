@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { FootballSpinner } from "@/components/ui/football-spinner";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -174,7 +175,11 @@ export default function ProfilePage() {
 
 
   if (loading) {
-    return null;
+     return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
+        <FootballSpinner />
+      </div>
+    );
   }
 
   if (!user) {
