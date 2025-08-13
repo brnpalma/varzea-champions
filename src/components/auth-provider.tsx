@@ -1,9 +1,10 @@
+
 "use client";
 
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -38,58 +39,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const fetchUserProfile = useCallback(async (firebaseUser: FirebaseAuthUser) => {
-    const userDocRef = doc(firestore, "users", firebaseUser.uid);
-    
-    // Use onSnapshot for real-time updates
-    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const userProfileData = docSnap.data() as UserProfile;
-        setUser({
-          ...firebaseUser,
-          ...userProfileData,
-          displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
-          photoURL: userProfileData.photoURL || firebaseUser.photoURL || "",
-        });
-      } else {
-        // If profile doesn't exist, use basic auth info
-        setUser({
-          ...firebaseUser,
-          displayName: firebaseUser.displayName || "Usuário",
-          photoURL: firebaseUser.photoURL || "",
-          userType: UserType.JOGADOR, // Default value
-        });
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    let profileUnsubscribe: (() => void) | undefined;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // If a profile listener is active, unsubscribe from it
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+
       if (firebaseUser) {
         setLoading(true);
-        const unsubscribeProfile = await fetchUserProfile(firebaseUser);
-        // Store the profile unsubscribe function to call it on cleanup
-        (auth as any)._unsubscribeProfile = unsubscribeProfile;
+        const userDocRef = doc(firestore, "users", firebaseUser.uid);
+        
+        profileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userProfileData = docSnap.data() as UserProfile;
+            setUser({
+              ...firebaseUser,
+              ...userProfileData,
+              displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
+              photoURL: userProfileData.photoURL || firebaseUser.photoURL || "",
+            });
+          } else {
+            // Fallback if the firestore doc doesn't exist for some reason
+            setUser({
+              ...firebaseUser,
+              displayName: firebaseUser.displayName || "Usuário",
+              photoURL: firebaseUser.photoURL || "",
+              userType: UserType.JOGADOR, // Default value
+            });
+          }
+          setLoading(false);
+        }, (error) => {
+          // Handle potential errors, e.g., permissions
+          console.error("Error fetching user profile:", error);
+          setUser(null);
+          setLoading(false);
+        });
       } else {
         setUser(null);
         setLoading(false);
-        // Clean up profile listener if it exists
-        if ((auth as any)._unsubscribeProfile) {
-          (auth as any)._unsubscribeProfile();
-        }
       }
     });
 
+    // Cleanup function
     return () => {
-      unsubscribeAuth();
-      if ((auth as any)._unsubscribeProfile) {
-        (auth as any)._unsubscribeProfile();
+      authUnsubscribe();
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
       }
     };
-  }, [fetchUserProfile]);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -99,6 +100,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (user && isAuthPage) {
       router.push("/");
     }
+
+    if (!user && !isAuthPage) {
+      // Optional: redirect to login if not authenticated and not on an auth page
+      // Uncomment the line below if you want this behavior
+      // router.push("/login");
+    }
+
   }, [user, loading, pathname, router]);
 
   if (loading) {
@@ -125,3 +133,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
+
