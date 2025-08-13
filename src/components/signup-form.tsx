@@ -7,6 +7,8 @@ import * as z from "zod";
 import Link from "next/link";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,9 +28,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { auth, firestore } from "@/lib/firebase";
+import { auth, firestore, storage } from "@/lib/firebase";
 import { UserType } from "@/hooks/use-auth";
+import { Camera } from "lucide-react";
 
 
 const formSchema = z
@@ -39,6 +43,8 @@ const formSchema = z
       .string()
       .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
     confirmPassword: z.string(),
+    userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
+    photo: z.any().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não correspondem",
@@ -47,6 +53,8 @@ const formSchema = z
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,15 +67,32 @@ export function SignupForm() {
     },
   });
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      form.setValue('photo', file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
+      let photoURL = user.photoURL || null;
+
+      if (values.photo) {
+        const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+        await uploadBytes(storageRef, values.photo);
+        photoURL = await getDownloadURL(storageRef);
+      }
+
       // 1. Update Firebase Auth Profile
       await updateProfile(user, {
         displayName: values.displayName,
+        photoURL: photoURL,
       });
 
       // 2. Create user document in Firestore
@@ -76,8 +101,8 @@ export function SignupForm() {
         uid: user.uid,
         displayName: values.displayName,
         email: values.email,
-        userType: UserType.JOGADOR, // Default user type
-        photoURL: user.photoURL, // Default photo
+        userType: values.userType,
+        photoURL: photoURL,
         createdAt: new Date().toISOString(),
       });
       
@@ -104,6 +129,32 @@ export function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <Image
+                    src={photoPreview || "https://placehold.co/100x100.png"}
+                    alt="Foto do Perfil"
+                    width={100}
+                    height={100}
+                    className="rounded-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                    accept="image/*"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
              <FormField
               control={form.control}
               name="displayName"
@@ -117,6 +168,28 @@ export function SignupForm() {
                       disabled={isLoading}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="userType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Usuário</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o seu tipo de perfil" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(UserType).map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
