@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth, UserType } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -28,6 +28,7 @@ const daysOfWeek = [
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const timeInputRef = useRef<HTMLInputElement>(null);
 
   const [settings, setSettings] = useState({
     gameDays: {} as Record<string, boolean>,
@@ -142,11 +143,13 @@ export default function SettingsPage() {
                       <Label htmlFor="game-time" className="text-base">Horário dos jogos</Label>
                        <p className="text-sm text-muted-foreground mb-2">Informe o horário de início padrão para os dias selecionados.</p>
                       <Input 
+                        ref={timeInputRef}
                         id="game-time" 
                         type="time" 
                         value={settings.gameTime} 
                         onChange={handleTimeChange} 
                         className="max-w-xs"
+                        onClick={() => timeInputRef.current?.showPicker()}
                       />
                     </div>
                      <div className="pt-2">
