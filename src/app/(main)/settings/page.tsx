@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { doc, getDoc, setDoc, onSnapshot, updateDoc } from "firebase/firestore"
+import { doc, setDoc, onSnapshot } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -188,7 +188,7 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
         </div>
-     )
+     );
   }
 
   if (!user) {
@@ -295,7 +295,7 @@ export default function SettingsPage() {
                 <CardDescription>
                     Apenas gestores podem editar as configurações.
                 </CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Você está vendo esta página porque é um jogador. As configurações do seu grupo são gerenciadas pelo gestor.</p>
             </CardContent>
@@ -316,5 +316,7 @@ export default function SettingsPage() {
           </CardContent>
       </Card>
     </div>
-  )
+  );
 }
+
+    
