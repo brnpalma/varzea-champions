@@ -31,11 +31,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="flex min-h-screen bg-background">
-              <BottomNav />
-              <main className="flex-1 pb-24 md:pb-0 md:ml-64">
-                {children}
-              </main>
+            <div className="flex flex-col min-h-screen bg-background">
+              <div className="flex flex-1">
+                 <BottomNav />
+                 <main className="flex-1 pb-24 md:pb-0 md:ml-64">
+                   {children}
+                 </main>
+              </div>
               <ThemeToggle />
             </div>
           </AuthProvider>

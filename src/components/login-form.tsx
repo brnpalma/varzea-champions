@@ -107,7 +107,7 @@ export function LoginForm() {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="voce@exemplo.com"
+                    placeholder=""
                     {...field}
                     disabled={!!isLoading}
                   />
@@ -125,7 +125,7 @@ export function LoginForm() {
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder="••••••••"
+                    placeholder=""
                     {...field}
                     disabled={!!isLoading}
                   />

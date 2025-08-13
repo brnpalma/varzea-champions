@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+    <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">

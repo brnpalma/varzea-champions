@@ -259,7 +259,7 @@ function SignupFormComponent() {
                     <FormLabel>Nome / Apelido</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Seu nome ou apelido"
+                        placeholder=""
                         {...field}
                         disabled={isLoading}
                       />
@@ -280,7 +280,7 @@ function SignupFormComponent() {
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading || !!groupId}>
                     <FormControl>
                         <SelectTrigger>
-                        <SelectValue placeholder="Selecione o seu tipo de perfil" />
+                        <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -306,7 +306,7 @@ function SignupFormComponent() {
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                     <FormControl>
                         <SelectTrigger>
-                        <SelectValue placeholder="Selecione seu plano" />
+                        <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -328,7 +328,7 @@ function SignupFormComponent() {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="voce@exemplo.com"
+                    placeholder=""
                     {...field}
                     disabled={isLoading}
                   />
@@ -347,7 +347,7 @@ function SignupFormComponent() {
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="••••••••"
+                      placeholder=""
                       {...field}
                       disabled={isLoading}
                     />
@@ -365,7 +365,7 @@ function SignupFormComponent() {
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="••••••••"
+                      placeholder=""
                       {...field}
                       disabled={isLoading}
                     />
