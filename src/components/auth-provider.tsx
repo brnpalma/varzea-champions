@@ -25,6 +25,7 @@ export interface UserProfile {
   userType: UserType;
   groupName: string | null;
   playerSubscriptionType: PlayerSubscriptionType;
+  groupId: string | null;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -69,6 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userType: userProfileData.userType || UserType.JOGADOR,
               groupName: userProfileData.groupName || null,
               playerSubscriptionType: userProfileData.playerSubscriptionType || PlayerSubscriptionType.AVULSO,
+              groupId: userProfileData.groupId || null,
             });
           } else {
             // Fallback if the firestore doc doesn't exist for some reason
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userType: UserType.JOGADOR, // Default value
               groupName: null,
               playerSubscriptionType: PlayerSubscriptionType.AVULSO,
+              groupId: null,
             });
           }
           setLoading(false);
@@ -106,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthPage = pathname === "/login" || pathname === "/signup";
+    const isAuthPage = pathname === "/login" || pathname.startsWith("/signup");
 
     if (user && isAuthPage) {
       router.push("/");
@@ -131,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
   }
 
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const isAuthPage = pathname === "/login" || pathname.startsWith("/signup");
   if (!user && !isAuthPage) {
      return null; // Render nothing while redirecting to login
   }

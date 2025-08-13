@@ -3,9 +3,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Settings, LogIn, LogOut } from "lucide-react";
+import { Home, User, Settings, LogIn, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, UserType } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "./ui/button";
@@ -35,12 +35,20 @@ export function BottomNav() {
   };
   
   const navItems = [
-    { href: "/", label: "Início", icon: Home, requiresAuth: false },
+    { href: "/", label: "Início", icon: Home, requiresAuth: true },
+    { href: "/players", label: "Jogadores", icon: Users, requiresAuth: true, allowedRoles: [UserType.JOGADOR, UserType.GESTOR_GRUPO] },
     { href: "/profile", label: "Perfil", icon: User, requiresAuth: true },
-    { href: "/settings", label: "Configurações", icon: Settings, requiresAuth: false },
+    { href: "/settings", label: "Configurações", icon: Settings, requiresAuth: true, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
   ];
 
-  const visibleNavItems = navItems.filter(item => !item.requiresAuth || user);
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.requiresAuth) return true;
+    if (!user) return false;
+    if (item.allowedRoles && !item.allowedRoles.includes(user.userType)) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <>

@@ -6,8 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
+import { useSearchParams } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -91,11 +92,14 @@ const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
   });
 };
 
-export function SignupForm() {
+function SignupFormComponent() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const groupId = searchParams.get('group_id');
+  const [groupName, setGroupName] = React.useState<string | null>("Grupo Padrão");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -107,12 +111,50 @@ export function SignupForm() {
     },
   });
 
+  React.useEffect(() => {
+    async function fetchGroupName() {
+      if (groupId) {
+        try {
+          // In Firestore, a group is represented by the user who is the group manager.
+          const groupAdminDocRef = doc(firestore, "users", groupId);
+          const docSnap = await getDoc(groupAdminDocRef);
+          if (docSnap.exists() && docSnap.data().groupName) {
+            setGroupName(docSnap.data().groupName);
+          } else {
+             setGroupName("Grupo não encontrado");
+          }
+        } catch (error) {
+          console.error("Error fetching group name:", error);
+          setGroupName("Erro ao buscar grupo");
+        }
+      }
+    }
+    fetchGroupName();
+  }, [groupId]);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       form.setValue('photo', file);
       setPhotoPreview(URL.createObjectURL(file));
     }
+  };
+
+  const createGroupForManager = async (userId: string, displayName: string): Promise<string> => {
+    // A group name can be derived from the manager's name, e.g., "Grupo do João"
+    const newGroupName = `Grupo de ${displayName}`;
+    
+    // Check if a group with this name already exists to avoid duplicates
+    const groupsRef = collection(firestore, "users");
+    const q = query(groupsRef, where("groupName", "==", newGroupName));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        // If a group with the same name exists, append a number or a short unique ID
+        return `${newGroupName} ${Math.floor(Math.random() * 100)}`;
+    }
+    
+    return newGroupName;
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -135,13 +177,24 @@ export function SignupForm() {
         }
       }
 
-      // TODO: Get groupName from invitation link
+      let finalGroupName = groupName;
+      if (values.userType === UserType.GESTOR_GRUPO && !groupId) {
+         finalGroupName = await createGroupForManager(user.uid, values.displayName);
+      } else if (values.userType === UserType.JOGADOR && !groupId) {
+         finalGroupName = null; // Players should only join via link
+      }
+
+      if (values.userType === UserType.JOGADOR && !finalGroupName) {
+        throw new Error("Jogadores só podem se cadastrar através de um link de convite.");
+      }
+
       const userProfile = {
         displayName: values.displayName,
         userType: values.userType,
         playerSubscriptionType: values.playerSubscriptionType,
         photoURL: photoURL,
-        groupName: "Grupo Padrão" // Placeholder
+        groupName: finalGroupName, 
+        groupId: values.userType === UserType.GESTOR_GRUPO ? user.uid : groupId,
       };
 
       await setDoc(doc(firestore, "users", user.uid), {
@@ -182,9 +235,15 @@ export function SignupForm() {
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Crie uma Conta</CardTitle>
-        <CardDescription>
-          Insira seus dados abaixo para começar.
-        </CardDescription>
+        {groupId ? (
+          <CardDescription>
+            Você está se juntando ao <span className="font-bold text-primary">{groupName}</span>.
+          </CardDescription>
+        ) : (
+          <CardDescription>
+            Insira seus dados abaixo para começar.
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -232,16 +291,20 @@ export function SignupForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Usuário</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading || !!groupId}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o seu tipo de perfil" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.values(UserType).map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
+                      {groupId ? (
+                        <SelectItem value={UserType.JOGADOR}>{UserType.JOGADOR}</SelectItem>
+                      ) : (
+                         Object.values(UserType).map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -342,4 +405,13 @@ export function SignupForm() {
       </CardFooter>
     </Card>
   );
+}
+
+// React.Suspense is required for useSearchParams to work.
+export function SignupForm() {
+  return (
+    <React.Suspense fallback={<div>Carregando...</div>}>
+      <SignupFormComponent />
+    </React.Suspense>
+  )
 }
