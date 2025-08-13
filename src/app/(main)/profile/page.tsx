@@ -138,7 +138,6 @@ export default function ProfilePage() {
         if (auth.currentUser) {
             await updateProfile(auth.currentUser, {
                 displayName: displayName,
-                photoURL: newPhotoURL,
             });
         }
 

@@ -105,6 +105,7 @@ function SignupFormComponent() {
       password: "",
       confirmPassword: "",
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
+      playerSubscriptionType: undefined,
     },
   });
 
@@ -156,7 +157,6 @@ function SignupFormComponent() {
 
       await updateProfile(user, {
         displayName: values.displayName,
-        photoURL: photoURL
       });
 
       const userDocRef = doc(firestore, "users", user.uid);
@@ -314,7 +314,7 @@ function SignupFormComponent() {
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Compromisso</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />

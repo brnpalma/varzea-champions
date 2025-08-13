@@ -6,13 +6,13 @@ import { getFirestore } from "firebase/firestore";
 // ATENÇÃO: Substitua o objeto de exemplo abaixo pela configuração do SEU projeto Firebase.
 // Você pode encontrá-lo no Console do Firebase > Configurações do Projeto.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyC7LcRr6Rc9UR5J42VgSVvYPfKhMPx3VSs",
+  authDomain: "varzea-champions-manager.firebaseapp.com",
+  projectId: "varzea-champions-manager",
+  storageBucket: "varzea-champions-manager.firebasestorage.app",
+  messagingSenderId: "842794376801",
+  appId: "1:842794376801:web:89f4c9f93afc892b385420",
+  measurementId: "G-VJ9NYC343G"
 };
 
 // O código abaixo inicializa o Firebase com a configuração que você fornecer.
