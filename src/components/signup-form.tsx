@@ -148,20 +148,13 @@ export function SignupForm() {
         ...userProfile,
       });
 
-      // 4. Update Firebase Auth Profile.
-      // We do this separately and handle errors silently for photoURL,
-      // as Firestore is our source of truth.
+      // 4. Update Firebase Auth Profile (displayName only)
       try {
         await updateProfile(user, {
           displayName: userProfile.displayName,
-          photoURL: userProfile.photoURL,
         });
       } catch (authProfileError: any) {
-        // Silently ignore photoURL too long errors, as it's saved in Firestore.
-        if (authProfileError.code !== 'auth/invalid-profile-attribute') {
-           // For other errors, we can log them or show a non-blocking warning.
-           console.error("Could not update Firebase Auth profile:", authProfileError);
-        }
+       console.error("Could not update Firebase Auth profile:", authProfileError);
       }
       
     } catch (error: any) {

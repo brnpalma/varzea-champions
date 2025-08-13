@@ -141,7 +141,7 @@ export default function ProfilePage() {
         photoURL: newPhotoURL,
       };
 
-      // 1. Update Firestore first, as it's our primary source of truth
+      // 1. Update Firestore, as it's our primary source of truth
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, { 
         displayName: userProfile.displayName, 
@@ -149,24 +149,20 @@ export default function ProfilePage() {
         photoURL: userProfile.photoURL 
       }, { merge: true });
 
-      // 2. Then, try to update Firebase Auth profile
+      // 2. Then, try to update Firebase Auth profile (displayName only)
       if (auth.currentUser) {
           try {
               await updateProfile(auth.currentUser, { 
                 displayName: userProfile.displayName, 
-                photoURL: userProfile.photoURL 
               });
           } catch (authProfileError: any) {
-             // Silently ignore photoURL too long errors, as it's saved in Firestore.
-             if (authProfileError.code !== 'auth/invalid-profile-attribute') {
-                console.error("Could not update Firebase Auth profile:", authProfileError);
-                // Optionally show a non-critical error to the user
-                toast({
-                    variant: "destructive",
-                    title: "Aviso",
-                    description: "Seu perfil foi salvo, mas algumas informações não puderam ser sincronizadas com o sistema de autenticação.",
-                });
-             }
+              console.error("Could not update Firebase Auth profile:", authProfileError);
+              // Optionally show a non-critical error to the user
+              toast({
+                  variant: "destructive",
+                  title: "Aviso",
+                  description: "Seu perfil foi salvo, mas algumas informações não puderam ser sincronizadas com o sistema de autenticação.",
+              });
           }
       }
       
