@@ -51,11 +51,40 @@ const formSchema = z
     path: ["confirmPassword"],
   });
 
-const fileToDataUri = (file: File): Promise<string> => {
+const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      resolve(reader.result as string);
+    reader.onload = (readerEvent) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Failed to get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // Use JPEG for better compression for photos, with 80% quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = readerEvent.target?.result as string;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -94,7 +123,7 @@ export function SignupForm() {
 
       let photoURL: string | null = null;
       if (values.photo) {
-        photoURL = await fileToDataUri(values.photo);
+        photoURL = await resizeAndEncodeImage(values.photo);
       }
 
       // 1. Update Firebase Auth Profile
@@ -115,10 +144,18 @@ export function SignupForm() {
       });
       
     } catch (error: any) {
+      let description = "Ocorreu um erro desconhecido. Tente novamente.";
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'Este e-mail já está em uso.';
+      } else if (error.code === 'auth/invalid-profile-attribute') {
+        description = "Ocorreu um erro ao salvar a foto. Tente uma imagem menor.";
+      } else {
+        description = error.message;
+      }
       toast({
         variant: "destructive",
         title: "Falha ao Cadastrar",
-        description: error.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' : error.message,
+        description: description,
       });
     } finally {
       setIsLoading(false);

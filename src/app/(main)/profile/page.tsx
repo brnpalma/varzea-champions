@@ -14,11 +14,41 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { doc, setDoc } from "firebase/firestore";
 
-const fileToDataUri = (file: File): Promise<string> => {
+
+const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      resolve(reader.result as string);
+    reader.onload = (readerEvent) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Failed to get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // Use JPEG for better compression for photos, with 80% quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = readerEvent.target?.result as string;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -89,8 +119,9 @@ export default function ProfilePage() {
     let photoURL = user.photoURL;
 
     try {
+      // If a new photo was selected, process and update it
       if (photoFile) {
-        photoURL = await fileToDataUri(photoFile);
+        photoURL = await resizeAndEncodeImage(photoFile);
       }
 
       const userProfile = {
@@ -99,13 +130,20 @@ export default function ProfilePage() {
         photoURL,
       };
 
-      // Update Firestore first, as it's our source of truth
+      // 1. Update Firestore first, as it's our primary source of truth
       const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, userProfile, { merge: true });
+      await setDoc(userDocRef, { 
+        displayName: userProfile.displayName, 
+        userType: userProfile.userType,
+        photoURL: userProfile.photoURL 
+      }, { merge: true });
 
-      // Then update Firebase Auth profile
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { displayName, photoURL });
+      // 2. Then update Firebase Auth profile if any relevant data changed
+      if (auth.currentUser && (auth.currentUser.displayName !== userProfile.displayName || auth.currentUser.photoURL !== userProfile.photoURL)) {
+          await updateProfile(auth.currentUser, { 
+            displayName: userProfile.displayName, 
+            photoURL: userProfile.photoURL 
+          });
       }
       
       toast({
@@ -116,10 +154,16 @@ export default function ProfilePage() {
 
     } catch (error: any) {
       console.error("Failed to save profile:", error);
+      
+      let description = "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.";
+      if (error.code === 'auth/invalid-profile-attribute') {
+        description = "Ocorreu um erro ao atualizar a foto. Tente uma imagem menor.";
+      }
+
       toast({
         variant: "destructive",
         title: "Erro ao Salvar",
-        description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
+        description: description,
       });
     } finally {
       setIsSaving(false);
