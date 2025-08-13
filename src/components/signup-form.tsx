@@ -118,38 +118,58 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
+      // 2. Process photo if it exists
       let photoURL: string | null = null;
       if (values.photo) {
-        photoURL = await resizeAndEncodeImage(values.photo);
+        try {
+          photoURL = await resizeAndEncodeImage(values.photo);
+        } catch (photoError) {
+           console.error("Error processing photo:", photoError);
+           // We can still proceed without a photo
+        }
       }
 
-      // 1. Update Firebase Auth Profile
-      await updateProfile(user, {
+      const userProfile = {
         displayName: values.displayName,
+        userType: values.userType,
         photoURL: photoURL,
-      });
+      };
 
-      // 2. Create user document in Firestore
+      // 3. Create user document in Firestore (our source of truth)
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
         uid: user.uid,
-        displayName: values.displayName,
         email: values.email,
-        userType: values.userType,
-        photoURL: photoURL,
         createdAt: new Date().toISOString(),
+        ...userProfile,
       });
+
+      // 4. Update Firebase Auth Profile.
+      // We do this separately and handle errors silently for photoURL,
+      // as Firestore is our source of truth.
+      try {
+        await updateProfile(user, {
+          displayName: userProfile.displayName,
+          photoURL: userProfile.photoURL,
+        });
+      } catch (authProfileError: any) {
+        // Silently ignore photoURL too long errors, as it's saved in Firestore.
+        if (authProfileError.code !== 'auth/invalid-profile-attribute') {
+           // For other errors, we can log them or show a non-blocking warning.
+           console.error("Could not update Firebase Auth profile:", authProfileError);
+        }
+      }
       
     } catch (error: any) {
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este e-mail já está em uso.';
-      } else if (error.code === 'auth/invalid-profile-attribute') {
-        description = "Ocorreu um erro ao salvar a foto. Tente uma imagem menor.";
       } else {
+        console.error("Signup Error:", error);
         description = error.message;
       }
       toast({

@@ -116,18 +116,29 @@ export default function ProfilePage() {
     if (!user) return;
 
     setIsSaving(true);
-    let photoURL = user.photoURL;
+    let newPhotoURL = user.photoURL;
 
     try {
-      // If a new photo was selected, process and update it
+      // If a new photo was selected, process it
       if (photoFile) {
-        photoURL = await resizeAndEncodeImage(photoFile);
+        try {
+            newPhotoURL = await resizeAndEncodeImage(photoFile);
+        } catch (photoError) {
+            console.error("Error processing new photo:", photoError);
+            toast({
+                variant: "destructive",
+                title: "Erro ao processar imagem",
+                description: "Não foi possível processar a nova foto. Tente novamente.",
+            });
+            setIsSaving(false);
+            return;
+        }
       }
 
       const userProfile = {
         displayName,
         userType,
-        photoURL,
+        photoURL: newPhotoURL,
       };
 
       // 1. Update Firestore first, as it's our primary source of truth
@@ -138,12 +149,25 @@ export default function ProfilePage() {
         photoURL: userProfile.photoURL 
       }, { merge: true });
 
-      // 2. Then update Firebase Auth profile if any relevant data changed
-      if (auth.currentUser && (auth.currentUser.displayName !== userProfile.displayName || auth.currentUser.photoURL !== userProfile.photoURL)) {
-          await updateProfile(auth.currentUser, { 
-            displayName: userProfile.displayName, 
-            photoURL: userProfile.photoURL 
-          });
+      // 2. Then, try to update Firebase Auth profile
+      if (auth.currentUser) {
+          try {
+              await updateProfile(auth.currentUser, { 
+                displayName: userProfile.displayName, 
+                photoURL: userProfile.photoURL 
+              });
+          } catch (authProfileError: any) {
+             // Silently ignore photoURL too long errors, as it's saved in Firestore.
+             if (authProfileError.code !== 'auth/invalid-profile-attribute') {
+                console.error("Could not update Firebase Auth profile:", authProfileError);
+                // Optionally show a non-critical error to the user
+                toast({
+                    variant: "destructive",
+                    title: "Aviso",
+                    description: "Seu perfil foi salvo, mas algumas informações não puderam ser sincronizadas com o sistema de autenticação.",
+                });
+             }
+          }
       }
       
       toast({
@@ -153,17 +177,11 @@ export default function ProfilePage() {
       setIsEditing(false);
 
     } catch (error: any) {
-      console.error("Failed to save profile:", error);
-      
-      let description = "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.";
-      if (error.code === 'auth/invalid-profile-attribute') {
-        description = "Ocorreu um erro ao atualizar a foto. Tente uma imagem menor.";
-      }
-
+      console.error("Failed to save profile to Firestore:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Salvar",
-        description: description,
+        description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
       });
     } finally {
       setIsSaving(false);
