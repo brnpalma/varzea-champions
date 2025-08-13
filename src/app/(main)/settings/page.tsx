@@ -41,19 +41,10 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-            {/* Seção de Configurações do App (Visível para todos) */}
-            <div>
-              <h3 className="text-lg font-medium text-foreground">Configurações do App</h3>
-              <Separator className="my-2" />
-              <div className="flex items-center justify-center text-center p-8">
-                  <p className="text-muted-foreground">Mais configurações do aplicativo em breve.</p>
-              </div>
-            </div>
-
             {/* Seção de Configurações do Grupo (Visível apenas para gestores) */}
             {isManager && (
               <div>
-                <h3 className="text-lg font-medium text-foreground">Configurações do Grupo</h3>
+                <h3 className="text-lg font-medium text-foreground">Grupo</h3>
                 <Separator className="my-2" />
                 <div className="space-y-6 pt-4">
                   <div>
@@ -91,6 +82,15 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            {/* Seção de Configurações do App (Visível para todos) */}
+            <div>
+              <h3 className="text-lg font-medium text-foreground">Aplicativo</h3>
+              <Separator className="my-2" />
+              <div className="flex items-center justify-center text-center p-8">
+                  <p className="text-muted-foreground">Mais configurações do aplicativo em breve.</p>
+              </div>
+            </div>
         </CardContent>
       </Card>
     </div>
