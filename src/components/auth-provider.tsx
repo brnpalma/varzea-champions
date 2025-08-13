@@ -44,6 +44,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -56,7 +57,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (firebaseUser) {
-        setLoading(true);
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
         profileUnsubscribe = onSnapshot(userDocRef, async (userDocSnap) => {
@@ -92,15 +92,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
               groupId: null,
             });
           }
-          setLoading(false);
+          if (!initialLoad) {
+            setLoading(false);
+            setInitialLoad(true);
+          }
         }, (error) => {
           console.error("Error fetching user profile:", error);
           setUser(null);
-          setLoading(false);
+          if (!initialLoad) {
+            setLoading(false);
+            setInitialLoad(true);
+          }
         });
       } else {
         setUser(null);
-        setLoading(false);
+         if (!initialLoad) {
+            setLoading(false);
+            setInitialLoad(true);
+        }
       }
     });
 
@@ -110,7 +119,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         profileUnsubscribe();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!initialLoad) return;
+
+    if (pathname !== "/") {
+      router.push("/");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialLoad]);
 
   useEffect(() => {
     if (loading) return;
@@ -124,7 +143,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [user, loading, pathname, router]);
 
 
-  if (loading && (pathname === "/login" || pathname.startsWith("/signup"))) {
+  if (loading) {
      return (
       <div className="flex items-center justify-center h-screen bg-background">
         <FootballSpinner />
