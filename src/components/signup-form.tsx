@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import Image from "next/image";
 
@@ -150,18 +150,10 @@ export function SignupForm() {
         uid: user.uid,
         email: values.email,
         createdAt: new Date().toISOString(),
-        ...userProfile,
+        displayName: userProfile.displayName,
+        userType: userProfile.userType,
+        photoURL: userProfile.photoURL,
       });
-
-      // 4. Update Firebase Auth Profile (displayName only)
-      try {
-        await updateProfile(user, {
-          displayName: userProfile.displayName,
-        });
-      } catch (authProfileError: any) {
-       console.error("Could not update Firebase Auth profile:", authProfileError);
-        // This is not a critical error, so we just log it. The primary data is in Firestore.
-      }
       
     } catch (error: any) {
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
@@ -194,13 +186,14 @@ export function SignupForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="flex justify-center mb-4">
                 <div className="relative">
-                  <Image
-                    src={photoPreview || "https://placehold.co/100x100.png"}
-                    alt="Foto do Perfil"
-                    width={100}
-                    height={100}
-                    className="rounded-full object-cover"
-                  />
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden">
+                    <Image
+                      src={photoPreview || "https://placehold.co/100x100.png"}
+                      alt="Foto do Perfil"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
