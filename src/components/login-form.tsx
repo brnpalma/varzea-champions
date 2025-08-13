@@ -108,7 +108,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Bem-vindo de Volta!</CardTitle>
+        <CardTitle className="text-2xl">Bem-vindo ao Várzea Champions</CardTitle>
         <CardDescription>
           Faça login na sua conta para continuar.
         </CardDescription>

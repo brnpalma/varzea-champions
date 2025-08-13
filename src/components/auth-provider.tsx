@@ -4,7 +4,7 @@
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -115,13 +115,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       router.push("/");
     }
 
-    if (!user && !isAuthPage) {
-      router.push("/login");
-    }
+    // Comentado para permitir navegação sem login
+    // if (!user && !isAuthPage) {
+    //   router.push("/login");
+    // }
 
   }, [user, loading, pathname, router]);
 
-  if (loading) {
+  if (loading && (pathname === "/login" || pathname.startsWith("/signup"))) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-full max-w-sm p-8 space-y-4">
@@ -132,15 +133,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         </div>
       </div>
     );
-  }
-
-  const isAuthPage = pathname === "/login" || pathname.startsWith("/signup");
-  if (!user && !isAuthPage) {
-     return null; // Render nothing while redirecting to login
-  }
-
-  if (user && isAuthPage) {
-    return null; // Render nothing while redirecting
   }
 
   return (

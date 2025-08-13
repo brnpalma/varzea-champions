@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, Copy } from 'lucide-react';
+import { Share2, Trash2, Copy, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -21,7 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import Link from 'next/link';
 
 export default function PlayersPage() {
   const { user } = useAuth();
@@ -66,6 +67,7 @@ export default function PlayersPage() {
   }, [groupId, toast]);
 
   const handleShareLink = () => {
+    if (!user) return;
     const inviteLink = `${window.location.origin}/signup?group_id=${user?.uid}`;
     navigator.clipboard.writeText(inviteLink).then(() => {
       toast({
@@ -107,6 +109,27 @@ export default function PlayersPage() {
       });
     }
   };
+
+  if (!user) {
+     return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="max-w-2xl mx-auto shadow-lg text-center">
+          <CardHeader>
+            <CardTitle>Gerencie seu Grupo</CardTitle>
+            <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">

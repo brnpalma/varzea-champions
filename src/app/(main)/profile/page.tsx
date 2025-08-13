@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut, updateProfile } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { doc, setDoc } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
+import Link from "next/link";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -179,8 +180,29 @@ export default function ProfilePage() {
   };
 
 
-  if (loading || !user) {
+  if (loading) {
     return null;
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="max-w-2xl mx-auto shadow-lg text-center">
+          <CardHeader>
+            <CardTitle>Acesse seu Perfil</CardTitle>
+            <CardDescription>Faça login para ver e gerenciar os detalhes do seu perfil.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

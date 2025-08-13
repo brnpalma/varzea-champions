@@ -12,7 +12,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Save } from "lucide-react"
+import { LogIn, Save } from "lucide-react"
+import Link from "next/link"
 
 const daysOfWeek = [
   { id: "segunda", label: "Segunda-feira" },
@@ -136,6 +137,27 @@ export default function SettingsPage() {
     }
   };
 
+
+  if (!user) {
+     return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="max-w-2xl mx-auto shadow-lg text-center">
+          <CardHeader>
+            <CardTitle>Ajustes do Grupo e App</CardTitle>
+            <CardDescription>Faça login como Gestor para configurar os dias de jogos e outras opções.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">

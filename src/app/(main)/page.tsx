@@ -5,20 +5,44 @@ import { useAuth, UserType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, Users, X, Trophy } from "lucide-react";
+import { ArrowRight, Calendar, Check, Users, X, Trophy, LogIn } from "lucide-react";
 import { useState } from "react";
 
 export default function HomePage() {
   const { user } = useAuth();
   const [confirmed, setConfirmed] = useState<boolean | null>(null);
 
-  if (!user || user.userType === UserType.GESTOR_QUADRA) {
+  if (!user) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col items-center justify-center text-center space-y-6 bg-card shadow-lg rounded-2xl p-8">
+          <div className="space-y-4">
+             <Trophy className="h-16 w-16 text-amber-500 mx-auto" />
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+              Bem-vindo ao Várzea Champions!
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Gerencie seu time, confirme presenças, acompanhe o ranking e muito mais. Faça login ou crie sua conta para começar.
+            </p>
+             <Button asChild size="lg">
+              <Link href="/login">
+                <LogIn className="mr-2" />
+                Fazer Login ou Criar Conta
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.userType === UserType.GESTOR_QUADRA) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center text-center space-y-6">
           <div className="space-y-4">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {user ? `Bem-vindo, ${user.displayName}!` : 'Bem-vindo ao AuthFlow!'}
+              {`Bem-vindo, ${user.displayName}!`}
             </h1>
             <p className="text-muted-foreground text-lg">
               Painel de gestão da quadra.
