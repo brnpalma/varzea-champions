@@ -133,54 +133,49 @@ export default function SettingsPage() {
                 {isLoading ? (
                    <div className="space-y-6 pt-4">
                      <Skeleton className="h-6 w-1/3" />
-                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                       {daysOfWeek.map(day => <Skeleton key={day.id} className="h-6 w-32" />)}
+                     <div className="space-y-4">
+                       {daysOfWeek.map(day => <Skeleton key={day.id} className="h-10 w-full" />)}
                      </div>
-                     <Skeleton className="h-6 w-1/3 mt-4" />
-                     <Skeleton className="h-10 w-32" />
-                     <Skeleton className="h-10 w-40 mt-4 self-end" />
+                     <div className="flex justify-end pt-2">
+                        <Skeleton className="h-10 w-40" />
+                     </div>
                    </div>
                 ) : (
                   <div className="space-y-6">
                     <div>
                       <Label className="text-base">Dias da pelada</Label>
-                      <p className="text-sm text-muted-foreground mb-4">Selecione os dias da semana em que os jogos acontecem.</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
+                      <div className="space-y-4">
                         {daysOfWeek.map((day) => (
-                          <div key={day.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={day.id}
-                              checked={!!settings.gameDays[day.id]?.selected}
-                              onCheckedChange={() => handleDayChange(day.id)}
-                            />
-                            <Label htmlFor={day.id} className="font-normal cursor-pointer">{day.label}</Label>
+                          <div key={day.id} className="flex items-center space-x-4 justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={day.id}
+                                    checked={!!settings.gameDays[day.id]?.selected}
+                                    onCheckedChange={() => handleDayChange(day.id)}
+                                />
+                                <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
+                            </div>
+                            {settings.gameDays[day.id]?.selected && (
+                                <div>
+                                    <Input
+                                        id={`time-${day.id}`}
+                                        type="time"
+                                        value={settings.gameDays[day.id].time}
+                                        onChange={(e) => handleTimeChange(day.id, e.target.value)}
+                                        className="w-40"
+                                    />
+                                </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div>
-                      <Label className="text-base">Horário</Label>
-                      <p className="text-sm text-muted-foreground mb-2">Informe o horário de início para os dias selecionados.</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-6">
-                         {daysOfWeek.filter(day => settings.gameDays[day.id]?.selected).map((day) => (
-                           <div key={`time-${day.id}`}>
-                              <Label htmlFor={`time-${day.id}`} className="text-sm font-medium">{day.label}</Label>
-                              <Input
-                                id={`time-${day.id}`}
-                                type="time"
-                                value={settings.gameDays[day.id].time}
-                                onChange={(e) => handleTimeChange(day.id, e.target.value)}
-                                className="w-40 mt-1"
-                              />
-                           </div>
-                         ))}
-                      </div>
-                    </div>
                      <div className="pt-2 flex justify-end">
                         <Button onClick={handleSave} disabled={isSaving}>
                             <Save className="mr-2 h-4 w-4" />
-                            {isSaving ? "Salvando..." : "Salvar Configurações"}
+                            {isSaving ? "Salvando..." : "Salvar"}
                         </Button>
                     </div>
                   </div>
