@@ -217,7 +217,7 @@ export default function SettingsPage() {
       {isManager ? (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle>Configurações Gerais</CardTitle>
+                <CardTitle>Grupo</CardTitle>
                 <CardDescription>
                     Gerencie as configurações dos jogos e do seu grupo.
                 </CardDescription>
@@ -266,7 +266,7 @@ export default function SettingsPage() {
                                 <Input
                                     id={`time-${day.id}`}
                                     type="time"
-                                    step="900" // 15 minutos em segundos
+                                    step="1800" // 30 minutos em segundos
                                     value={settings.gameDays[day.id]?.time || ''}
                                     onChange={(e) => handleTimeChange(day.id, e.target.value)}
                                     className="w-40"
@@ -318,5 +318,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

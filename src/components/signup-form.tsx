@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
-import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, setDoc, getDoc, writeBatch, collection } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -141,7 +141,6 @@ function SignupFormComponent() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Rollback logic: if anything after auth creation fails, delete the user
       try {
         let photoURL: string | null = null;
         if (values.photo) {
@@ -167,7 +166,7 @@ function SignupFormComponent() {
 
         if (values.userType === UserType.GESTOR_GRUPO) {
           const groupName = `Grupo de ${values.displayName}`;
-          const groupDocRef = doc(firestore, "groups", user.uid);
+          const groupDocRef = doc(firestore, "groups", user.uid); // groupId is the manager's uid
 
           batch.set(groupDocRef, {
               name: groupName,
@@ -175,6 +174,10 @@ function SignupFormComponent() {
               createdAt: new Date().toISOString(),
               gameDays: {}
           });
+          
+          // Create a document for the manager inside the group's players subcollection
+          const playerDocRef = doc(collection(firestore, "groups", user.uid, "players"), user.uid);
+          batch.set(playerDocRef, {}); // Initially empty, can be populated later
 
           batch.set(userDocRef, {
             uid: user.uid,
@@ -183,7 +186,7 @@ function SignupFormComponent() {
             photoURL: photoURL,
             userType: values.userType,
             playerSubscriptionType: values.playerSubscriptionType,
-            groupId: user.uid,
+            groupId: user.uid, // Manager's groupdId is their own UID
             createdAt: new Date().toISOString(),
           });
 
@@ -207,7 +210,6 @@ function SignupFormComponent() {
           });
 
         } else {
-           // Handle other user types if they don't belong to a group by default
            batch.set(userDocRef, {
               uid: user.uid,
               email: values.email,
@@ -223,7 +225,6 @@ function SignupFormComponent() {
         await batch.commit();
         
       } catch (error: any) {
-        // If firestore/profile update fails, delete the auth user
         if (auth.currentUser && auth.currentUser.uid === user.uid) {
           await deleteUser(auth.currentUser);
         }
@@ -241,7 +242,6 @@ function SignupFormComponent() {
       }
 
     } catch (error: any) {
-      // This catches errors from createUserWithEmailAndPassword
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este e-mail já está em uso.';
