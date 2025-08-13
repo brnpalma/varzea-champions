@@ -5,7 +5,6 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import Link from "next/link";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -23,14 +22,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { Icons } from "@/components/icons";
@@ -61,8 +52,7 @@ export function LoginForm() {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         variant: "success",
-        title: "Login bem-sucedido!",
-        description: "Bem-vindo de volta!",
+        title: "Bem-vindo ao Várzea Champions",
         duration: 2000,
       });
     } catch (error: any) {
@@ -106,112 +96,93 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Bem-vindo ao Várzea Champions</CardTitle>
-        <CardDescription>
-          Faça login na sua conta para continuar.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="voce@exemplo.com"
-                      {...field}
-                      disabled={!!isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      {...field}
-                      disabled={!!isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={!!isLoading}>
-              {isLoading === 'email' ? "Entrando..." : "Entrar com E-mail"}
-            </Button>
-          </form>
-        </Form>
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">
-              Ou continue com
-            </span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            onClick={handleGoogleLogin}
-            disabled={!!isLoading}
-          >
-            {isLoading === 'google' ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-current" />
-              ) : (
-                <Icons.google className="mr-2 h-4 w-4" />
-              )
-            }
-            Google
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="voce@exemplo.com"
+                    {...field}
+                    disabled={!!isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Senha</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    {...field}
+                    disabled={!!isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full" disabled={!!isLoading}>
+            {isLoading === 'email' ? "Entrando..." : "Entrar com E-mail"}
           </Button>
-           <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-full">
-                    <Button
-                      variant="outline"
-                      disabled
-                      className="w-full"
-                    >
-                      <Apple className="mr-2 h-4 w-4" />
-                      Apple
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Login com Apple será implementado em breve.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        </form>
+      </Form>
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
         </div>
-      </CardContent>
-      <CardFooter className="justify-center">
-        <p className="text-sm text-muted-foreground">
-          Não tem uma conta?{" "}
-          <Link
-            href="/signup"
-            className="font-semibold text-primary hover:underline"
-          >
-            Cadastre-se
-          </Link>
-        </p>
-      </CardFooter>
-    </Card>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">
+            Ou continue com
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Button
+          variant="outline"
+          onClick={handleGoogleLogin}
+          disabled={!!isLoading}
+        >
+          {isLoading === 'google' ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-current" />
+            ) : (
+              <Icons.google className="mr-2 h-4 w-4" />
+            )
+          }
+          Google
+        </Button>
+         <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full">
+                  <Button
+                    variant="outline"
+                    disabled
+                    className="w-full"
+                  >
+                    <Apple className="mr-2 h-4 w-4" />
+                    Apple
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Login com Apple será implementado em breve.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+      </div>
+    </>
   );
 }
