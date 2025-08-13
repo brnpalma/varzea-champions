@@ -1,10 +1,9 @@
 
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useAuth, UserType } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -96,19 +95,16 @@ export default function SettingsPage() {
 
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <Card className="max-w-2xl mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl">Configurações</CardTitle>
-          <CardDescription>
-            Gerencie as configurações da sua conta e preferências do aplicativo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-             {isManager ? (
-              <div>
-                <h3 className="text-lg font-medium text-foreground">Grupo</h3>
-                <Separator className="my-2" />
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      {isManager ? (
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>Grupo</CardTitle>
+                <CardDescription>
+                    Gerencie as configurações dos jogos do seu grupo.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
                 {isLoading ? (
                    <div className="space-y-6 pt-4">
                      <Skeleton className="h-6 w-1/3" />
@@ -117,10 +113,10 @@ export default function SettingsPage() {
                      </div>
                      <Skeleton className="h-6 w-1/3 mt-4" />
                      <Skeleton className="h-10 w-32" />
-                     <Skeleton className="h-10 w-40 mt-4" />
+                     <Skeleton className="h-10 w-40 mt-4 self-end" />
                    </div>
                 ) : (
-                  <div className="space-y-6 pt-4">
+                  <div className="space-y-6">
                     <div>
                       <Label className="text-base">Dias da pelada</Label>
                       <p className="text-sm text-muted-foreground mb-4">Selecione os dias da semana em que os jogos acontecem.</p>
@@ -146,28 +142,33 @@ export default function SettingsPage() {
                         type="time" 
                         value={settings.gameTime} 
                         onChange={handleTimeChange} 
-                        className="max-w-xs"
+                        className="w-40"
                       />
                     </div>
-                     <div className="pt-2">
+                     <div className="pt-2 flex justify-end">
                         <Button onClick={handleSave} disabled={isSaving}>
                             <Save className="mr-2 h-4 w-4" />
-                            {isSaving ? "Salvando..." : "Salvar Configurações do Grupo"}
+                            {isSaving ? "Salvando..." : "Salvar Configurações"}
                         </Button>
                     </div>
                   </div>
                 )}
-              </div>
-            ) : null}
+            </CardContent>
+        </Card>
+      ) : null}
 
-            <div>
-              <h3 className="text-lg font-medium text-foreground">Aplicativo</h3>
-              <Separator className="my-2" />
+      <Card className="shadow-lg">
+          <CardHeader>
+              <CardTitle>Aplicativo</CardTitle>
+              <CardDescription>
+                  Gerencie as configurações gerais do aplicativo.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
               <div className="flex items-center justify-center text-center p-8">
                   <p className="text-muted-foreground">Mais configurações do aplicativo em breve.</p>
               </div>
-            </div>
-        </CardContent>
+          </CardContent>
       </Card>
     </div>
   )
