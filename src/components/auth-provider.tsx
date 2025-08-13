@@ -15,8 +15,8 @@ export enum UserType {
 }
 
 export interface UserProfile {
-  displayName: string;
-  photoURL: string;
+  displayName: string | null;
+  photoURL: string | null;
   userType: UserType;
 }
 
@@ -57,16 +57,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const userProfileData = docSnap.data() as UserProfile;
             setUser({
               ...firebaseUser,
-              ...userProfileData,
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
-              photoURL: userProfileData.photoURL || firebaseUser.photoURL || "",
+              photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
+              userType: userProfileData.userType || UserType.JOGADOR,
             });
           } else {
             // Fallback if the firestore doc doesn't exist for some reason
             setUser({
               ...firebaseUser,
               displayName: firebaseUser.displayName || "Usuário",
-              photoURL: firebaseUser.photoURL || "",
+              photoURL: firebaseUser.photoURL || null,
               userType: UserType.JOGADOR, // Default value
             });
           }
@@ -102,9 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     if (!user && !isAuthPage) {
-      // Optional: redirect to login if not authenticated and not on an auth page
-      // Uncomment the line below if you want this behavior
-      // router.push("/login");
+      router.push("/login");
     }
 
   }, [user, loading, pathname, router]);
@@ -123,6 +121,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const isAuthPage = pathname === "/login" || pathname === "/signup";
+  if (!user && !isAuthPage) {
+     return null; // Render nothing while redirecting to login
+  }
+
   if (user && isAuthPage) {
     return null; // Render nothing while redirecting
   }
@@ -133,4 +135,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
-

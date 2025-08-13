@@ -30,9 +30,7 @@ export default function ProfilePage() {
     if (user) {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
-      if (user.photoURL) {
-        setPhotoPreview(user.photoURL)
-      }
+      setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
 
@@ -53,13 +51,14 @@ export default function ProfilePage() {
   };
 
   const handleEditToggle = () => {
+    const wasEditing = isEditing;
     setIsEditing(!isEditing);
-     if (!isEditing && user) {
+     if (wasEditing && user) {
       // Reset fields to current user data when canceling edit
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPhotoFile(null);
-      setPhotoPreview(user.photoURL);
+      setPhotoPreview(user.photoURL || null);
     }
   };
 
@@ -94,7 +93,9 @@ export default function ProfilePage() {
       await setDoc(userDocRef, userProfile, { merge: true });
 
       // Update Firebase Auth profile
-      await updateProfile(auth.currentUser!, { displayName, photoURL });
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName, photoURL });
+      }
       
       toast({
         title: "Perfil Atualizado",
@@ -117,11 +118,9 @@ export default function ProfilePage() {
     return null;
   }
 
-  const providerId = user.providerData?.[0]?.providerId || "N/A";
-
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <Card className="max-w-2xl mx-auto">
+      <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -199,12 +198,6 @@ export default function ProfilePage() {
                     <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="text-foreground">
                         Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
-                    </span>
-                </div>
-                <div className="flex items-center">
-                    <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="text-foreground">
-                        Autenticado via <span className="font-medium capitalize text-primary">{providerId.replace('.com', '')}</span>
                     </span>
                 </div>
             </div>
