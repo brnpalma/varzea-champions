@@ -130,16 +130,31 @@ export default function HomePage() {
     setConfirmed(false);
   };
   
-  const formattedDate = nextGameDate
-    ? new Intl.DateTimeFormat('pt-BR', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }).format(nextGameDate)
-    : "Nenhuma partida agendada.";
+  const formatNextGameDate = (date: Date | null) => {
+    if (!date) {
+      return {
+        line1: "Nenhuma partida agendada.",
+        line2: null,
+      };
+    }
+
+    const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date);
+    
+    const dateTime = new Intl.DateTimeFormat('pt-BR', {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date).replace(',', ' às');
+    
+    return {
+      line1: `${weekday.charAt(0).toUpperCase() + weekday.slice(1)},`,
+      line2: dateTime
+    }
+  };
+
+  const formattedDate = formatNextGameDate(nextGameDate);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -155,12 +170,18 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 capitalize">
-              <Calendar className="h-6 w-6 text-primary" />
+            <CardTitle className="flex items-start gap-3">
+              <Calendar className="h-6 w-6 text-primary mt-1" />
                {isGameDateLoading ? (
-                  <Skeleton className="h-6 w-4/5" />
+                  <div className="w-4/5 space-y-2">
+                    <Skeleton className="h-6 w-3/5" />
+                    <Skeleton className="h-5 w-4/5" />
+                  </div>
                 ) : (
-                  <span>{formattedDate}</span>
+                  <div className="flex flex-col">
+                    <span>{formattedDate.line1}</span>
+                    {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
+                  </div>
                 )}
             </CardTitle>
           </CardHeader>
