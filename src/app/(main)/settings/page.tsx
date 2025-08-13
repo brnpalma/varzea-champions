@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore"
+import { doc, getDoc, setDoc, onSnapshot, updateDoc } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -39,10 +39,12 @@ export default function SettingsPage() {
   }>({
     gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
   });
+  const [groupName, setGroupName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
+  const isGroupManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
 
 
@@ -58,15 +60,21 @@ export default function SettingsPage() {
     const groupDocRef = doc(firestore, "groups", groupId);
     
     const unsubscribe = onSnapshot(groupDocRef, (docSnap) => {
-      if (docSnap.exists() && docSnap.data().gameDays) {
-        const loadedSettings = docSnap.data().gameDays;
-        
-        const mergedGameDays: Record<string, GameDaySetting> = {};
-        daysOfWeek.forEach(day => {
-            mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
-        });
-        
-        setSettings({ gameDays: mergedGameDays });
+      if (docSnap.exists()) {
+        const groupData = docSnap.data();
+        if (groupData.gameDays) {
+          const loadedSettings = groupData.gameDays;
+          
+          const mergedGameDays: Record<string, GameDaySetting> = {};
+          daysOfWeek.forEach(day => {
+              mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
+          });
+          
+          setSettings({ gameDays: mergedGameDays });
+        }
+        if (groupData.name) {
+            setGroupName(groupData.name);
+        }
       }
        setIsLoading(false);
     }, (error) => {
@@ -106,7 +114,15 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (!user || !isManager || !groupId) return;
 
-    // Validation
+    if (isGroupManager && !groupName.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Campo Obrigatório",
+            description: "O nome do grupo não pode estar vazio.",
+        });
+        return;
+    }
+
     for (const day of daysOfWeek) {
         const setting = settings.gameDays[day.id];
         if (setting.selected && !setting.time) {
@@ -122,7 +138,17 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       const groupDocRef = doc(firestore, "groups", groupId);
-      await setDoc(groupDocRef, { gameDays: settings.gameDays }, { merge: true });
+      
+      const dataToUpdate: any = {
+          gameDays: settings.gameDays
+      };
+
+      if (isGroupManager) {
+          dataToUpdate.name = groupName.trim();
+      }
+
+      await setDoc(groupDocRef, dataToUpdate, { merge: true });
+
       toast({
         variant: "success",
         title: "Salvo!",
@@ -191,14 +217,15 @@ export default function SettingsPage() {
       {isManager ? (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle>Grupo {user.groupName ? `"${user.groupName}"` : ""}</CardTitle>
+                <CardTitle>Configurações Gerais</CardTitle>
                 <CardDescription>
-                    Gerencie as configurações dos jogos do seu grupo.
+                    Gerencie as configurações dos jogos e do seu grupo.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
                    <div className="space-y-6 pt-4">
+                     {isGroupManager && <Skeleton className="h-10 w-full" />}
                      <Skeleton className="h-6 w-1/3" />
                      <div className="space-y-4">
                        {daysOfWeek.map(day => <Skeleton key={day.id} className="h-10 w-full" />)}
@@ -209,7 +236,19 @@ export default function SettingsPage() {
                    </div>
                 ) : (
                   <div className="space-y-6">
-                    <div>
+                    {isGroupManager && (
+                      <div className="space-y-2">
+                        <Label htmlFor="group-name" className="text-base">Nome do Grupo</Label>
+                         <Input
+                            id="group-name"
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            placeholder="Digite o nome do grupo"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
                       <Label className="text-base">Dias e Horários</Label>
                       <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
                       <div className="space-y-4">
@@ -227,6 +266,7 @@ export default function SettingsPage() {
                                 <Input
                                     id={`time-${day.id}`}
                                     type="time"
+                                    step="900" // 15 minutos em segundos
                                     value={settings.gameDays[day.id]?.time || ''}
                                     onChange={(e) => handleTimeChange(day.id, e.target.value)}
                                     className="w-40"
@@ -238,10 +278,10 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                     <div className="pt-2 flex justify-end">
+                     <div className="pt-4 flex justify-end">
                         <Button onClick={handleSave} disabled={isSaving}>
                             <Save className="mr-2 h-4 w-4" />
-                            {isSaving ? "Salvando..." : "Salvar"}
+                            {isSaving ? "Salvando..." : "Salvar Alterações"}
                         </Button>
                     </div>
                   </div>
@@ -255,7 +295,7 @@ export default function SettingsPage() {
                 <CardDescription>
                     Apenas gestores podem editar as configurações.
                 </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               <p className="text-muted-foreground">Você está vendo esta página porque é um jogador. As configurações do seu grupo são gerenciadas pelo gestor.</p>
             </CardContent>

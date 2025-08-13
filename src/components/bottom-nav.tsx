@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Settings, LogIn, LogOut, Users } from "lucide-react";
+import { Home, User, Settings, LogIn, LogOut, Users, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, UserType } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
@@ -37,6 +37,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home },
     { href: "/players", label: "Jogadores", icon: Users },
+    { href: "/ranking", label: "Ranking", icon: Trophy },
     { href: "/profile", label: "Perfil", icon: User },
     { href: "/settings", label: "Configurações", icon: Settings, allowedRoles: [UserType.GESTOR_GRUPO, UserType.GESTOR_QUADRA] },
   ];
@@ -71,17 +72,6 @@ export function BottomNav() {
               <span className="text-xs font-medium">{item.label}</span>
             </Link>
           ))}
-           {user ? (
-              <button onClick={handleLogout} className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary">
-                <LogOut className="h-5 w-5" />
-                <span className="text-xs font-medium">Sair</span>
-              </button>
-            ) : (
-              <Link href="/login" className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary">
-                  <LogIn className="h-5 w-5" />
-                  <span className="text-xs font-medium">Login</span>
-              </Link>
-            )}
         </div>
       </nav>
 
@@ -90,7 +80,7 @@ export function BottomNav() {
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
-              <LogIn className="h-6 w-6 text-primary-foreground" />
+              <Trophy className="h-6 w-6 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
