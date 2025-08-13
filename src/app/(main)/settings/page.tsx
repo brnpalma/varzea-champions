@@ -36,7 +36,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<{
     gameDays: Record<string, GameDaySetting>;
   }>({
-    gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '20:00' }]))
+    gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -160,7 +160,7 @@ export default function SettingsPage() {
                                 <Input
                                     id={`time-${day.id}`}
                                     type="time"
-                                    value={settings.gameDays[day.id].time}
+                                    value={settings.gameDays[day.id]?.time || ''}
                                     onChange={(e) => handleTimeChange(day.id, e.target.value)}
                                     className="w-40"
                                     disabled={!settings.gameDays[day.id]?.selected}
