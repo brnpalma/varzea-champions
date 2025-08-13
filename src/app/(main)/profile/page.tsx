@@ -72,27 +72,30 @@ export default function ProfilePage() {
   
   const handleSave = async () => {
     if (!user) return;
-    setIsUploading(true);
-    try {
-      let photoURL = user.photoURL;
 
+    setIsUploading(true);
+    let photoURL = user.photoURL;
+
+    try {
+      // 1. Upload new photo if one was selected
       if (photoFile) {
         const storageRef = ref(storage, `profile-pictures/${user.uid}`);
         await uploadBytes(storageRef, photoFile);
         photoURL = await getDownloadURL(storageRef);
       }
 
+      // 2. Prepare data for Firestore and Auth
       const userProfile = {
         displayName,
         userType,
         photoURL,
       };
 
-      // Update Firestore document
+      // 3. Update Firestore document
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, userProfile, { merge: true });
 
-      // Update Firebase Auth profile
+      // 4. Update Firebase Auth profile
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, { displayName, photoURL });
       }
@@ -102,16 +105,20 @@ export default function ProfilePage() {
         description: "Suas informações foram salvas com sucesso.",
       });
       setIsEditing(false);
+
     } catch (error: any) {
+      console.error("Failed to save profile:", error);
       toast({
         variant: "destructive",
         title: "Falha ao Salvar",
-        description: error.message,
+        description: "Não foi possível salvar as alterações. Verifique suas permissões ou tente novamente.",
       });
     } finally {
+      // Ensure the loading state is always turned off
       setIsUploading(false);
     }
   };
+
 
   if (loading || !user) {
     // You can show a loading skeleton here
