@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams } from 'next/navigation'
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
 import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -141,92 +141,113 @@ function SignupFormComponent() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      let photoURL: string | null = null;
-      if (values.photo) {
-        try {
-          photoURL = await resizeAndEncodeImage(values.photo);
-        } catch (photoError) {
-           console.error("Error processing photo:", photoError);
-            toast({
-              variant: "destructive",
-              title: "Erro na Imagem",
-              description: "Não foi possível processar sua foto, mas seu perfil foi criado.",
-            });
-        }
-      }
-
-      await updateProfile(user, {
-        displayName: values.displayName,
-      });
-
-      const userDocRef = doc(firestore, "users", user.uid);
-      
-      const batch = writeBatch(firestore);
-
-      if (values.userType === UserType.GESTOR_GRUPO) {
-        const groupName = `Grupo de ${values.displayName}`;
-        const groupDocRef = doc(firestore, "groups", user.uid);
-
-        batch.set(groupDocRef, {
-            name: groupName,
-            managerId: user.uid,
-            createdAt: new Date().toISOString(),
-            gameDays: {}
-        });
-
-        batch.set(userDocRef, {
-          uid: user.uid,
-          email: values.email,
-          displayName: values.displayName,
-          photoURL: photoURL,
-          userType: values.userType,
-          playerSubscriptionType: values.playerSubscriptionType,
-          groupId: user.uid,
-          createdAt: new Date().toISOString(),
-        });
-
-      } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
-        const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
-        const groupDocSnap = await getDoc(groupDocRef);
-
-        if (!groupDocSnap.exists()) {
-          throw new Error("O grupo do convite não foi encontrado.");
+      // Rollback logic: if anything after auth creation fails, delete the user
+      try {
+        let photoURL: string | null = null;
+        if (values.photo) {
+          try {
+            photoURL = await resizeAndEncodeImage(values.photo);
+          } catch (photoError) {
+             console.error("Error processing photo:", photoError);
+              toast({
+                variant: "destructive",
+                title: "Erro na Imagem",
+                description: "Não foi possível processar sua foto, mas seu perfil foi criado.",
+              });
+          }
         }
 
-        batch.set(userDocRef, {
-          uid: user.uid,
-          email: values.email,
+        await updateProfile(user, {
           displayName: values.displayName,
-          photoURL: photoURL,
-          userType: values.userType,
-          playerSubscriptionType: values.playerSubscriptionType,
-          groupId: groupIdFromUrl,
-          createdAt: new Date().toISOString(),
         });
 
-      } else {
-         // Handle other user types if they don't belong to a group by default
-         batch.set(userDocRef, {
+        const userDocRef = doc(firestore, "users", user.uid);
+        
+        const batch = writeBatch(firestore);
+
+        if (values.userType === UserType.GESTOR_GRUPO) {
+          const groupName = `Grupo de ${values.displayName}`;
+          const groupDocRef = doc(firestore, "groups", user.uid);
+
+          batch.set(groupDocRef, {
+              name: groupName,
+              managerId: user.uid,
+              createdAt: new Date().toISOString(),
+              gameDays: {}
+          });
+
+          batch.set(userDocRef, {
             uid: user.uid,
             email: values.email,
             displayName: values.displayName,
             photoURL: photoURL,
             userType: values.userType,
             playerSubscriptionType: values.playerSubscriptionType,
-            groupId: null,
+            groupId: user.uid,
             createdAt: new Date().toISOString(),
+          });
+
+        } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
+          const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
+          const groupDocSnap = await getDoc(groupDocRef);
+
+          if (!groupDocSnap.exists()) {
+            throw new Error("O grupo do convite não foi encontrado.");
+          }
+
+          batch.set(userDocRef, {
+            uid: user.uid,
+            email: values.email,
+            displayName: values.displayName,
+            photoURL: photoURL,
+            userType: values.userType,
+            playerSubscriptionType: values.playerSubscriptionType,
+            groupId: groupIdFromUrl,
+            createdAt: new Date().toISOString(),
+          });
+
+        } else {
+           // Handle other user types if they don't belong to a group by default
+           batch.set(userDocRef, {
+              uid: user.uid,
+              email: values.email,
+              displayName: values.displayName,
+              photoURL: photoURL,
+              userType: values.userType,
+              playerSubscriptionType: values.playerSubscriptionType,
+              groupId: null,
+              createdAt: new Date().toISOString(),
+          });
+        }
+
+        await batch.commit();
+        
+      } catch (error: any) {
+        // If firestore/profile update fails, delete the auth user
+        if (auth.currentUser && auth.currentUser.uid === user.uid) {
+          await deleteUser(auth.currentUser);
+        }
+        
+        console.error("Signup Error (during profile/firestore write):", error);
+        let description = "Ocorreu um erro ao salvar seu perfil. A conta não foi criada.";
+        if (error.message === "O grupo do convite não foi encontrado.") {
+          description = error.message;
+        }
+        toast({
+          variant: "destructive",
+          title: "Falha ao Salvar Perfil",
+          description: description,
         });
       }
 
-      await batch.commit();
-      
     } catch (error: any) {
+      // This catches errors from createUserWithEmailAndPassword
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este e-mail já está em uso.';
       } else {
-        console.error("Signup Error:", error);
-        description = error.message;
+        console.error("Signup Error (during auth creation):", error);
+        description = "Ocorreu um erro ao criar a conta de autenticação.";
       }
       toast({
         variant: "destructive",
