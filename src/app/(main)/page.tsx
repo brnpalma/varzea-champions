@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, User } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 
 export default function HomePage() {
@@ -12,8 +12,8 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0 md:space-x-10 mb-8">
-        <div className="space-y-4 text-center md:text-left">
+      <div className="flex flex-col items-center justify-center text-center space-y-6 mb-8">
+        <div className="space-y-4">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">
             {user ? `Bem-vindo de volta, ${user.displayName || 'Usuário'}!` : 'Bem-vindo ao Varzea Champions!'}
           </h1>
@@ -21,14 +21,6 @@ export default function HomePage() {
             {user ? 'Aqui está o seu painel. Pronto para começar?' : 'Explore o app. Faça login para uma experiência completa.'}
           </p>
         </div>
-        <Image 
-          src="https://placehold.co/300x200.png" 
-          alt="Ilustração de um jogador de futebol"
-          width={300}
-          height={200}
-          className="rounded-lg shadow-lg"
-          data-ai-hint="soccer player illustration"
-        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
