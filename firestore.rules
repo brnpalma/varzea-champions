@@ -3,48 +3,39 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
+    
+    // Helper function to check if a user is the manager of a specific group
     function isGroupManager(groupId) {
-      let groupDoc = get(/databases/$(database)/documents/groups/$(groupId));
-      return request.auth != null && groupDoc.exists() && groupDoc.data.managerId == request.auth.uid;
+      return get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
     }
     
-    function isGroupMember(groupId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return request.auth != null && userDoc.exists() && userDoc.data.groupId == groupId;
+    // Helper function to check if two users are in the same group
+    function areInSameGroup(user1Id, user2Id) {
+      let user1GroupId = get(/databases/$(database)/documents/users/$(user1Id)).data.groupId;
+      let user2GroupId = get(/databases/$(database)/documents/users/$(user2Id)).data.groupId;
+      return user1GroupId != null && user1GroupId == user2GroupId;
     }
 
     match /users/{userId} {
-      // A user can read their own profile.
-      // A group member can read the profiles of other members in the same group.
-      allow read: if request.auth != null && (isOwner(userId) || (
-                    resource.data.groupId != null && isGroupMember(resource.data.groupId)
-                  ));
-
-      // A new user can create their own user document.
-      allow create: if isOwner(userId);
+      // Allow read access to own profile or if in the same group
+      allow read: if request.auth != null && (request.auth.uid == userId || areInSameGroup(request.auth.uid, userId));
       
-      // A user can update their own profile.
-      // A group manager can update a player's groupId to remove them.
-      allow update: if request.auth != null && (
-                      isOwner(userId) || 
-                      (resource.data.groupId != null && isGroupManager(resource.data.groupId))
-                    );
+      // Allow create for new users (their own document)
+      allow create: if request.auth.uid == userId;
+
+      // Allow updates by the user themselves, or by a group manager removing a player
+      allow update: if request.auth.uid == userId || (isGroupManager(request.resource.data.groupId) && request.resource.data.groupId != resource.data.groupId);
     }
 
     match /groups/{groupId} {
-      // A group member can read their group's information.
-      allow read: if request.auth != null && isGroupMember(groupId);
+      // Allow read access to authenticated users who are part of the group
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
 
-      // A new group manager can create their own group document.
-      allow create: if request.auth != null && isOwner(groupId) && request.resource.data.managerId == request.auth.uid;
+      // Allow a user to create a group if they set themselves as the manager
+      allow create: if request.auth.uid != null && request.resource.data.managerId == request.auth.uid;
       
-      // The group manager can update their group's information.
-      allow update: if request.auth != null && isGroupManager(groupId);
+      // Allow updates only by the group manager
+      allow update: if request.auth.uid != null && isGroupManager(groupId);
     }
   }
 }
