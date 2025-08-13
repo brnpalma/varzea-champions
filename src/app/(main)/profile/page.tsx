@@ -5,7 +5,7 @@ import { useAuth, UserType } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { signOut, updateProfile } from "firebase/auth";
-import { auth, firestore, storage } from "@/lib/firebase";
+import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Mail, Shield, User, Edit, Save, Camera, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -13,7 +13,18 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+const fileToDataUri = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -23,7 +34,7 @@ export default function ProfilePage() {
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,82 +85,44 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) return;
 
-    setIsUploading(true);
+    setIsSaving(true);
     let photoURL = user.photoURL;
-    let success = true;
 
     try {
-      // 1. Upload new photo if one was selected
       if (photoFile) {
-        try {
-            const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-            await uploadBytes(storageRef, photoFile);
-            photoURL = await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error("Error uploading photo:", error);
-            toast({
-                variant: "destructive",
-                title: "Falha no Upload",
-                description: "Não foi possível carregar a nova foto.",
-            });
-            success = false;
-        }
+        photoURL = await fileToDataUri(photoFile);
       }
 
-      // Proceed only if photo upload was successful or not needed
-      if (success) {
-        // 2. Prepare data for Firestore and Auth
-        const userProfile = {
-          displayName,
-          userType,
-          photoURL,
-        };
+      const userProfile = {
+        displayName,
+        userType,
+        photoURL,
+      };
 
-        // 3. Update Firestore document
-        try {
-            const userDocRef = doc(firestore, "users", user.uid);
-            await setDoc(userDocRef, userProfile, { merge: true });
-        } catch (error) {
-            console.error("Error updating Firestore:", error);
-            toast({
-                variant: "destructive",
-                title: "Falha ao Salvar",
-                description: "Não foi possível salvar os dados no perfil.",
-            });
-            success = false;
-        }
+      // Update Firestore first, as it's our source of truth
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, userProfile, { merge: true });
 
-        // 4. Update Firebase Auth profile
-        try {
-          if (auth.currentUser) {
-            await updateProfile(auth.currentUser, { displayName, photoURL });
-          }
-        } catch (error) {
-            console.error("Error updating Auth profile:", error);
-            // This error might not be critical for the user, but we can log it.
-            // We won't set success to false here, as Firestore is the source of truth.
-        }
+      // Then update Firebase Auth profile
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName, photoURL });
       }
-
-      if (success) {
-        toast({
-          title: "Perfil Atualizado",
-          description: "Suas informações foram salvas com sucesso.",
-        });
-        setIsEditing(false);
-      }
+      
+      toast({
+        title: "Perfil Atualizado",
+        description: "Suas informações foram salvas com sucesso.",
+      });
+      setIsEditing(false);
 
     } catch (error: any) {
-      // General catch block for any other unexpected errors
       console.error("Failed to save profile:", error);
       toast({
         variant: "destructive",
-        title: "Erro Inesperado",
-        description: "Ocorreu um erro ao salvar o perfil. Tente novamente.",
+        title: "Erro ao Salvar",
+        description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
       });
     } finally {
-      // This will always run, ensuring the button is re-enabled.
-      setIsUploading(false);
+      setIsSaving(false);
     }
   };
 
@@ -246,8 +219,8 @@ export default function ProfilePage() {
            
           <div className="flex justify-between items-center">
              {isEditing ? (
-                 <Button onClick={handleSave} disabled={isUploading}>
-                   {isUploading ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
+                 <Button onClick={handleSave} disabled={isSaving}>
+                   {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
                  </Button>
              ) : (
                 <Button onClick={handleLogout} variant="destructive">

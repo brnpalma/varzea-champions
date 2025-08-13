@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,7 +8,6 @@ import * as z from "zod";
 import Link from "next/link";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { auth, firestore, storage } from "@/lib/firebase";
+import { auth, firestore } from "@/lib/firebase";
 import { UserType } from "@/hooks/use-auth";
 import { Camera } from "lucide-react";
 
@@ -44,12 +44,23 @@ const formSchema = z
       .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
     confirmPassword: z.string(),
     userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
-    photo: z.any().optional(),
+    photo: z.instanceof(File).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não correspondem",
     path: ["confirmPassword"],
   });
+
+const fileToDataUri = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -81,12 +92,9 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      let photoURL = user.photoURL || null;
-
+      let photoURL: string | null = null;
       if (values.photo) {
-        const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-        await uploadBytes(storageRef, values.photo);
-        photoURL = await getDownloadURL(storageRef);
+        photoURL = await fileToDataUri(values.photo);
       }
 
       // 1. Update Firebase Auth Profile
@@ -106,7 +114,6 @@ export function SignupForm() {
         createdAt: new Date().toISOString(),
       });
       
-      // Toast and redirect will be handled by AuthProvider
     } catch (error: any) {
       toast({
         variant: "destructive",
