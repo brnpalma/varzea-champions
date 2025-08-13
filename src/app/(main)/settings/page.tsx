@@ -24,13 +24,19 @@ const daysOfWeek = [
   { id: "domingo", label: "Domingo" },
 ];
 
+interface GameDaySetting {
+  selected: boolean;
+  time: string;
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [settings, setSettings] = useState({
-    gameDays: {} as Record<string, boolean>,
-    gameTime: "20:00",
+  const [settings, setSettings] = useState<{
+    gameDays: Record<string, GameDaySetting>;
+  }>({
+    gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '20:00' }]))
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,10 +55,13 @@ export default function SettingsPage() {
       const docSnap = await getDoc(userDocRef);
       if (docSnap.exists() && docSnap.data().groupSettings) {
         const loadedSettings = docSnap.data().groupSettings;
-        setSettings({
-            gameDays: loadedSettings.gameDays || {},
-            gameTime: loadedSettings.gameTime || "20:00",
-        });
+        // Merge loaded settings with default to ensure all days are present
+        setSettings(prev => ({
+          gameDays: {
+            ...prev.gameDays,
+            ...loadedSettings.gameDays,
+          }
+        }));
       }
       setIsLoading(false);
     };
@@ -62,13 +71,28 @@ export default function SettingsPage() {
 
   const handleDayChange = (dayId: string) => {
     setSettings(prev => ({ 
-        ...prev, 
-        gameDays: { ...prev.gameDays, [dayId]: !prev.gameDays[dayId] }
+      ...prev,
+      gameDays: {
+        ...prev.gameDays,
+        [dayId]: {
+          ...prev.gameDays[dayId],
+          selected: !prev.gameDays[dayId].selected,
+        }
+      }
     }));
   };
 
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSettings(prev => ({ ...prev, gameTime: e.target.value }));
+  const handleTimeChange = (dayId: string, value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      gameDays: {
+        ...prev.gameDays,
+        [dayId]: {
+          ...prev.gameDays[dayId],
+          time: value
+        }
+      }
+    }));
   };
   
   const handleSave = async () => {
@@ -126,7 +150,7 @@ export default function SettingsPage() {
                           <div key={day.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={day.id}
-                              checked={!!settings.gameDays[day.id]}
+                              checked={!!settings.gameDays[day.id]?.selected}
                               onCheckedChange={() => handleDayChange(day.id)}
                             />
                             <Label htmlFor={day.id} className="font-normal cursor-pointer">{day.label}</Label>
@@ -136,15 +160,22 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="game-time" className="text-base">Horário dos jogos</Label>
-                       <p className="text-sm text-muted-foreground mb-2">Informe o horário de início padrão para os dias selecionados.</p>
-                      <Input
-                        id="game-time" 
-                        type="time" 
-                        value={settings.gameTime} 
-                        onChange={handleTimeChange} 
-                        className="w-40"
-                      />
+                      <Label className="text-base">Horário</Label>
+                      <p className="text-sm text-muted-foreground mb-2">Informe o horário de início para os dias selecionados.</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-6">
+                         {daysOfWeek.filter(day => settings.gameDays[day.id]?.selected).map((day) => (
+                           <div key={`time-${day.id}`}>
+                              <Label htmlFor={`time-${day.id}`} className="text-sm font-medium">{day.label}</Label>
+                              <Input
+                                id={`time-${day.id}`}
+                                type="time"
+                                value={settings.gameDays[day.id].time}
+                                onChange={(e) => handleTimeChange(day.id, e.target.value)}
+                                className="w-40 mt-1"
+                              />
+                           </div>
+                         ))}
+                      </div>
                     </div>
                      <div className="pt-2 flex justify-end">
                         <Button onClick={handleSave} disabled={isSaving}>
