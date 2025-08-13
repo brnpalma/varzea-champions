@@ -3,39 +3,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isRequestingOwnData(userId) {
+      return isUserAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/{database}/documents/users/$(userId)).data;
+    }
     
-    // Helper function to check if a user is the manager of a specific group
     function isGroupManager(groupId) {
-      return get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+      // O gestor é verificado pelo campo 'managerId' no próprio documento do grupo.
+      // Esta função é segura para 'update' e 'delete', mas não para 'create'.
+      return isUserAuthenticated() && get(/databases/{database}/documents/groups/$(groupId)).data.managerId == request.auth.uid;
     }
     
-    // Helper function to check if two users are in the same group
-    function areInSameGroup(user1Id, user2Id) {
-      let user1GroupId = get(/databases/$(database)/documents/users/$(user1Id)).data.groupId;
-      let user2GroupId = get(/databases/$(database)/documents/users/$(user2Id)).data.groupId;
-      return user1GroupId != null && user1GroupId == user2GroupId;
-    }
-
+    // =================================
+    //               USERS
+    // =================================
     match /users/{userId} {
-      // Allow read access to own profile or if in the same group
-      allow read: if request.auth != null && (request.auth.uid == userId || areInSameGroup(request.auth.uid, userId));
+      // Permite leitura se o usuário estiver autenticado.
+      // Necessário para a página de jogadores carregar a lista de membros do grupo.
+      allow read: if isUserAuthenticated();
       
-      // Allow create for new users (their own document)
-      allow create: if request.auth.uid == userId;
+      // Permite a criação do próprio perfil de usuário.
+      allow create: if isRequestingOwnData(userId);
 
-      // Allow updates by the user themselves, or by a group manager removing a player
-      allow update: if request.auth.uid == userId || (isGroupManager(request.resource.data.groupId) && request.resource.data.groupId != resource.data.groupId);
+      // Permite que um usuário atualize seus próprios dados.
+      // Também permite que um gestor de grupo remova um jogador (atualizando o groupId).
+      allow update: if isRequestingOwnData(userId) ||
+                     (isUserAuthenticated() && 
+                      getUserData(request.auth.uid).userType == 'Gestor do Grupo' && 
+                      getUserData(userId).groupId == getUserData(request.auth.uid).groupId);
     }
-
+    
+    // =================================
+    //               GROUPS
+    // =================================
     match /groups/{groupId} {
-      // Allow read access to authenticated users who are part of the group
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+      // Permite a leitura se o usuário pertencer ao grupo.
+      allow read: if isUserAuthenticated() && getUserData(request.auth.uid).groupId == groupId;
 
-      // Allow a user to create a group if they set themselves as the manager
-      allow create: if request.auth.uid != null && request.resource.data.managerId == request.auth.uid;
+      // Permite a criação se o 'managerId' no novo documento for o uid do criador.
+      allow create: if isUserAuthenticated() && request.resource.data.managerId == request.auth.uid;
       
-      // Allow updates only by the group manager
-      allow update: if request.auth.uid != null && isGroupManager(groupId);
+      // Permite a atualização apenas se o usuário for o gestor do grupo.
+      allow update: if isGroupManager(groupId);
     }
   }
 }
