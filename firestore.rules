@@ -2,8 +2,39 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isManagerOfGroup(groupId) {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    }
+
+    function isMemberOfGroup(groupId) {
+       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow user to create their own profile upon signup
+      allow create: if isUser(userId);
+
+      // Allow user to read their own profile
+      // Allow any signed-in user to read profiles of users in the same group
+      allow read: if isUser(userId) || (isMemberOfGroup(resource.data.groupId) && resource.data.groupId != null);
+
+      // Allow user to update their own data
+      // Allow a group manager to remove a player from their group (updating groupId and groupName)
+      allow update: if isUser(userId) || 
+                    (isManagerOfGroup(resource.data.groupId) && request.resource.data.keys().hasAll(['groupId', 'groupName']));
+      
+      // Prevent users from deleting their own account from the database directly
+      allow delete: if false;
     }
   }
 }
