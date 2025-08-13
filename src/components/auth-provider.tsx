@@ -1,10 +1,25 @@
 "use client";
 
-import { createContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { auth, firestore } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export enum UserType {
+  JOGADOR = "Jogador",
+  GESTOR_GRUPO = "Gestor do Grupo",
+  GESTOR_QUADRA = "Gestor da Quadra",
+}
+
+export interface UserProfile {
+  displayName: string;
+  photoURL: string;
+  userType: UserType;
+}
+
+export interface User extends FirebaseAuthUser, UserProfile {}
 
 export interface AuthContextType {
   user: User | null;
@@ -23,14 +38,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+  const fetchUserProfile = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+    const userDocRef = doc(firestore, "users", firebaseUser.uid);
+    
+    // Use onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userProfileData = docSnap.data() as UserProfile;
+        setUser({
+          ...firebaseUser,
+          ...userProfileData,
+          displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
+          photoURL: userProfileData.photoURL || firebaseUser.photoURL || "",
+        });
+      } else {
+        // If profile doesn't exist, use basic auth info
+        setUser({
+          ...firebaseUser,
+          displayName: firebaseUser.displayName || "Usuário",
+          photoURL: firebaseUser.photoURL || "",
+          userType: UserType.JOGADOR, // Default value
+        });
+      }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setLoading(true);
+        const unsubscribeProfile = await fetchUserProfile(firebaseUser);
+        // Store the profile unsubscribe function to call it on cleanup
+        (auth as any)._unsubscribeProfile = unsubscribeProfile;
+      } else {
+        setUser(null);
+        setLoading(false);
+        // Clean up profile listener if it exists
+        if ((auth as any)._unsubscribeProfile) {
+          (auth as any)._unsubscribeProfile();
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if ((auth as any)._unsubscribeProfile) {
+        (auth as any)._unsubscribeProfile();
+      }
+    };
+  }, [fetchUserProfile]);
 
   useEffect(() => {
     if (loading) return;
@@ -55,8 +114,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
   }
 
-  // This logic is now simplified. We only block rendering if a logged-in
-  // user is on an auth page, to avoid a flash of content during redirect.
   const isAuthPage = pathname === "/login" || pathname === "/signup";
   if (user && isAuthPage) {
     return null; // Render nothing while redirecting

@@ -15,7 +15,7 @@ export default function HomePage() {
       <div className="flex flex-col items-center justify-center text-center space-y-6 mb-8">
         <div className="space-y-4">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-            {user ? `Bem-vindo de volta, ${user.displayName || 'Usuário'}!` : 'Bem-vindo ao Varzea Champions!'}
+            {user ? `Bem-vindo de volta, ${user.displayName}!` : 'Bem-vindo ao AuthFlow!'}
           </h1>
           <p className="text-muted-foreground text-lg">
             {user ? 'Aqui está o seu painel. Pronto para começar?' : 'Explore o app. Faça login para uma experiência completa.'}

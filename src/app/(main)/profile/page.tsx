@@ -1,16 +1,40 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, UserType } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { signOut, updateProfile } from "firebase/auth";
+import { auth, firestore, storage } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Shield, LogOut } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || "");
+      setUserType(user.userType || UserType.JOGADOR);
+      if (user.photoURL) {
+        setPhotoPreview(user.photoURL)
+      }
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -28,29 +52,154 @@ export default function ProfilePage() {
     }
   };
 
-  if (!user) {
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+     if (!isEditing && user) {
+      // Reset fields to current user data when canceling edit
+      setDisplayName(user.displayName || "");
+      setUserType(user.userType || UserType.JOGADOR);
+      setPhotoFile(null);
+      setPhotoPreview(user.photoURL);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+  
+  const handleSave = async () => {
+    if (!user) return;
+    setIsUploading(true);
+    try {
+      let photoURL = user.photoURL;
+
+      if (photoFile) {
+        const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+        await uploadBytes(storageRef, photoFile);
+        photoURL = await getDownloadURL(storageRef);
+      }
+
+      const userProfile = {
+        displayName,
+        userType,
+        photoURL,
+      };
+
+      // Update Firestore document
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, userProfile, { merge: true });
+
+      // Update Firebase Auth profile
+      await updateProfile(auth.currentUser!, { displayName, photoURL });
+      
+      toast({
+        title: "Perfil Atualizado",
+        description: "Suas informações foram salvas com sucesso.",
+      });
+      setIsEditing(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Falha ao Salvar",
+        description: error.message,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (loading || !user) {
+    // You can show a loading skeleton here
     return null;
   }
 
   const providerId = user.providerData?.[0]?.providerId || "N/A";
-  
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <div className="flex items-center space-x-4">
-             <User className="h-16 w-16 rounded-full bg-secondary p-4 text-secondary-foreground"/>
-            <div>
-                <CardTitle className="text-2xl">{user.displayName || "Perfil do Usuário"}</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Image
+                  src={photoPreview || "https://placehold.co/80x80.png"}
+                  alt="Foto do Perfil"
+                  width={80}
+                  height={80}
+                  className="rounded-full object-cover"
+                />
+                {isEditing && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1 rounded-full hover:bg-primary/90 transition-colors"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
                 <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
+              </div>
             </div>
+            <Button onClick={handleEditToggle} variant="ghost" size="icon">
+              {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {isEditing ? (
+            <div className="space-y-4">
+               <div>
+                  <label htmlFor="displayName" className="block text-sm font-medium text-muted-foreground mb-1">Nome / Apelido</label>
+                  <Input 
+                    id="displayName" 
+                    value={displayName} 
+                    onChange={(e) => setDisplayName(e.target.value)} 
+                    placeholder="Seu nome ou apelido"
+                  />
+               </div>
+               <div>
+                 <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
+                  <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
+                    <SelectTrigger id="userType">
+                      <SelectValue placeholder="Selecione o tipo de usuário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(UserType).map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+            </div>
+          ) : (
             <div className="space-y-4 text-sm">
+                <div className="flex items-center">
+                    <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium text-foreground">{user.displayName}</span>
+                </div>
                 <div className="flex items-center">
                     <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="font-medium text-foreground">{user.email}</span>
+                </div>
+                 <div className="flex items-center">
+                    <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="text-foreground">
+                        Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
+                    </span>
                 </div>
                 <div className="flex items-center">
                     <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -59,10 +208,20 @@ export default function ProfilePage() {
                     </span>
                 </div>
             </div>
-            <Button onClick={handleLogout} className="w-full sm:w-auto" variant="destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-            </Button>
+          )}
+           
+          <div className="flex justify-between items-center">
+             {isEditing ? (
+                 <Button onClick={handleSave} disabled={isUploading}>
+                   {isUploading ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
+                 </Button>
+             ) : (
+                <Button onClick={handleLogout} variant="destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                </Button>
+             )}
+          </div>
         </CardContent>
       </Card>
     </div>

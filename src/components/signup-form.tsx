@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +27,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase";
+import { auth, firestore } from "@/lib/firebase";
+import { UserType } from "@/hooks/use-auth";
+
 
 const formSchema = z
   .object({
+    displayName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres."}),
     email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
     password: z
       .string()
@@ -48,6 +52,7 @@ export function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      displayName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -57,12 +62,31 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // 1. Update Firebase Auth Profile
+      await updateProfile(user, {
+        displayName: values.displayName,
+      });
+
+      // 2. Create user document in Firestore
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        displayName: values.displayName,
+        email: values.email,
+        userType: UserType.JOGADOR, // Default user type
+        photoURL: user.photoURL, // Default photo
+        createdAt: new Date().toISOString(),
+      });
+      
+      // Toast and redirect will be handled by AuthProvider
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Falha ao Cadastrar",
-        description: error.message,
+        description: error.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' : error.message,
       });
     } finally {
       setIsLoading(false);
@@ -80,6 +104,23 @@ export function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <FormField
+              control={form.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome / Apelido</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Seu nome ou apelido"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"
