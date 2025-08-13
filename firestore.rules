@@ -4,61 +4,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isUser(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
     function isGroupManager(groupId) {
-      let group = get(/databases/$(database)/documents/groups/$(groupId)).data;
-      return isSignedIn() && request.auth.uid == group.managerId;
+      let groupDoc = get(/databases/$(database)/documents/groups/$(groupId));
+      return request.auth != null && groupDoc.exists() && groupDoc.data.managerId == request.auth.uid;
+    }
+    
+    function isGroupMember(groupId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return request.auth != null && userDoc.exists() && userDoc.data.groupId == groupId;
     }
 
-    function isMemberOfGroup(groupId) {
-        return isSignedIn() && getUserData(request.auth.uid).groupId == groupId;
-    }
-
-    // USERS COLLECTION
     match /users/{userId} {
-      // READ: 
-      // 1. A user can read their own document.
-      // 2. A user can read the documents of other users in the same group.
-      allow read: if isUser(userId) || (isSignedIn() && getUserData(request.auth.uid).groupId != null && getUserData(request.auth.uid).groupId == resource.data.groupId);
-      
-      // CREATE: A user can create their own document when signing up.
-      allow create: if isUser(userId);
+      // A user can read their own profile.
+      // A group member can read the profiles of other members in the same group.
+      allow read: if request.auth != null && (isOwner(userId) || (
+                    resource.data.groupId != null && isGroupMember(resource.data.groupId)
+                  ));
 
-      // UPDATE:
-      // 1. A user can update their own profile data.
-      // 2. A group manager can remove a player from a group (updating their groupId to null).
-      allow update: if isUser(userId) || 
-                       (isGroupManager(getUserData(userId).groupId) && request.resource.data.groupId == null);
-                       
-      // DELETE: Deleting user documents is disallowed to prevent data loss.
-      allow delete: if false;
+      // A new user can create their own user document.
+      allow create: if isOwner(userId);
+      
+      // A user can update their own profile.
+      // A group manager can update a player's groupId to remove them.
+      allow update: if request.auth != null && (
+                      isOwner(userId) || 
+                      (resource.data.groupId != null && isGroupManager(resource.data.groupId))
+                    );
     }
 
-    // GROUPS COLLECTION
     match /groups/{groupId} {
-       // READ: Any authenticated member of the group can read the group document.
-       allow read: if isMemberOfGroup(groupId);
+      // A group member can read their group's information.
+      allow read: if request.auth != null && isGroupMember(groupId);
 
-       // CREATE: Only authenticated users can create a group (will be set as manager).
-       allow create: if isSignedIn() && request.auth.uid == request.resource.data.managerId;
-       
-       // UPDATE: Only the manager of the group can update its settings.
-       allow update: if isGroupManager(groupId);
-
-       // DELETE: Deleting groups is disallowed for now to prevent accidental data loss.
-       allow delete: if false;
+      // A new group manager can create their own group document.
+      allow create: if request.auth != null && isOwner(groupId) && request.resource.data.managerId == request.auth.uid;
+      
+      // The group manager can update their group's information.
+      allow update: if request.auth != null && isGroupManager(groupId);
     }
   }
 }
