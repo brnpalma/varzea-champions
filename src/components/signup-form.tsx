@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
-import { doc, setDoc, getDoc, writeBatch, collection } from "firebase/firestore";
+import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -160,13 +160,15 @@ function SignupFormComponent() {
           displayName: values.displayName,
         });
 
-        const userDocRef = doc(firestore, "users", user.uid);
-        
         const batch = writeBatch(firestore);
+        const userDocRef = doc(firestore, "users", user.uid);
 
+        let finalGroupId: string | null = null;
+        
         if (values.userType === UserType.GESTOR_GRUPO) {
           const groupName = `Grupo de ${values.displayName}`;
-          const groupDocRef = doc(firestore, "groups", user.uid); // groupId is the manager's uid
+          finalGroupId = user.uid; // O ID do grupo é o UID do gestor
+          const groupDocRef = doc(firestore, "groups", finalGroupId);
 
           batch.set(groupDocRef, {
               name: groupName,
@@ -174,22 +176,6 @@ function SignupFormComponent() {
               createdAt: new Date().toISOString(),
               gameDays: {}
           });
-          
-          // Create a document for the manager inside the group's players subcollection
-          const playerDocRef = doc(collection(firestore, "groups", user.uid, "players"), user.uid);
-          batch.set(playerDocRef, {}); // Initially empty, can be populated later
-
-          batch.set(userDocRef, {
-            uid: user.uid,
-            email: values.email,
-            displayName: values.displayName,
-            photoURL: photoURL,
-            userType: values.userType,
-            playerSubscriptionType: values.playerSubscriptionType,
-            groupId: user.uid, // Manager's groupdId is their own UID
-            createdAt: new Date().toISOString(),
-          });
-
         } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
           const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
           const groupDocSnap = await getDoc(groupDocRef);
@@ -197,31 +183,20 @@ function SignupFormComponent() {
           if (!groupDocSnap.exists()) {
             throw new Error("O grupo do convite não foi encontrado.");
           }
-
-          batch.set(userDocRef, {
-            uid: user.uid,
-            email: values.email,
-            displayName: values.displayName,
-            photoURL: photoURL,
-            userType: values.userType,
-            playerSubscriptionType: values.playerSubscriptionType,
-            groupId: groupIdFromUrl,
-            createdAt: new Date().toISOString(),
-          });
-
-        } else {
-           batch.set(userDocRef, {
-              uid: user.uid,
-              email: values.email,
-              displayName: values.displayName,
-              photoURL: photoURL,
-              userType: values.userType,
-              playerSubscriptionType: values.playerSubscriptionType,
-              groupId: null,
-              createdAt: new Date().toISOString(),
-          });
+          finalGroupId = groupIdFromUrl;
         }
 
+        batch.set(userDocRef, {
+          uid: user.uid,
+          email: values.email,
+          displayName: values.displayName,
+          photoURL: photoURL,
+          userType: values.userType,
+          playerSubscriptionType: values.playerSubscriptionType,
+          groupId: finalGroupId,
+          createdAt: new Date().toISOString(),
+        });
+        
         await batch.commit();
         
       } catch (error: any) {
