@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -9,6 +10,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { UserAvatar } from "./user-avatar";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -99,7 +101,7 @@ export function BottomNav() {
         <div className="p-4 border-t">
           {user ? (
             <div className="flex items-center gap-3">
-              <User className="h-10 w-10 rounded-full bg-secondary p-2 text-secondary-foreground" />
+              <UserAvatar src={user.photoURL} size={40} />
               <div className="flex-1 truncate">
                 <p className="text-sm font-semibold text-foreground truncate">
                   {user.displayName || "Usuário"}

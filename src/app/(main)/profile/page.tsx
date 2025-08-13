@@ -9,10 +9,10 @@ import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Mail, Shield, User, Edit, Save, Camera, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { doc, setDoc } from "firebase/firestore";
+import { UserAvatar } from "@/components/user-avatar";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -43,7 +43,6 @@ const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
           return reject(new Error('Failed to get canvas context'));
         }
         ctx.drawImage(img, 0, 0, width, height);
-        // Use JPEG for better compression for photos, with 80% quality
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
@@ -96,7 +95,6 @@ export default function ProfilePage() {
     const wasEditing = isEditing;
     setIsEditing(!isEditing);
      if (wasEditing && user) {
-      // Reset fields to current user data when canceling edit
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPhotoFile(null);
@@ -116,77 +114,65 @@ export default function ProfilePage() {
     if (!user) return;
 
     setIsSaving(true);
-    let newPhotoURL = user.photoURL;
+    let newPhotoURL = photoPreview;
 
     try {
-      // If a new photo was selected, process it
-      if (photoFile) {
-        try {
+        if (photoFile) {
             newPhotoURL = await resizeAndEncodeImage(photoFile);
-        } catch (photoError) {
-            console.error("Error processing new photo:", photoError);
-            toast({
-                variant: "destructive",
-                title: "Erro ao processar imagem",
-                description: "Não foi possível processar a nova foto. Tente novamente.",
-            });
-            setIsSaving(false);
-            return;
         }
-      }
 
-      const userProfile = {
-        displayName,
-        userType,
-        photoURL: newPhotoURL,
-      };
+        const userProfile = {
+            displayName,
+            userType,
+            photoURL: newPhotoURL,
+        };
 
-      // 1. Update Firestore, as it's our primary source of truth
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, { 
-        displayName: userProfile.displayName, 
-        userType: userProfile.userType,
-        photoURL: userProfile.photoURL 
-      }, { merge: true });
+        const userDocRef = doc(firestore, "users", user.uid);
+        
+        // Save to firestore first
+        await setDoc(userDocRef, {
+            displayName: userProfile.displayName,
+            userType: userProfile.userType,
+            photoURL: userProfile.photoURL
+        }, { merge: true });
 
-      // 2. Then, try to update Firebase Auth profile (displayName only)
-      if (auth.currentUser) {
-          try {
-              await updateProfile(auth.currentUser, { 
-                displayName: userProfile.displayName, 
-              });
-          } catch (authProfileError: any) {
-              console.error("Could not update Firebase Auth profile:", authProfileError);
-              // Optionally show a non-critical error to the user
-              toast({
-                  variant: "destructive",
-                  title: "Aviso",
-                  description: "Seu perfil foi salvo, mas algumas informações não puderam ser sincronizadas com o sistema de autenticação.",
-              });
-          }
-      }
-      
-      toast({
-        title: "Perfil Atualizado",
-        description: "Suas informações foram salvas com sucesso.",
-      });
-      setIsEditing(false);
+        // Then try to update auth profile (display name only)
+        if (auth.currentUser && auth.currentUser.displayName !== userProfile.displayName) {
+            try {
+                await updateProfile(auth.currentUser, {
+                    displayName: userProfile.displayName,
+                });
+            } catch (authProfileError: any) {
+                console.error("Could not update Firebase Auth profile display name:", authProfileError);
+                toast({
+                    variant: "destructive",
+                    title: "Aviso",
+                    description: "Seu nome não pode ser sincronizado com o sistema de autenticação, mas foi salvo em seu perfil.",
+                });
+            }
+        }
+
+        toast({
+            title: "Perfil Atualizado",
+            description: "Suas informações foram salvas com sucesso.",
+        });
+        setIsEditing(false);
+        setPhotoFile(null);
 
     } catch (error: any) {
-      console.error("Failed to save profile to Firestore:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao Salvar",
-        description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
-      });
+        console.error("Failed to save profile to Firestore:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Salvar",
+            description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
+        });
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
   };
 
 
   if (loading || !user) {
-    // You can show a loading skeleton here
     return null;
   }
 
@@ -197,13 +183,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <Image
-                  src={photoPreview || "https://placehold.co/80x80.png"}
-                  alt="Foto do Perfil"
-                  width={80}
-                  height={80}
-                  className="rounded-full object-cover"
-                />
+                 <UserAvatar src={photoPreview} size={80} />
                 {isEditing && (
                   <button
                     onClick={() => fileInputRef.current?.click()}

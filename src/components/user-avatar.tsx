@@ -1,0 +1,29 @@
+
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+
+interface UserAvatarProps {
+  src: string | null | undefined;
+  size?: number;
+  className?: string;
+}
+
+export function UserAvatar({ src, size = 40, className }: UserAvatarProps) {
+  return (
+    <div
+      className={cn(
+        'relative rounded-full overflow-hidden bg-muted flex items-center justify-center',
+        className
+      )}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src={src || `https://placehold.co/${size}x${size}.png`}
+        alt="Foto do Perfil"
+        fill
+        className="object-cover"
+        sizes={`${size}px`}
+      />
+    </div>
+  );
+}

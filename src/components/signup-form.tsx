@@ -6,9 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, firestore } from "@/lib/firebase";
 import { UserType } from "@/hooks/use-auth";
 import { Camera } from "lucide-react";
+import { UserAvatar } from "./user-avatar";
 
 
 const formSchema = z
@@ -79,7 +79,6 @@ const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
           return reject(new Error('Failed to get canvas context'));
         }
         ctx.drawImage(img, 0, 0, width, height);
-        // Use JPEG for better compression for photos, with 80% quality
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
@@ -118,18 +117,15 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // 2. Process photo if it exists
       let photoURL: string | null = null;
       if (values.photo) {
         try {
           photoURL = await resizeAndEncodeImage(values.photo);
         } catch (photoError) {
            console.error("Error processing photo:", photoError);
-           // We can still proceed without a photo, show a toast to user
             toast({
               variant: "destructive",
               title: "Erro na Imagem",
@@ -144,15 +140,17 @@ export function SignupForm() {
         photoURL: photoURL,
       };
 
-      // 3. Create user document in Firestore (our source of truth)
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, {
+      await setDoc(doc(firestore, "users", user.uid), {
         uid: user.uid,
         email: values.email,
         createdAt: new Date().toISOString(),
         displayName: userProfile.displayName,
         userType: userProfile.userType,
         photoURL: userProfile.photoURL,
+      });
+
+      await updateProfile(user, {
+        displayName: userProfile.displayName,
       });
       
     } catch (error: any) {
@@ -186,14 +184,7 @@ export function SignupForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="flex justify-center mb-4">
                 <div className="relative">
-                  <div className="relative w-24 h-24 rounded-full overflow-hidden">
-                    <Image
-                      src={photoPreview || "https://placehold.co/100x100.png"}
-                      alt="Foto do Perfil"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
+                  <UserAvatar src={photoPreview} size={96} />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
