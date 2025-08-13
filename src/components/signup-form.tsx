@@ -270,54 +270,56 @@ function SignupFormComponent() {
                />
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="userType"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Tipo de Usuário</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading || !!groupId}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecione o seu tipo de perfil" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {groupId ? (
+                        <SelectItem value={UserType.JOGADOR}>{UserType.JOGADOR}</SelectItem>
+                        ) : (
+                            Object.values(UserType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))
+                        )}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
             <FormField
-            control={form.control}
-            name="userType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Usuário</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading || !!groupId}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o seu tipo de perfil" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {groupId ? (
-                      <SelectItem value={UserType.JOGADOR}>{UserType.JOGADOR}</SelectItem>
-                    ) : (
-                        Object.values(UserType).map((type) => (
+                control={form.control}
+                name="playerSubscriptionType"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Compromisso</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecione seu plano" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {Object.values(PlayerSubscriptionType).map((type) => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="playerSubscriptionType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Compromisso</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione seu plano" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.values(PlayerSubscriptionType).map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+          </div>
           <FormField
             control={form.control}
             name="email"
