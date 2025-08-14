@@ -1,42 +1,30 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // As regras a seguir definem o acesso para as coleções 'users' e 'groups'.
-
-    // Coleção de Usuários
-    match /users/{userId} {
-      // PERMITIR LEITURA: Um usuário autenticado pode ler os dados de outro usuário
-      // se ambos pertencerem ao mesmo grupo.
-      // PERMITIR ESCRITA: Um usuário só pode criar ou atualizar seu próprio perfil.
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId;
-      allow write: if request.auth.uid == userId;
+    // Helper function to get the requesting user's data
+    function getRequestingUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Coleção de Grupos
-    match /groups/{groupId} {
-      // PERMITIR LEITURA: Qualquer usuário autenticado pode ler as configurações de um grupo.
-      //                Isso é necessário para que a lógica do convite funcione.
-      // PERMITIR ESCRITA: Apenas o gestor do grupo (cujo UID é o mesmo que o ID do grupo) pode escrever.
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == groupId;
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || getRequestingUserData().groupId == resource.data.groupId);
+      
+      // Allow write if:
+      // 1. The user is updating their own document.
+      // 2. The user is a Group Manager and is updating a user in their own group.
+      allow write: if request.auth != null && 
+                    (request.auth.uid == userId || 
+                      (getRequestingUserData().userType == "Gestor do Grupo" && getRequestingUserData().groupId == resource.data.groupId));
+    }
 
-      // Subcoleção de Partidas (Games)
-      match /games/{gameId} {
-        // PERMITIR LEITURA e ESCRITA: Por enquanto, qualquer usuário autenticado pode
-        // ler e escrever na subcoleção de partidas.
-        // TODO: Refinar regras para permitir que apenas membros do grupo possam interagir.
-        allow read, write: if request.auth != null;
-        
-        // Subcoleção de Participantes (Attendees)
-        match /attendees/{attendeeId} {
-           // PERMITIR LEITURA: Qualquer usuário autenticado pode ver quem confirmou.
-           // PERMITIR ESCRITA: Um usuário só pode confirmar/recusar a sua própria presença (attendeeId == userId).
-           allow read: if request.auth != null;
-           allow write: if request.auth.uid == attendeeId;
-        }
+    match /groups/{groupId} {
+      allow read: if request.auth != null && getRequestingUserData().groupId == groupId;
+      allow write: if request.auth != null && getRequestingUserData().groupId == groupId && getRequestingUserData().userType == "Gestor do Grupo";
+      
+      match /games/{gameId}/attendees/{attendeeId} {
+        allow read: if request.auth != null && getRequestingUserData().groupId == groupId;
+        allow write: if request.auth != null && request.auth.uid == attendeeId;
       }
     }
   }
