@@ -1,295 +1,40 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
-import { useAuth, UserType } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { doc, setDoc, onSnapshot } from "firebase/firestore"
-import { firestore } from "@/lib/firebase"
-import { useToast } from "@/hooks/use-toast"
-import { LogIn, Save } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
-import { FootballSpinner } from "@/components/ui/football-spinner"
-
-const daysOfWeek = [
-  { id: "segunda", label: "Segunda-feira" },
-  { id: "terca", label: "Terça-feira" },
-  { id: "quarta", label: "Quarta-feira" },
-  { id: "quinta", label: "Quinta-feira" },
-  { id: "sexta", label: "Sexta-feira" },
-  { id: "sabado", label: "Sábado" },
-  { id: "domingo", label: "Domingo" },
-];
-
-interface GameDaySetting {
-  selected: boolean;
-  time: string;
-}
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth();
-  const { toast } = useToast();
-
-  const [settings, setSettings] = useState<{
-    gameDays: Record<string, GameDaySetting>;
-  }>({
-    gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
-  });
-  const [groupName, setGroupName] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
-  const isGroupManager = user?.userType === UserType.GESTOR_GRUPO;
-  const groupId = user?.groupId;
-
-
-  useEffect(() => {
-    if (loading) return;
-    
-    if (!user || !isManager || !groupId) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    const groupDocRef = doc(firestore, "groups", groupId);
-    
-    const unsubscribe = onSnapshot(groupDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const groupData = docSnap.data();
-        if (groupData.gameDays) {
-          const loadedSettings = groupData.gameDays;
-          
-          const mergedGameDays: Record<string, GameDaySetting> = {};
-          daysOfWeek.forEach(day => {
-              mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
-          });
-          
-          setSettings({ gameDays: mergedGameDays });
-        }
-        if (groupData.name) {
-            setGroupName(groupData.name);
-        }
-      }
-       setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching settings:", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user, isManager, groupId, loading]);
-
-  const handleDayChange = (dayId: string) => {
-    setSettings(prev => ({ 
-      ...prev,
-      gameDays: {
-        ...prev.gameDays,
-        [dayId]: {
-          ...prev.gameDays[dayId],
-          selected: !prev.gameDays[dayId].selected,
-        }
-      }
-    }));
-  };
-
-  const handleTimeChange = (dayId: string, value: string) => {
-    setSettings(prev => ({
-      ...prev,
-      gameDays: {
-        ...prev.gameDays,
-        [dayId]: {
-          ...prev.gameDays[dayId],
-          time: value
-        }
-      }
-    }));
-  };
-  
-  const handleSave = async () => {
-    if (!user || !isManager || !groupId) return;
-
-    if (isGroupManager && !groupName.trim()) {
-        toast({
-            variant: "destructive",
-            title: "Campo Obrigatório",
-            description: "O nome do grupo não pode estar vazio.",
-        });
-        return;
-    }
-
-    for (const day of daysOfWeek) {
-        const setting = settings.gameDays[day.id];
-        if (setting.selected && !setting.time) {
-            toast({
-                variant: "destructive",
-                title: "Campo Obrigatório",
-                description: `Por favor, defina um horário para ${day.label}.`,
-            });
-            return;
-        }
-    }
-
-    setIsSaving(true);
-    try {
-      const groupDocRef = doc(firestore, "groups", groupId);
-      
-      const dataToUpdate: any = {
-          gameDays: settings.gameDays
-      };
-
-      if (isGroupManager) {
-          dataToUpdate.name = groupName.trim();
-      }
-
-      await setDoc(groupDocRef, dataToUpdate, { merge: true });
-
-      toast({
-        variant: "success",
-        title: "Salvo!",
-        description: "Suas configurações foram salvas com sucesso.",
-      });
-    } catch (error) {
-      console.error("Error saving settings: ", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível salvar suas configurações.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-
-  if (loading) {
-     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
-           <FootballSpinner />
-        </div>
-     );
-  }
-
-  if (!user) {
-     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <Card className="max-w-2xl mx-auto shadow-lg text-center">
-          <CardHeader>
-            <CardTitle>Ajustes do Grupo e App</CardTitle>
-            <CardDescription>Faça login como Gestor para configurar os dias de jogos e outras opções.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Button asChild size="lg">
-                <Link href="/login">
-                  <LogIn className="mr-2" />
-                  Fazer Login ou Criar Conta
-                </Link>
-              </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const { user } = useAuth()
+  const isManager = user?.userType === "Gestor do Grupo" || user?.userType === "Gestor da Quadra";
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-      {isManager ? (
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle>Grupo</CardTitle>
-                <CardDescription>
-                    Gerencie as configurações dos jogos e do seu grupo.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-8">
-                    <FootballSpinner />
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {isGroupManager && (
-                      <div className="space-y-2">
-                        <Label htmlFor="group-name" className="text-base">Nome do Grupo</Label>
-                         <Input
-                            id="group-name"
-                            value={groupName}
-                            onChange={(e) => setGroupName(e.target.value)}
-                            placeholder="Digite o nome do grupo"
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label className="text-base">Dias e Horários</Label>
-                      <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
-                      <div className="space-y-4">
-                        {daysOfWeek.map((day) => (
-                          <div key={day.id} className="flex items-center space-x-4 justify-between">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={day.id}
-                                    checked={!!settings.gameDays[day.id]?.selected}
-                                    onCheckedChange={() => handleDayChange(day.id)}
-                                />
-                                <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
-                            </div>
-                            <div>
-                                <Input
-                                    id={`time-${day.id}`}
-                                    type="time"
-                                    step="1800" // 30 minutos em segundos
-                                    value={settings.gameDays[day.id]?.time || ''}
-                                    onChange={(e) => handleTimeChange(day.id, e.target.value)}
-                                    className="w-40"
-                                    disabled={!settings.gameDays[day.id]?.selected}
-                                />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                     <div className="pt-4 flex justify-end">
-                        <Button onClick={handleSave} disabled={isSaving}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {isSaving ? "Salvando..." : "Salvar Alterações"}
-                        </Button>
-                    </div>
-                  </div>
-                )}
-            </CardContent>
-        </Card>
-      ) : (
-         <Card className="shadow-lg text-center">
-            <CardHeader>
-                <CardTitle>Acesso Restrito</CardTitle>
-                <CardDescription>
-                    Apenas gestores podem editar as configurações.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Você está vendo esta página porque é um jogador. As configurações do seu grupo são gerenciadas pelo gestor.</p>
-            </CardContent>
-        </Card>
-      )}
-
-      <Card className="shadow-lg">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+       <Card className="max-w-2xl mx-auto shadow-lg text-center">
           <CardHeader>
-              <CardTitle>Aplicativo</CardTitle>
+              <CardTitle>Página Movida</CardTitle>
               <CardDescription>
-                  Gerencie as configurações gerais do aplicativo.
+                  As configurações do grupo agora estão localizadas na sua página de perfil para facilitar o acesso.
               </CardDescription>
           </CardHeader>
-          <CardContent>
-              <div className="flex items-center justify-center text-center p-8">
-                  <p className="text-muted-foreground">Mais configurações do aplicativo em breve.</p>
-              </div>
+          <CardContent className="flex flex-col items-center gap-4">
+            <p className="text-muted-foreground">
+              {isManager 
+                ? "Você pode gerenciar o nome do grupo, dias e horários dos jogos diretamente no seu perfil."
+                : "Apenas gestores podem acessar as configurações."
+              }
+            </p>
+            {isManager && (
+              <Button asChild>
+                <Link href="/profile">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar para o Perfil
+                </Link>
+              </Button>
+            )}
           </CardContent>
       </Card>
     </div>

@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut, updateProfile, deleteUser } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2, Settings } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { doc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch, setDoc, onSnapshot } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
 import Link from "next/link";
 import {
@@ -28,6 +28,7 @@ import {
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -69,24 +70,52 @@ const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
   });
 };
 
+const daysOfWeek = [
+  { id: "segunda", label: "Segunda-feira" },
+  { id: "terca", label: "Terça-feira" },
+  { id: "quarta", label: "Quarta-feira" },
+  { id: "quinta", label: "Quinta-feira" },
+  { id: "sexta", label: "Sexta-feira" },
+  { id: "sabado", label: "Sábado" },
+  { id: "domingo", label: "Domingo" },
+];
+
+interface GameDaySetting {
+  selected: boolean;
+  time: string;
+}
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  
+  // Profile Editing State
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
+  // Group Settings State
+  const [settings, setSettings] = useState<{
+    gameDays: Record<string, GameDaySetting>;
+  }>({
+    gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
+  });
+  const [groupName, setGroupName] = useState("");
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+  const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
+  const isGroupManager = user?.userType === UserType.GESTOR_GRUPO;
+  const groupId = user?.groupId;
+
+  // Effect for Profile Data
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
@@ -95,6 +124,41 @@ export default function ProfilePage() {
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
+  
+  // Effect for Group Settings Data
+  useEffect(() => {
+    if (!isManager || !groupId) {
+      setIsSettingsLoading(false);
+      return;
+    }
+
+    setIsSettingsLoading(true);
+    const groupDocRef = doc(firestore, "groups", groupId);
+    
+    const unsubscribe = onSnapshot(groupDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const groupData = docSnap.data();
+        if (groupData.gameDays) {
+          const loadedSettings = groupData.gameDays;
+          const mergedGameDays: Record<string, GameDaySetting> = {};
+          daysOfWeek.forEach(day => {
+              mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
+          });
+          setSettings({ gameDays: mergedGameDays });
+        }
+        if (groupData.name) {
+            setGroupName(groupData.name);
+        }
+      }
+       setIsSettingsLoading(false);
+    }, (error) => {
+        console.error("Error fetching settings:", error);
+        setIsSettingsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [isManager, groupId]);
+
 
   const handleLogout = async () => {
     try {
@@ -134,10 +198,10 @@ export default function ProfilePage() {
     }
   };
   
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     if (!user) return;
 
-    setIsSaving(true);
+    setIsSavingProfile(true);
     let newPhotoURL = user.photoURL;
 
     try {
@@ -179,7 +243,7 @@ export default function ProfilePage() {
             description: "Ocorreu um erro ao salvar o perfil. Por favor, tente novamente.",
         });
     } finally {
-        setIsSaving(false);
+        setIsSavingProfile(false);
     }
   };
   
@@ -192,7 +256,7 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
-      // Step 1: Delete Firestore data.
+      // Step 1: Delete Firestore data FIRST, because auth is needed for rules.
       const batch = writeBatch(firestore);
       
       const userDocRef = doc(firestore, "users", user.uid);
@@ -205,7 +269,7 @@ export default function ProfilePage() {
       
       await batch.commit();
       
-      // Step 2: Delete the user from Firebase Auth.
+      // Step 2: If Firestore deletion succeeds, delete the user from Firebase Auth.
       await deleteUser(currentUser);
       
       toast({
@@ -231,6 +295,88 @@ export default function ProfilePage() {
       setIsDeleting(false);
     }
   }
+  
+  // Group Settings Handlers
+  const handleDayChange = (dayId: string) => {
+    setSettings(prev => ({ 
+      ...prev,
+      gameDays: {
+        ...prev.gameDays,
+        [dayId]: {
+          ...prev.gameDays[dayId],
+          selected: !prev.gameDays[dayId].selected,
+        }
+      }
+    }));
+  };
+
+  const handleTimeChange = (dayId: string, value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      gameDays: {
+        ...prev.gameDays,
+        [dayId]: {
+          ...prev.gameDays[dayId],
+          time: value
+        }
+      }
+    }));
+  };
+  
+  const handleSaveSettings = async () => {
+    if (!user || !isManager || !groupId) return;
+
+    if (isGroupManager && !groupName.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Campo Obrigatório",
+            description: "O nome do grupo não pode estar vazio.",
+        });
+        return;
+    }
+
+    for (const day of daysOfWeek) {
+        const setting = settings.gameDays[day.id];
+        if (setting.selected && !setting.time) {
+            toast({
+                variant: "destructive",
+                title: "Campo Obrigatório",
+                description: `Por favor, defina um horário para ${day.label}.`,
+            });
+            return;
+        }
+    }
+
+    setIsSavingSettings(true);
+    try {
+      const groupDocRef = doc(firestore, "groups", groupId);
+      
+      const dataToUpdate: any = {
+          gameDays: settings.gameDays
+      };
+
+      if (isGroupManager) {
+          dataToUpdate.name = groupName.trim();
+      }
+
+      await setDoc(groupDocRef, dataToUpdate, { merge: true });
+
+      toast({
+        variant: "success",
+        title: "Salvo!",
+        description: "Suas configurações foram salvas com sucesso.",
+      });
+    } catch (error) {
+      console.error("Error saving settings: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar suas configurações.",
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
 
   if (loading) {
@@ -373,8 +519,8 @@ export default function ProfilePage() {
             
             <div className="flex justify-between items-center pt-4 border-t">
               {isEditing ? (
-                  <Button onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
+                  <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                    {isSavingProfile ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
                   </Button>
               ) : (
                   <div className="flex gap-2">
@@ -449,12 +595,62 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild>
-                  <Link href="/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Acessar Configurações do Grupo
-                  </Link>
-                </Button>
+                {isSettingsLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <FootballSpinner />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {isGroupManager && (
+                      <div className="space-y-2">
+                        <Label htmlFor="group-name" className="text-base">Nome do Grupo</Label>
+                         <Input
+                            id="group-name"
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            placeholder="Digite o nome do grupo"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-base">Dias e Horários</Label>
+                      <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
+                      <div className="space-y-4">
+                        {daysOfWeek.map((day) => (
+                          <div key={day.id} className="flex items-center space-x-4 justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={day.id}
+                                    checked={!!settings.gameDays[day.id]?.selected}
+                                    onCheckedChange={() => handleDayChange(day.id)}
+                                />
+                                <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
+                            </div>
+                            <div>
+                                <Input
+                                    id={`time-${day.id}`}
+                                    type="time"
+                                    step="1800" // 30 minutos em segundos
+                                    value={settings.gameDays[day.id]?.time || ''}
+                                    onChange={(e) => handleTimeChange(day.id, e.target.value)}
+                                    className="w-40"
+                                    disabled={!settings.gameDays[day.id]?.selected}
+                                />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                     <div className="pt-4 flex justify-end">
+                        <Button onClick={handleSaveSettings} disabled={isSavingSettings}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {isSavingSettings ? "Salvando..." : "Salvar Alterações"}
+                        </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
