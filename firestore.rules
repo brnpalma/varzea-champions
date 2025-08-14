@@ -1,37 +1,39 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regras para a coleção 'users'
-    match /users/{userId} {
-      // Qualquer usuário autenticado pode ler perfis.
-      allow read: if request.auth != null;
-
-      // Um usuário pode criar seu próprio perfil.
-      allow create: if request.auth.uid == userId;
-
-      // Um usuário só pode atualizar seu próprio perfil.
-      allow update: if request.auth.uid == userId;
-
-      // Um usuário só pode deletar seu próprio perfil.
-      allow delete: if request.auth.uid == userId;
+    function isAuth() {
+      return request.auth != null;
     }
 
-    // Regras para a coleção 'groups'
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Any authenticated user can read user profiles (for player lists, etc.)
+      allow read: if isAuth();
+
+      // A user can create their own profile.
+      allow create: if isOwner(userId);
+      
+      // A user can only update or delete their own profile.
+      allow update, delete: if isOwner(userId);
+    }
+
+    // Rules for the 'groups' collection
     match /groups/{groupId} {
-      // Qualquer usuário autenticado pode ler os dados de um grupo.
-      allow read: if request.auth != null;
+      // Any authenticated user can read group data (for group names, settings, etc.)
+      allow read: if isAuth();
+      
+      // Allow creation if the new group's managerId matches the user's ID.
+      allow create: if isAuth() && request.resource.data.managerId == request.auth.uid;
 
-      // Um gestor pode criar um grupo se ele for o manager.
-      // O ID do gestor deve ser o mesmo que o ID do grupo.
-      allow create: if request.auth.uid == groupId && request.resource.data.managerId == request.auth.uid;
-
-      // Um gestor só pode atualizar seu próprio grupo.
-      allow update: if request.auth.uid == resource.data.managerId;
-
-      // Um gestor só pode deletar seu próprio grupo.
-      allow delete: if request.auth.uid == resource.data.managerId;
+      // Allow update/delete if the existing group's managerId matches the user's ID.
+      allow update, delete: if isAuth() && resource.data.managerId == request.auth.uid;
     }
   }
 }
