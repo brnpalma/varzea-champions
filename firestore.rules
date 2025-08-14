@@ -3,53 +3,28 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Helper function to check if the requesting user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // Rules for the 'users' collection
+
+    // Users can read/update their own profile, create one, and delete their own.
     match /users/{userId} {
-      // Allow a user to create their own profile document.
-      // Allow a user to read and update their own profile.
-      // Allow a user to delete their own document.
-      allow read, update, delete: if isAuthenticated() && isOwner(userId);
-      allow create: if isAuthenticated();
-      
-      // Allow any authenticated user to read other users' profiles (e.g., for player lists)
-      allow list: if isAuthenticated();
+      allow read, update, delete: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
     }
-    
-    // Rules for the 'groups' collection
+
+    // Authenticated users can read group info.
+    // Only managers can create, update, or delete their own group.
     match /groups/{groupId} {
-      // Any authenticated user can read group info (like name, game days).
-      allow get: if isAuthenticated();
-
-      // Only the group manager (whose UID matches the group ID) can update or delete the group.
-      allow update, delete: if isAuthenticated() && isOwner(groupId);
-
-      // A user can create a group if they are authenticated and are creating it for themselves.
-      allow create: if isAuthenticated() && isOwner(groupId);
+      allow read: if request.auth.uid != null;
+      allow create, delete: if request.auth.uid == groupId;
+      allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' && request.auth.uid == resource.data.managerId;
       
-      // Rules for the 'games' subcollection
-      match /games/{gameId} {
+      // Rules for the 'attendees' subcollection of a game
+      match /games/{gameId}/attendees/{userId} {
+        // Allow reads if the requesting user is part of the group.
+        allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
         
-        // Rules for the 'attendees' subcollection
-        match /attendees/{userId} {
-          // Allow read access to attendees list for any authenticated user.
-          // In a more complex app, we might restrict this to group members only.
-          // For now, any authenticated user can see who is confirmed.
-          allow read: if isAuthenticated();
-          
-          // A user can only confirm/decline their own presence.
-          allow create, update: if isAuthenticated() && isOwner(userId);
-        }
+        // Allow a user to create or update their OWN attendance record,
+        // but ONLY if they are a member of the group.
+        allow create, update: if request.auth.uid == userId && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
       }
     }
   }
