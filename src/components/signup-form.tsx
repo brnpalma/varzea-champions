@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams } from 'next/navigation'
-import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { auth, firestore } from "@/lib/firebase";
-import { UserType, PlayerSubscriptionType } from "@/hooks/use-auth";
+import { UserType, PlayerSubscriptionType, useAuth } from "@/hooks/use-auth";
 import { Camera } from "lucide-react";
 import { UserAvatar } from "./user-avatar";
 
@@ -37,18 +37,31 @@ const formSchema = z
   .object({
     displayName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres."}),
     email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-    password: z
-      .string()
-      .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-    confirmPassword: z.string(),
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
     userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
     playerSubscriptionType: z.nativeEnum(PlayerSubscriptionType, { required_error: "Por favor, selecione uma opção." }),
     photo: z.instanceof(File).optional(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => {
+    // Password confirmation is only required if a password is provided
+    if (data.password) {
+      return data.password === data.confirmPassword;
+    }
+    return true;
+  }, {
     message: "As senhas não correspondem",
     path: ["confirmPassword"],
+  })
+  .refine(data => {
+      // Password is required only if the user is not already authenticated (e.g., via Google)
+      const currentUser = auth.currentUser;
+      return !!currentUser || (!!data.password && data.password.length >= 6);
+  }, {
+      message: "A senha deve ter pelo menos 6 caracteres.",
+      path: ["password"],
   });
+
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -96,18 +109,27 @@ function SignupFormComponent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const groupIdFromUrl = searchParams.get('group_id');
+  const { user: authUser } = useAuth(); // Get the authenticated user
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      displayName: "",
-      email: "",
+      displayName: authUser?.displayName || "",
+      email: authUser?.email || "",
       password: "",
       confirmPassword: "",
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
       playerSubscriptionType: undefined,
     },
   });
+  
+  React.useEffect(() => {
+    if (authUser) {
+      form.setValue('displayName', authUser.displayName || "");
+      form.setValue('email', authUser.email || "");
+      setPhotoPreview(authUser.photoURL || null);
+    }
+  }, [authUser, form]);
 
   React.useEffect(() => {
     if (groupIdFromUrl) {
@@ -116,11 +138,16 @@ function SignupFormComponent() {
   }, [groupIdFromUrl, form]);
 
   const availableUserTypes = React.useMemo(() => {
+    const allTypes = Object.values(UserType);
     if (groupIdFromUrl) {
-      return Object.values(UserType);
+        return allTypes.filter(type => type === UserType.JOGADOR);
     }
-    return Object.values(UserType).filter(type => type !== UserType.JOGADOR);
-  }, [groupIdFromUrl]);
+    // If not a group invite, and not completing a Google Sign-In, hide "Jogador"
+    if (!authUser) {
+       return allTypes.filter(type => type !== UserType.JOGADOR);
+    }
+    return allTypes;
+  }, [groupIdFromUrl, authUser]);
 
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,91 +172,95 @@ function SignupFormComponent() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
+      let user = authUser;
 
-      try {
-        let photoURL: string | null = null;
-        if (values.photo) {
-          try {
-            photoURL = await resizeAndEncodeImage(values.photo);
-          } catch (photoError) {
-             console.error("Error processing photo:", photoError);
-              toast({
-                variant: "destructive",
-                title: "Erro na Imagem",
-                description: "Não foi possível processar sua foto, mas seu perfil foi criado.",
-              });
-          }
+      // If there's no authenticated user, it means this is a fresh email/password signup.
+      if (!user) {
+        if (!values.password) {
+          toast({ variant: "destructive", title: "Senha obrigatória" });
+          setIsLoading(false);
+          return;
         }
-
-        await updateProfile(user, {
-          displayName: values.displayName,
-        });
-
-        const batch = writeBatch(firestore);
-        const userDocRef = doc(firestore, "users", user.uid);
-
-        let finalGroupId: string | null = null;
-        
-        if (values.userType === UserType.GESTOR_GRUPO) {
-          const groupName = `Grupo de ${values.displayName}`;
-          finalGroupId = user.uid; // O ID do grupo é o UID do gestor
-          const groupDocRef = doc(firestore, "groups", finalGroupId);
-
-          batch.set(groupDocRef, {
-              name: groupName,
-              managerId: user.uid,
-              createdAt: new Date().toISOString(),
-              gameDays: {}
-          });
-        } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
-          const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
-          const groupDocSnap = await getDoc(groupDocRef);
-
-          if (!groupDocSnap.exists()) {
-            throw new Error("O grupo do convite não foi encontrado.");
-          }
-          finalGroupId = groupIdFromUrl;
-        }
-
-        batch.set(userDocRef, {
-          uid: user.uid,
-          email: values.email,
-          displayName: values.displayName,
-          photoURL: photoURL,
-          userType: values.userType,
-          playerSubscriptionType: values.playerSubscriptionType,
-          groupId: finalGroupId,
-          createdAt: new Date().toISOString(),
-        });
-        
-        await batch.commit();
-        
-      } catch (error: any) {
-        if (auth.currentUser && auth.currentUser.uid === user.uid) {
-          await deleteUser(auth.currentUser);
-        }
-        
-        console.error("Signup Error (during profile/firestore write):", error);
-        let description = "Ocorreu um erro ao salvar seu perfil. A conta não foi criada.";
-        if (error.message === "O grupo do convite não foi encontrado.") {
-          description = error.message;
-        }
-        toast({
-          variant: "destructive",
-          title: "Falha ao Salvar Perfil",
-          description: description,
-        });
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        user = userCredential.user;
+      }
+      
+      if (!user) {
+          throw new Error("Falha na autenticação do usuário.");
       }
 
+      // At this point, `user` is guaranteed to be a FirebaseAuth user object.
+      
+      let photoURL = user.photoURL; // Keep existing photo by default
+      if (values.photo) {
+        try {
+          photoURL = await resizeAndEncodeImage(values.photo);
+        } catch (photoError) {
+            console.error("Error processing photo:", photoError);
+            toast({
+              variant: "destructive",
+              title: "Erro na Imagem",
+              description: "Não foi possível processar sua foto, mas seu perfil será salvo sem ela.",
+            });
+        }
+      }
+
+      await updateProfile(user, {
+        displayName: values.displayName,
+      });
+
+      const batch = writeBatch(firestore);
+      const userDocRef = doc(firestore, "users", user.uid);
+
+      let finalGroupId: string | null = null;
+      
+      if (values.userType === UserType.GESTOR_GRUPO) {
+        const groupName = `Grupo de ${values.displayName}`;
+        finalGroupId = user.uid; // O ID do grupo é o UID do gestor
+        const groupDocRef = doc(firestore, "groups", finalGroupId);
+
+        batch.set(groupDocRef, {
+            name: groupName,
+            managerId: user.uid,
+            createdAt: new Date().toISOString(),
+            gameDays: {}
+        });
+      } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
+        const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
+        const groupDocSnap = await getDoc(groupDocRef);
+
+        if (!groupDocSnap.exists()) {
+          throw new Error("O grupo do convite não foi encontrado.");
+        }
+        finalGroupId = groupIdFromUrl;
+      }
+
+      batch.set(userDocRef, {
+        uid: user.uid,
+        email: values.email,
+        displayName: values.displayName,
+        photoURL: photoURL,
+        userType: values.userType,
+        playerSubscriptionType: values.playerSubscriptionType,
+        groupId: finalGroupId,
+        createdAt: new Date().toISOString(),
+      });
+      
+      await batch.commit();
+
+      toast({
+          variant: "success",
+          title: "Cadastro Concluído!",
+          description: "Seu perfil foi criado com sucesso.",
+      });
+      
     } catch (error: any) {
+      console.error("Signup Error:", error);
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este e-mail já está em uso.';
-      } else {
-        console.error("Signup Error (during auth creation):", error);
-        description = "Ocorreu um erro ao criar a conta de autenticação.";
+      } else if (error.message) {
+          description = error.message;
       }
       toast({
         variant: "destructive",
@@ -293,7 +324,7 @@ function SignupFormComponent() {
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value} 
-                      disabled={isLoading || !!groupIdFromUrl}>
+                      disabled={isLoading || (!!groupIdFromUrl && !!authUser)}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
@@ -344,53 +375,55 @@ function SignupFormComponent() {
                   <Input
                     placeholder=""
                     {...field}
-                    disabled={isLoading}
+                    disabled={isLoading || !!authUser} // Disable if completing profile
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder=""
-                      {...field}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar Senha</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder=""
-                      {...field}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          {!authUser && (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder=""
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder=""
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
           <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
-            {isLoading ? "Criando Conta..." : "Criar Conta"}
+            {isLoading ? "Salvando..." : (authUser ? "Concluir Cadastro" : "Criar Conta")}
           </Button>
         </form>
       </Form>
