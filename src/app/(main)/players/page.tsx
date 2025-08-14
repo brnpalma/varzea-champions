@@ -215,60 +215,60 @@ export default function PlayersPage() {
           ) : (
             <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex items-center justify-between p-3 gap-4">
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <UserAvatar src={player.photoURL} size={48} />
-                    <div className="flex-1 min-w-0 flex flex-col">
-                        <div>
-                            <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-                            <p className="text-sm text-muted-foreground truncate">{player.email}</p>
-                        </div>
-                        {isManager && user?.uid !== player.uid && (
-                            <div className="flex items-center space-x-2 mt-2">
-                            <Checkbox 
-                                id={`debt-${player.uid}`}
-                                checked={player.allowConfirmationWithDebt ?? false}
-                                onCheckedChange={() => handleToggleDebtPermission(player)}
-                                disabled={isPending}
-                            />
-                            <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                                Permitir confirmação de presença com pendência
-                            </Label>
-                            </div>
-                        )}
+                <li key={player.uid} className="flex flex-col p-3 gap-2">
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <UserAvatar src={player.photoURL} size={48} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">{player.displayName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{player.email}</p>
+                      </div>
                     </div>
+                    {isManager && user?.uid !== player.uid && (
+                      <div className='flex items-center justify-end gap-2'>
+                          <Button variant="outline" size="icon">
+                            <DollarSign className="h-4 w-4"/>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="icon">
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemovePlayer(player)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                      </div>
+                    )}
                   </div>
-                  {isManager && user?.uid !== player.uid && (
-                     <div className='flex items-center justify-end gap-2'>
-                        <Button variant="outline" size="icon">
-                          <DollarSign className="h-4 w-4"/>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="destructive" size="icon">
-                                <Trash2 className="h-5 w-5" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleRemovePlayer(player)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Remover
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                     </div>
-                  )}
+                   {isManager && user?.uid !== player.uid && (
+                      <div className="flex items-center space-x-2 pt-1 pl-16"> 
+                        <Checkbox 
+                            id={`debt-${player.uid}`}
+                            checked={player.allowConfirmationWithDebt ?? false}
+                            onCheckedChange={() => handleToggleDebtPermission(player)}
+                            disabled={isPending}
+                        />
+                        <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
+                            Permitir confirmação de presença com pendência
+                        </Label>
+                      </div>
+                    )}
                 </li>
               ))}
             </ul>
