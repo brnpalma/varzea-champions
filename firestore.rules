@@ -2,47 +2,37 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user belongs to a specific group
-    function isGroupMember(groupId) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-    }
-    
-    // Users can read/update their own profile, and any authenticated user can create one.
+
+    // =================================
+    // COLEÇÃO DE USUÁRIOS (USERS)
+    // =================================
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      // Permite que um usuário leia e atualize seu próprio perfil.
+      allow read, update: if request.auth.uid == userId;
+      // Permite que qualquer usuário autenticado crie seu perfil (cadastro).
       allow create: if request.auth != null;
+      // Permite que um usuário delete seu próprio perfil.
+      allow delete: if request.auth.uid == userId;
     }
 
-    // Rules for groups collection
+    // =================================
+    // COLEÇÃO DE GRUPOS (GROUPS)
+    // =================================
     match /groups/{groupId} {
-      // Any authenticated user can read group data (like name).
+      // Permite que qualquer usuário autenticado leia os dados de um grupo.
       allow read: if request.auth != null;
+      // Permite que um gestor crie, atualize ou delete seu próprio grupo.
+      allow create, update, delete: if request.auth.uid == groupId;
 
-      // Only the group manager can create, update, or delete the group document.
-      // We identify the manager by checking if their UID matches the group's ID.
-      allow create, update, delete: if request.auth != null && request.auth.uid == groupId;
-
-      // Rules for the 'games' subcollection within a group
-      match /games/{gameId} {
-        // Any member of the group can read the game data.
-        allow read: if request.auth != null && isGroupMember(groupId);
-        
-        // No one should write directly to a game document; writes happen on attendees.
-        allow write: if false;
-
-        // Rules for the 'attendees' subcollection within a game
-        match /attendees/{userId} {
-          // A group member can read the list of attendees.
-          allow read: if request.auth != null && isGroupMember(groupId);
-
-          // A user can only confirm/decline their own presence (create/update their own attendee doc).
-          // They also must be a member of the group to do so.
-          allow create, update: if request.auth != null && request.auth.uid == userId && isGroupMember(groupId);
+      // =================================
+      // SUBCOLEÇÃO DE PARTICIPANTES (ATTENDEES)
+      // =================================
+      match /games/{gameId}/attendees/{userId} {
+          // Permite que qualquer usuário do grupo leia a lista de participantes.
+          allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
           
-          // Users cannot delete attendance records, only update their status.
-          allow delete: if false;
-        }
+          // Permite que um usuário defina seu próprio status de presença se ele pertencer ao grupo.
+          allow create, update: if request.auth.uid == userId && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
       }
     }
   }
