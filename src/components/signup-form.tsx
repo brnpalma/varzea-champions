@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
@@ -108,6 +108,7 @@ function SignupFormComponent() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const groupIdFromUrl = searchParams.get('group_id');
   const { user: authUser } = useAuth(); // Get the authenticated user
   
@@ -128,14 +129,19 @@ function SignupFormComponent() {
       form.setValue('displayName', authUser.displayName || "");
       form.setValue('email', authUser.email || "");
       setPhotoPreview(authUser.photoURL || null);
+    } else {
+      // If user logs out (e.g., deletes profile), clear the form
+      form.reset({
+        displayName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
+        playerSubscriptionType: undefined,
+      });
+      setPhotoPreview(null);
     }
-  }, [authUser, form]);
-
-  React.useEffect(() => {
-    if (groupIdFromUrl) {
-      form.setValue('userType', UserType.JOGADOR);
-    }
-  }, [groupIdFromUrl, form]);
+  }, [authUser, form, groupIdFromUrl]);
 
   const availableUserTypes = React.useMemo(() => {
     const allTypes = Object.values(UserType);
@@ -253,6 +259,8 @@ function SignupFormComponent() {
           title: "Cadastro Concluído!",
           description: "Seu perfil foi criado com sucesso.",
       });
+
+      router.push('/');
       
     } catch (error: any) {
       console.error("Signup Error:", error);
