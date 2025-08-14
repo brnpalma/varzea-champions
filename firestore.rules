@@ -1,31 +1,60 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to get the requesting user's data
-    function getRequestingUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+
+    // Helper function to check if a user is a group manager
+    function isGroupManager(userId) {
+      let userData = get(/databases/$(database)/documents/users/$(userId)).data;
+      return userData.userType == 'Gestor do Grupo';
     }
 
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || getRequestingUserData().groupId == resource.data.groupId);
+      // READ: Allow users to read their own profile, or allow users to read profiles of others in the same group.
+      allow read: if request.auth != null && 
+                     (request.auth.uid == userId || 
+                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId != null &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId));
       
-      // Allow write if:
-      // 1. The user is updating their own document.
-      // 2. The user is a Group Manager and is updating a user in their own group.
-      allow write: if request.auth != null && 
-                    (request.auth.uid == userId || 
-                      (getRequestingUserData().userType == "Gestor do Grupo" && getRequestingUserData().groupId == resource.data.groupId));
+      // WRITE: 
+      // 1. Allow a user to create their own user document.
+      // 2. Allow a user to update their own document.
+      // 3. Allow a group manager to update only the 'allowConfirmationWithDebt' field of another user in the same group.
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && isGroupManager(request.auth.uid) &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == get(/databases/$(database)/documents/users/$(userId)).data.groupId &&
+                      request.resource.data.keys().hasOnly(['allowConfirmationWithDebt']);
     }
 
+    // Rules for the 'groups' collection
     match /groups/{groupId} {
-      allow read: if request.auth != null && getRequestingUserData().groupId == groupId;
-      allow write: if request.auth != null && getRequestingUserData().groupId == groupId && getRequestingUserData().userType == "Gestor do Grupo";
+      // READ: Allow any authenticated user who is part of the group to read group data.
+      allow read: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
       
-      match /games/{gameId}/attendees/{attendeeId} {
-        allow read: if request.auth != null && getRequestingUserData().groupId == groupId;
+      // WRITE: Only allow the group manager to create or update the group.
+      allow write: if request.auth != null &&
+                      // On create, the managerId must be the user's uid.
+                      (resource.data.managerId == request.auth.uid ||
+                      // On update, the existing manager must be the user's uid.
+                       get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid);
+      
+      // DELETE: Only allow the group manager to delete the group.
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+    }
+    
+    match /groups/{groupId}/games/{gameId}/attendees/{attendeeId} {
+        // READ: Allow any authenticated user in the group to read attendee status.
+        allow read: if request.auth != null &&
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+
+        // WRITE: Allow users to write their own attendance status.
         allow write: if request.auth != null && request.auth.uid == attendeeId;
-      }
     }
   }
 }
