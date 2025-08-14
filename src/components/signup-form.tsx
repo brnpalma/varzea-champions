@@ -124,6 +124,7 @@ function SignupFormComponent() {
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
       playerSubscriptionType: undefined,
       rating: 3,
+      photo: undefined,
     },
   });
   
@@ -142,7 +143,8 @@ function SignupFormComponent() {
         confirmPassword: "",
         userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
         playerSubscriptionType: undefined,
-        rating: 3
+        rating: 3,
+        photo: undefined,
       });
       setPhotoPreview(null);
     }
@@ -256,6 +258,7 @@ function SignupFormComponent() {
         rating: values.rating,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
+        allowConfirmationWithDebt: true, // Habilitado por padrão
       });
       
       await batch.commit();
@@ -479,3 +482,5 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
+
+    
