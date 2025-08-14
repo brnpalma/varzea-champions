@@ -1,30 +1,48 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can read/update their own profile, create one, and delete their own.
+    
+    // Helper function to check if a user belongs to a specific group
+    function isGroupMember(groupId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    }
+    
+    // Users can read/update their own profile, and any authenticated user can create one.
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId;
-      allow create: if request.auth.uid != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
 
-    // Authenticated users can read group info.
-    // Only managers can create, update, or delete their own group.
+    // Rules for groups collection
     match /groups/{groupId} {
-      allow read: if request.auth.uid != null;
-      allow create, delete: if request.auth.uid == groupId;
-      allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' && request.auth.uid == resource.data.managerId;
-      
-      // Rules for the 'attendees' subcollection of a game
-      match /games/{gameId}/attendees/{userId} {
-        // Allow reads if the requesting user is part of the group.
-        allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+      // Any authenticated user can read group data (like name).
+      allow read: if request.auth != null;
+
+      // Only the group manager can create, update, or delete the group document.
+      // We identify the manager by checking if their UID matches the group's ID.
+      allow create, update, delete: if request.auth != null && request.auth.uid == groupId;
+
+      // Rules for the 'games' subcollection within a group
+      match /games/{gameId} {
+        // Any member of the group can read the game data.
+        allow read: if request.auth != null && isGroupMember(groupId);
         
-        // Allow a user to create or update their OWN attendance record,
-        // but ONLY if they are a member of the group.
-        allow create, update: if request.auth.uid == userId && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+        // No one should write directly to a game document; writes happen on attendees.
+        allow write: if false;
+
+        // Rules for the 'attendees' subcollection within a game
+        match /attendees/{userId} {
+          // A group member can read the list of attendees.
+          allow read: if request.auth != null && isGroupMember(groupId);
+
+          // A user can only confirm/decline their own presence (create/update their own attendee doc).
+          // They also must be a member of the group to do so.
+          allow create, update: if request.auth != null && request.auth.uid == userId && isGroupMember(groupId);
+          
+          // Users cannot delete attendance records, only update their status.
+          allow delete: if false;
+        }
       }
     }
   }
