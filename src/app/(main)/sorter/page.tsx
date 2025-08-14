@@ -140,11 +140,7 @@ export default function SorterPage() {
             setIsFetchingPlayers(false);
         }, (error) => {
              console.error("Error fetching confirmed players:", error);
-             toast({
-                variant: 'destructive',
-                title: 'Erro ao buscar jogadores',
-                description: 'Não foi possível carregar a lista de jogadores confirmados.'
-             });
+             setConfirmedPlayers([]);
              setIsFetchingPlayers(false);
         });
 
