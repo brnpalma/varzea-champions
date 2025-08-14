@@ -153,14 +153,10 @@ function SignupFormComponent() {
   const availableUserTypes = React.useMemo(() => {
     const allTypes = Object.values(UserType);
     if (groupIdFromUrl) {
-        return allTypes.filter(type => type === UserType.JOGADOR);
+      return allTypes.filter(type => type === UserType.JOGADOR);
     }
-    // If not a group invite, and not completing a Google Sign-In, hide "Jogador"
-    if (!authUser) {
-       return allTypes.filter(type => type !== UserType.JOGADOR);
-    }
-    return allTypes;
-  }, [groupIdFromUrl, authUser]);
+    return allTypes.filter(type => type !== UserType.JOGADOR);
+  }, [groupIdFromUrl]);
 
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +170,7 @@ function SignupFormComponent() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
-    if (values.userType === UserType.JOGADOR && !groupIdFromUrl) {
+    if (values.userType === UserType.JOGADOR && !groupIdFromUrl && !authUser) {
        toast({
         variant: "destructive",
         title: "Falha no Cadastro",
@@ -258,7 +254,7 @@ function SignupFormComponent() {
         rating: values.rating,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
-        allowConfirmationWithDebt: true, // Habilitado por padrão
+        allowConfirmationWithDebt: true,
       });
       
       await batch.commit();
@@ -341,7 +337,7 @@ function SignupFormComponent() {
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value} 
-                      disabled={isLoading || (!!groupIdFromUrl && !!authUser)}>
+                      disabled={isLoading || !!groupIdFromUrl}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
@@ -349,7 +345,7 @@ function SignupFormComponent() {
                     </FormControl>
                     <SelectContent>
                         {availableUserTypes.map((type) => (
-                          <SelectItem key={type} value={type} disabled={groupIdFromUrl && type !== UserType.JOGADOR}>
+                          <SelectItem key={type} value={type}>
                             {type}
                           </SelectItem>
                         ))}
@@ -482,5 +478,7 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
+
+    
 
     
