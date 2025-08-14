@@ -97,6 +97,7 @@ export default function HomePage() {
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [isGameDateLoading, setIsGameDateLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -113,6 +114,9 @@ export default function HomePage() {
         if (groupData.gameDays) {
           const gameDate = getNextGameDate(groupData.gameDays);
           setNextGameDate(gameDate);
+          if (gameDate && new Date() > gameDate) {
+            setIsConfirmationLocked(true);
+          }
         } else {
           setNextGameDate(null);
         }
@@ -198,6 +202,7 @@ export default function HomePage() {
             title: "Tempo Esgotado",
             description: "O horário para confirmar presença neste jogo já passou.",
         });
+        setIsConfirmationLocked(true);
         return;
     }
     
@@ -261,7 +266,6 @@ export default function HomePage() {
   };
 
   const formattedDate = formatNextGameDate(nextGameDate);
-  const isGameTimePassed = nextGameDate ? new Date() > nextGameDate : false;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -298,7 +302,7 @@ export default function HomePage() {
                 size="lg" 
                 onClick={() => handlePresenceClick('confirmed')} 
                 className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed'}
+                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
               >
                 <Check className="mr-2 h-5 w-5" /> Sim
               </Button>
@@ -307,7 +311,7 @@ export default function HomePage() {
                 onClick={() => handlePresenceClick('declined')} 
                 variant="destructive"
                 className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined'}
+                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
               >
                 <X className="mr-2 h-5 w-5" /> Não
               </Button>
