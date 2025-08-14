@@ -221,11 +221,8 @@ export default function PlayersPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-foreground truncate">{player.displayName}</p>
                       <p className="text-sm text-muted-foreground truncate">{player.email}</p>
-                    </div>
-                  </div>
-                  {isManager && user?.uid !== player.uid && (
-                     <div className='flex items-center justify-end gap-2 flex-wrap'>
-                        <div className="flex items-center space-x-2 order-last sm:order-first">
+                      {isManager && user?.uid !== player.uid && (
+                        <div className="flex items-center space-x-2 mt-2">
                            <Checkbox 
                             id={`debt-${player.uid}`}
                             checked={player.allowConfirmationWithDebt ?? false}
@@ -236,6 +233,11 @@ export default function PlayersPage() {
                             Permitir confirmação de presença com pendência
                           </Label>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                  {isManager && user?.uid !== player.uid && (
+                     <div className='flex items-center justify-end gap-2'>
                         <Button variant="outline" size="icon">
                           <DollarSign className="h-4 w-4"/>
                         </Button>
