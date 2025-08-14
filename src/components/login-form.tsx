@@ -50,10 +50,7 @@ export function LoginForm() {
     setIsLoading("email");
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        variant: "success",
-        title: "Bem-vindo ao Várzea Champions",
-      });
+      // Toast on successful login is handled by redirection or auth provider now
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -70,11 +67,8 @@ export function LoginForm() {
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
-       toast({
-        variant: "success",
-        title: "Login bem-sucedido!",
-        description: "Bem-vindo!",
-      });
+       // The AuthProvider will now handle redirection to profile completion if needed.
+       // No toast here, as the user might need to complete their profile first.
     } catch (error: any) {
       // Don't show an error if the user closes the popup
       if (error.code === 'auth/popup-closed-by-user') {

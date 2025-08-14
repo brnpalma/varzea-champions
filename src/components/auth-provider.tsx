@@ -59,25 +59,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (firebaseUser) {
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          profileUnsubscribe = onSnapshot(userDocRef, async (snap) => {
+        
+        profileUnsubscribe = onSnapshot(userDocRef, async (snap) => {
+          if (snap.exists()) {
             const userProfileData = snap.data() as UserProfile | undefined;
             
             if (!userProfileData) {
-              // User document was deleted, treat as logged out or new user
-              setUser({
-                ...firebaseUser,
-                displayName: firebaseUser.displayName || "Usuário",
-                photoURL: firebaseUser.photoURL,
-                userType: UserType.JOGADOR, // Fallback value
-                groupName: null,
-                playerSubscriptionType: PlayerSubscriptionType.AVULSO, // Fallback value
-                groupId: null,
-              });
-              setLoading(false);
-              return;
+              // This case should ideally not be hit if snap.exists() is true, but as a safeguard:
+               setUser(null); // Treat as logged out
+               setLoading(false);
+               return;
             }
 
             let groupName = null;
@@ -93,25 +84,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
               ...firebaseUser,
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
               photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
-              userType: userProfileData.userType || UserType.JOGADOR,
+              userType: userProfileData.userType, // This will exist if doc exists
               groupName: groupName,
-              playerSubscriptionType: userProfileData.playerSubscriptionType || PlayerSubscriptionType.AVULSO,
+              playerSubscriptionType: userProfileData.playerSubscriptionType, // This will exist
               groupId: userProfileData.groupId || null,
             });
             setLoading(false);
-          });
-        } else {
-          setUser({
-            ...firebaseUser,
-            displayName: firebaseUser.displayName || "Usuário",
-            photoURL: firebaseUser.photoURL,
-            userType: UserType.JOGADOR, // Fallback, will be updated on profile completion
-            groupName: null,
-            playerSubscriptionType: PlayerSubscriptionType.AVULSO, // Fallback
-            groupId: null,
-          });
-          setLoading(false);
-        }
+
+          } else {
+            // Document doesn't exist: New user (e.g. from Google Sign-In) needs to complete profile.
+             setUser({
+              ...firebaseUser,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              // Explicitly set userType and other profile fields to null/undefined
+              // so the logic to force profile completion is triggered.
+              userType: undefined as any, 
+              groupName: null,
+              playerSubscriptionType: undefined as any,
+              groupId: null,
+            });
+            setLoading(false);
+          }
+        }, (error) => {
+            console.error("Snapshot listener error:", error);
+            setUser(null);
+            setLoading(false);
+        });
+
       } else {
         setUser(null);
         setLoading(false);
@@ -130,38 +130,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (loading) return;
     
     if (initialLoad) {
-      router.push('/');
+      if (pathname !== '/') {
+        router.push('/');
+      }
       setInitialLoad(false);
       return;
     }
 
     const isAuthPage = pathname === "/login";
     const isCompletingProfile = searchParams.get('complete_profile') === 'true';
-
-    // If user exists in auth, but not in Firestore (no userType), force profile completion.
+    
+    // If user exists in auth, but not in Firestore (identified by missing userType), force profile completion.
     if (user && !user.userType && !isAuthPage) {
        router.push("/login?complete_profile=true");
        return;
     }
     
-    if (user && user.userType && isAuthPage) {
-      // If a complete user is on the login page, redirect them away, unless they are there to complete profile.
-      if (!isCompletingProfile) {
-        router.push("/");
-      }
+    // If a fully registered user is on the login page, redirect them away.
+    if (user && user.userType && isAuthPage && !isCompletingProfile) {
+      router.push("/");
     }
     
-    // This handles a user who logged in via Google and is now joining a group
-    if (user && !user.groupId && pathname.startsWith('/login') && searchParams.get('group_id')) {
-        const params = new URLSearchParams(searchParams);
-        params.set('complete_profile', 'true');
-        router.push(`/login?${params.toString()}`);
-    }
-
   }, [user, loading, pathname, router, searchParams, initialLoad]);
 
 
-  if (loading) {
+  if (loading || initialLoad) {
      return (
       <div className="flex items-center justify-center h-screen bg-background">
         <FootballSpinner />
