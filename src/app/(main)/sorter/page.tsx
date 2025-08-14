@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User, UserType } from "@/hooks/use-auth";
 import { Dices, Shuffle, Star } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
@@ -24,7 +24,7 @@ export default function SorterPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [teams, setTeams] = useState<{ teamA: User[]; teamB: User[] }>({ teamA: [], teamB: [] });
+  const [teams, setTeams] = useState<User[][]>([]);
 
   const handleSort = async () => {
     if (!user?.groupId) {
@@ -37,11 +37,18 @@ export default function SorterPage() {
     }
 
     setIsLoading(true);
-    setTeams({ teamA: [], teamB: [] });
+    setTeams([]);
 
     try {
-      // Por enquanto, vamos sortear todos os jogadores do grupo.
-      // Futuramente, isso será integrado com a lista de presença confirmada.
+      const groupDocRef = doc(firestore, "groups", user.groupId);
+      const groupDocSnap = await getDoc(groupDocRef);
+
+      if (!groupDocSnap.exists()) {
+        throw new Error("Group document not found.");
+      }
+      
+      const playersPerTeam = groupDocSnap.data()?.playersPerTeam || 5;
+
       const playersQuery = query(
         collection(firestore, 'users'),
         where('groupId', '==', user.groupId)
@@ -50,50 +57,46 @@ export default function SorterPage() {
       const querySnapshot = await getDocs(playersQuery);
       const allPlayers = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id })) as User[];
       
-      if (allPlayers.length < 2) {
+      const numberOfTeams = Math.floor(allPlayers.length / playersPerTeam);
+
+      if (numberOfTeams < 1) {
         toast({
           variant: 'destructive',
           title: 'Jogadores Insuficientes',
-          description: 'São necessários pelo menos 2 jogadores para o sorteio.'
+          description: `São necessários pelo menos ${playersPerTeam} jogadores para formar um time.`
         });
         setIsLoading(false);
         return;
       }
       
-      // Classifica os jogadores por estrelas
+      const playersToSort = allPlayers.slice(0, numberOfTeams * playersPerTeam);
+      
       const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [], '0': [] };
-      allPlayers.forEach(p => {
+      playersToSort.forEach(p => {
         const rating = p.rating || 0;
         if (playersByRating[rating]) {
           playersByRating[rating].push(p);
         } else {
-          playersByRating['0'].push(p) // Sem rating
+          playersByRating['0'].push(p) 
         }
       });
       
-      // Embaralha jogadores dentro de cada nível de estrela
       Object.keys(playersByRating).forEach(rating => {
         shuffleArray(playersByRating[rating]);
       });
 
-      const teamA: User[] = [];
-      const teamB: User[] = [];
-      let turnA = true;
+      const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
+      let teamIndex = 0;
 
-      // Distribui os jogadores
       for (let rating = 5; rating >= 0; rating--) {
         const players = playersByRating[rating.toString()];
         for (const player of players) {
-          if (turnA) {
-            teamA.push(player);
-          } else {
-            teamB.push(player);
-          }
-          turnA = !turnA;
+          finalTeams[teamIndex].push(player);
+          teamIndex = (teamIndex + 1) % numberOfTeams;
         }
       }
 
-      setTeams({ teamA, teamB });
+      setTeams(finalTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
@@ -161,24 +164,18 @@ export default function SorterPage() {
             </div>
         )}
 
-        {(teams.teamA.length > 0 || teams.teamB.length > 0) && !isLoading && (
+        {teams.length > 0 && !isLoading && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Time A ({teams.teamA.length} jogadores)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderPlayerList(teams.teamA)}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Time B ({teams.teamB.length} jogadores)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderPlayerList(teams.teamB)}
-              </CardContent>
-            </Card>
+            {teams.map((team, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <CardTitle>Time {String.fromCharCode(65 + index)} ({team.length} jogadores)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {renderPlayerList(team)}
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>

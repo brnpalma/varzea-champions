@@ -109,6 +109,7 @@ export default function ProfilePage() {
     gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
   });
   const [groupName, setGroupName] = useState("");
+  const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -150,6 +151,9 @@ export default function ProfilePage() {
         }
         if (groupData.name) {
             setGroupName(groupData.name);
+        }
+        if (groupData.playersPerTeam) {
+            setPlayersPerTeam(groupData.playersPerTeam);
         }
       }
        setIsSettingsLoading(false);
@@ -356,7 +360,8 @@ export default function ProfilePage() {
       const groupDocRef = doc(firestore, "groups", groupId);
       
       const dataToUpdate: any = {
-          gameDays: settings.gameDays
+          gameDays: settings.gameDays,
+          playersPerTeam: playersPerTeam
       };
 
       if (isGroupManager) {
@@ -635,17 +640,30 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {isGroupManager && (
-                      <div className="space-y-2">
-                        <Label htmlFor="group-name" className="text-base">Nome do Grupo</Label>
-                         <Input
-                            id="group-name"
-                            value={groupName}
-                            onChange={(e) => setGroupName(e.target.value)}
-                            placeholder="Digite o nome do grupo"
-                        />
-                      </div>
-                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {isGroupManager && (
+                            <div className="space-y-2">
+                                <Label htmlFor="group-name">Nome do Grupo</Label>
+                                <Input
+                                    id="group-name"
+                                    value={groupName}
+                                    onChange={(e) => setGroupName(e.target.value)}
+                                    placeholder="Digite o nome do grupo"
+                                />
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="players-per-team">Jogadores por Time</Label>
+                            <Input
+                                id="players-per-team"
+                                type="number"
+                                value={playersPerTeam}
+                                onChange={(e) => setPlayersPerTeam(Number(e.target.value))}
+                                placeholder="Nº de jogadores"
+                                min="2"
+                            />
+                        </div>
+                    </div>
 
                     <div className="space-y-2">
                       <Label className="text-base">Dias e Horários</Label>
