@@ -196,13 +196,13 @@ export default function SorterPage() {
       
       const playersToSort = confirmedPlayers.slice(0, numberOfTeams * playersPerTeam);
       
-      const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [], '0': [] };
+      const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [] };
       playersToSort.forEach(p => {
-        const rating = p.rating || 0;
+        const rating = (p.rating || 1).toString();
         if (playersByRating[rating]) {
           playersByRating[rating].push(p);
         } else {
-          playersByRating['0'].push(p) 
+          playersByRating['1'].push(p) 
         }
       });
       
@@ -213,7 +213,7 @@ export default function SorterPage() {
       const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
       let teamIndex = 0;
 
-      for (let rating = 5; rating >= 0; rating--) {
+      for (let rating = 5; rating >= 1; rating--) {
         const players = playersByRating[rating.toString()];
         for (const player of players) {
           finalTeams[teamIndex].push(player);
@@ -237,18 +237,21 @@ export default function SorterPage() {
 
   const renderPlayerList = (players: User[]) => (
     <ul className="space-y-3">
-      {players.map(player => (
-        <li key={player.uid} className="flex items-center gap-3 p-2 rounded-md bg-secondary/50">
-          <UserAvatar src={player.photoURL} size={40} />
-          <div className="flex-1">
-            <p className="font-semibold">{player.displayName}</p>
-            <div className="flex items-center gap-1 text-amber-500">
-               {[...Array(player.rating || 0)].map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
-               {[...Array(5 - (player.rating || 0))].map((_, i) => <Star key={i} className="h-4 w-4 text-muted-foreground/50" />)}
+      {players.map(player => {
+        const playerRating = player.rating || 1;
+        return (
+          <li key={player.uid} className="flex items-center gap-3 p-2 rounded-md bg-secondary/50">
+            <UserAvatar src={player.photoURL} size={40} />
+            <div className="flex-1">
+              <p className="font-semibold">{player.displayName}</p>
+              <div className="flex items-center gap-1 text-amber-500">
+                {[...Array(playerRating)].map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
+                {[...Array(5 - playerRating)].map((_, i) => <Star key={i} className="h-4 w-4 text-muted-foreground/50" />)}
+              </div>
             </div>
-          </div>
-        </li>
-      ))}
+          </li>
+        )
+      })}
     </ul>
   );
 

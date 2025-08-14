@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
-  const [rating, setRating] = useState<number>(3);
+  const [rating, setRating] = useState<number>(1);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -126,7 +126,7 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 3);
+      setRating(user.rating || 1);
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
@@ -188,7 +188,7 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 3);
+      setRating(user.rating || 1);
       setPhotoFile(null);
       setPhotoPreview(user.photoURL || null);
     }
@@ -417,6 +417,8 @@ export default function ProfilePage() {
     );
   }
 
+  const currentUserRating = user.rating || 1;
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto space-y-8">
@@ -443,7 +445,15 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
+                        {!isEditing && (
+                            <div className="flex items-center text-amber-500">
+                                {[...Array(currentUserRating)].map((_, i) => <Star key={`filled-${i}`} className="h-5 w-5 fill-current" />)}
+                                {[...Array(5 - currentUserRating)].map((_, i) => <Star key={`empty-${i}`} className="h-5 w-5 text-muted-foreground/30" />)}
+                            </div>
+                        )}
+                    </div>
                   <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
                 </div>
               </div>
@@ -538,12 +548,6 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="text-foreground">
                           Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
-                      </span>
-                  </div>
-                   <div className="flex items-center">
-                      <Star className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="text-foreground">
-                          Classificação: <span className="font-medium capitalize text-primary">{user.rating || "N/A"} estrelas</span>
                       </span>
                   </div>
               </div>

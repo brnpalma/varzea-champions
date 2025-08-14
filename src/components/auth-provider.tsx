@@ -112,7 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userType: userProfileData.userType,
               playerSubscriptionType: userProfileData.playerSubscriptionType,
               groupId: userProfileData.groupId || null,
-              rating: userProfileData.rating || null,
+              rating: userProfileData.rating || 1,
               allowConfirmationWithDebt: userProfileData.allowConfirmationWithDebt || false,
               groupName: user?.groupName || null, // a temp value before the group listener updates it
             };
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               groupName: null,
               playerSubscriptionType: undefined as any,
               groupId: null,
-              rating: null,
+              rating: 1,
               allowConfirmationWithDebt: false,
             } as User);
           }
