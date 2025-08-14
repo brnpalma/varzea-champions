@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Home, User, Settings, LogIn, LogOut, Users, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, UserType } from "@/hooks/use-auth";
@@ -27,6 +27,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -36,6 +37,7 @@ export function BottomNav() {
         title: "Sessão Encerrada",
         description: "Você foi desconectado com sucesso.",
       });
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",

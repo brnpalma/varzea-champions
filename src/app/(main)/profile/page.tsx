@@ -101,6 +101,7 @@ export default function ProfilePage() {
         title: "Sessão Encerrada",
         description: "Você foi desconectado com sucesso.",
       });
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -143,7 +144,6 @@ export default function ProfilePage() {
         
         const userDocRef = doc(firestore, "users", user.uid);
         
-        // Using writeBatch for consistency, even for a single write
         const batch = writeBatch(firestore);
         batch.set(userDocRef, {
             displayName: displayName,
@@ -203,7 +203,6 @@ export default function ProfilePage() {
       await batch.commit();
       
       // Step 2: If Firestore deletion is successful, proceed with Auth user deletion.
-      // This is the sensitive operation that might require recent login.
       await deleteUser(currentUser);
       
       toast({
