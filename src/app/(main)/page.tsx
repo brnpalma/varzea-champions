@@ -252,6 +252,7 @@ export default function HomePage() {
   };
 
   const formattedDate = formatNextGameDate(nextGameDate);
+  const isGameTimePassed = nextGameDate ? new Date() > nextGameDate : false;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -288,7 +289,7 @@ export default function HomePage() {
                 size="lg" 
                 onClick={() => handlePresenceClick('confirmed')} 
                 className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed'}
+                disabled={isGameTimePassed || !user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed'}
               >
                 <Check className="mr-2 h-5 w-5" /> Sim
               </Button>
@@ -297,7 +298,7 @@ export default function HomePage() {
                 onClick={() => handlePresenceClick('declined')} 
                 variant="destructive"
                 className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined'}
+                disabled={isGameTimePassed || !user || isSubmitting || !nextGameDate || confirmedStatus === 'declined'}
               >
                 <X className="mr-2 h-5 w-5" /> Não
               </Button>
