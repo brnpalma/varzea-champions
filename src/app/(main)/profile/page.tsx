@@ -438,11 +438,11 @@ export default function ProfilePage() {
                   <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button onClick={handleEditToggle} variant="ghost" size="icon">
-                  {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
-                </Button>
-              </div>
+              {isEditing && (
+                  <Button onClick={handleEditToggle} variant="ghost" size="icon">
+                     <X className="h-5 w-5"/>
+                  </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -520,13 +520,19 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center pt-4 border-t">
               {isEditing ? (
                   <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
-                    {isSavingProfile ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
+                    <Save className="mr-2 h-4 w-4" /> 
+                    {isSavingProfile ? "Salvando..." : "Salvar Alterações"}
                   </Button>
               ) : (
+                <>
+                  <Button variant="outline" onClick={handleEditToggle}>
+                      <Edit className="mr-2 h-4 w-4"/>
+                      Editar Perfil
+                  </Button>
                   <div className="flex gap-2">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline">
+                        <Button variant="ghost">
                           <LogOut className="mr-2 h-4 w-4" />
                           Sair
                         </Button>
@@ -579,6 +585,7 @@ export default function ProfilePage() {
                         </AlertDialogContent>
                     </AlertDialog>
                   </div>
+                </>
               )}
             </div>
           </CardContent>
