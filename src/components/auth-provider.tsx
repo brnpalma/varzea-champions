@@ -47,7 +47,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     let profileUnsubscribe: (() => void) | undefined;
@@ -65,8 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const userProfileData = snap.data() as UserProfile | undefined;
             
             if (!userProfileData) {
-              // This case should ideally not be hit if snap.exists() is true, but as a safeguard:
-               setUser(null); // Treat as logged out
+               setUser(null);
                setLoading(false);
                return;
             }
@@ -84,28 +82,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
               ...firebaseUser,
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
               photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
-              userType: userProfileData.userType, // This will exist if doc exists
+              userType: userProfileData.userType,
               groupName: groupName,
-              playerSubscriptionType: userProfileData.playerSubscriptionType, // This will exist
+              playerSubscriptionType: userProfileData.playerSubscriptionType,
               groupId: userProfileData.groupId || null,
             });
-            setLoading(false);
 
           } else {
-            // Document doesn't exist: New user (e.g. from Google Sign-In) needs to complete profile.
              setUser({
               ...firebaseUser,
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
-              // Explicitly set userType and other profile fields to null/undefined
-              // so the logic to force profile completion is triggered.
               userType: undefined as any, 
               groupName: null,
               playerSubscriptionType: undefined as any,
               groupId: null,
             });
-            setLoading(false);
           }
+           setLoading(false);
         }, (error) => {
             console.error("Snapshot listener error:", error);
             setUser(null);
@@ -128,33 +122,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     if (loading) return;
-    
-    if (initialLoad) {
-      if (pathname !== '/') {
-        router.push('/');
-      }
-      setInitialLoad(false);
-      return;
-    }
 
     const isAuthPage = pathname === "/login";
     const isCompletingProfile = searchParams.get('complete_profile') === 'true';
     
-    // If user exists in auth, but not in Firestore (identified by missing userType), force profile completion.
-    if (user && !user.userType && !isAuthPage) {
+    if (user && !user.userType && !isCompletingProfile) {
        router.push("/login?complete_profile=true");
        return;
     }
     
-    // If a fully registered user is on the login page, redirect them away.
     if (user && user.userType && isAuthPage && !isCompletingProfile) {
       router.push("/");
     }
     
-  }, [user, loading, pathname, router, searchParams, initialLoad]);
+  }, [user, loading, pathname, router, searchParams]);
 
 
-  if (loading || initialLoad) {
+  if (loading) {
      return (
       <div className="flex items-center justify-center h-screen bg-background">
         <FootballSpinner />
