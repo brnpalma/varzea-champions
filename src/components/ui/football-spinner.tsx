@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Futbol } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 export function FootballSpinner({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
@@ -7,7 +7,7 @@ export function FootballSpinner({ className, ...props }: React.HTMLAttributes<HT
       className={cn("flex items-center justify-center", className)}
       {...props}
     >
-      <Futbol className="h-12 w-12 animate-spin text-primary" style={{ animationDuration: '1.5s' }}/>
+      <Trophy className="h-12 w-12 animate-pulse text-primary" />
     </div>
   );
 }
