@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useAuth, User } from "@/hooks/use-auth";
+import { useAuth, User, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, ClipboardCopy } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -89,7 +89,7 @@ const formatDateToId = (date: Date): string => {
 
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, groupSettings, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
@@ -109,12 +109,8 @@ export default function HomePage() {
     }
     setIsGameDateLoading(true);
     try {
-      const groupDocRef = doc(firestore, "groups", user.groupId);
-      const docSnap = await getDoc(groupDocRef);
-      if (docSnap.exists()) {
-        const groupData = docSnap.data();
-        if (groupData.gameDays) {
-          const gameDate = getNextGameDate(groupData.gameDays);
+        if (groupSettings && groupSettings.gameDays) {
+          const gameDate = getNextGameDate(groupSettings.gameDays);
           setNextGameDate(gameDate);
           if (gameDate && new Date() > gameDate) {
             setIsConfirmationLocked(true);
@@ -122,14 +118,13 @@ export default function HomePage() {
         } else {
           setNextGameDate(null);
         }
-      }
     } catch (error) {
       console.error("Error fetching game settings:", error);
       setNextGameDate(null);
     } finally {
       setIsGameDateLoading(false);
     }
-  }, [user?.groupId]);
+  }, [user?.groupId, groupSettings]);
 
 
   useEffect(() => {
@@ -212,6 +207,18 @@ export default function HomePage() {
         setIsConfirmationLocked(true);
         return;
     }
+
+    // Lógica de pendência financeira
+    // Simulação: bloqueia se for AVULSO e a flag `allowConfirmationWithDebt` for false.
+    // A lógica real de verificação de dívida seria mais complexa.
+    if (status === 'confirmed' && !user.allowConfirmationWithDebt && user.playerSubscriptionType === PlayerSubscriptionType.AVULSO) {
+        toast({
+            variant: "destructive",
+            title: "Pendência Financeira",
+            description: "Você possui mensalidades em atraso. Entre em contato com o gestor do grupo.",
+        });
+        return;
+    }
     
     setIsSubmitting(true);
     const oldStatus = confirmedStatus;
@@ -272,7 +279,17 @@ export default function HomePage() {
     }
   };
 
+  const handleCopyPix = () => {
+    if (!groupSettings?.chavePix) return;
+    navigator.clipboard.writeText(groupSettings.chavePix);
+    toast({
+        variant: "success",
+        title: "Chave PIX Copiada!",
+    });
+  };
+
   const formattedDate = formatNextGameDate(nextGameDate);
+  const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -332,6 +349,42 @@ export default function HomePage() {
           </CardContent>
         </Card>
         
+        {showPaymentCard && (
+           <Card className="shadow-lg">
+             <CardHeader>
+               <CardTitle className="flex items-center gap-3">
+                 <Wallet className="h-6 w-6 text-primary" />
+                 <span>Informações de Pagamento</span>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+                {groupSettings.valorMensalidade && (
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Mensalidade:</span>
+                        <span className="font-bold text-lg">R$ {groupSettings.valorMensalidade.toFixed(2)}</span>
+                    </div>
+                )}
+                 {groupSettings.valorAvulso && (
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Jogo Avulso:</span>
+                        <span className="font-bold text-lg">R$ {groupSettings.valorAvulso.toFixed(2)}</span>
+                    </div>
+                )}
+               {groupSettings.chavePix && (
+                 <div className="pt-2">
+                    <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
+                        <code className="truncate">{groupSettings.chavePix}</code>
+                        <Button variant="ghost" size="icon" onClick={handleCopyPix}>
+                            <ClipboardCopy className="h-4 w-4"/>
+                        </Button>
+                    </div>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
+        )}
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -354,5 +407,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

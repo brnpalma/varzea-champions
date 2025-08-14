@@ -86,7 +86,7 @@ interface GameDaySetting {
 }
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, groupSettings } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   
@@ -110,6 +110,9 @@ export default function ProfilePage() {
   });
   const [groupName, setGroupName] = useState("");
   const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
+  const [valorMensalidade, setValorMensalidade] = useState<number | ''>('');
+  const [valorAvulso, setValorAvulso] = useState<number | ''>('');
+  const [chavePix, setChavePix] = useState("");
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -135,35 +138,29 @@ export default function ProfilePage() {
       return;
     }
 
-    setIsSettingsLoading(true);
-    const groupDocRef = doc(firestore, "groups", groupId);
-    
-    const unsubscribe = onSnapshot(groupDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const groupData = docSnap.data();
-        if (groupData.gameDays) {
-          const loadedSettings = groupData.gameDays;
-          const mergedGameDays: Record<string, GameDaySetting> = {};
-          daysOfWeek.forEach(day => {
-              mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
-          });
-          setSettings({ gameDays: mergedGameDays });
-        }
-        if (groupData.name) {
-            setGroupName(groupData.name);
-        }
-        if (groupData.playersPerTeam) {
-            setPlayersPerTeam(groupData.playersPerTeam);
-        }
-      }
-       setIsSettingsLoading(false);
-    }, (error) => {
-        console.error("Error fetching settings:", error);
-        setIsSettingsLoading(false);
-    });
+    if(groupSettings === null) {
+      setIsSettingsLoading(true);
+      return;
+    }
 
-    return () => unsubscribe();
-  }, [isManager, groupId]);
+    if (groupSettings) {
+      if (groupSettings.gameDays) {
+        const loadedSettings = groupSettings.gameDays;
+        const mergedGameDays: Record<string, GameDaySetting> = {};
+        daysOfWeek.forEach(day => {
+            mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
+        });
+        setSettings({ gameDays: mergedGameDays });
+      }
+      setGroupName(groupSettings.name || "");
+      setPlayersPerTeam(groupSettings.playersPerTeam || 5);
+      setValorMensalidade(groupSettings.valorMensalidade || '');
+      setValorAvulso(groupSettings.valorAvulso || '');
+      setChavePix(groupSettings.chavePix || "");
+    }
+    setIsSettingsLoading(false);
+    
+  }, [isManager, groupId, groupSettings]);
 
 
   const handleLogout = async () => {
@@ -361,7 +358,10 @@ export default function ProfilePage() {
       
       const dataToUpdate: any = {
           gameDays: settings.gameDays,
-          playersPerTeam: playersPerTeam
+          playersPerTeam: playersPerTeam,
+          valorMensalidade: Number(valorMensalidade) || null,
+          valorAvulso: Number(valorAvulso) || null,
+          chavePix: chavePix.trim() || null,
       };
 
       if (isGroupManager) {
@@ -661,6 +661,45 @@ export default function ProfilePage() {
                                 onChange={(e) => setPlayersPerTeam(Number(e.target.value))}
                                 placeholder="Nº de jogadores"
                                 min="2"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-base">Financeiro</Label>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="space-y-2">
+                                <Label htmlFor="valor-mensalidade">Valor da Mensalidade (R$)</Label>
+                                <Input
+                                    id="valor-mensalidade"
+                                    type="number"
+                                    value={valorMensalidade}
+                                    onChange={(e) => setValorMensalidade(e.target.value === '' ? '' : Number(e.target.value))}
+                                    placeholder="Ex: 100.00"
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+                           <div className="space-y-2">
+                                <Label htmlFor="valor-avulso">Valor Avulso (R$)</Label>
+                                <Input
+                                    id="valor-avulso"
+                                    type="number"
+                                    value={valorAvulso}
+                                    onChange={(e) => setValorAvulso(e.target.value === '' ? '' : Number(e.target.value))}
+                                    placeholder="Ex: 25.00"
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+                       </div>
+                       <div className="space-y-2 pt-4">
+                            <Label htmlFor="chave-pix">Chave PIX</Label>
+                            <Input
+                                id="chave-pix"
+                                value={chavePix}
+                                onChange={(e) => setChavePix(e.target.value)}
+                                placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
                             />
                         </div>
                     </div>

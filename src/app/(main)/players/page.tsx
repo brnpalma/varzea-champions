@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useAuth, User, UserType } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, Copy, LogIn } from 'lucide-react';
+import { Share2, Trash2, LogIn, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -23,12 +23,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
@@ -53,7 +57,7 @@ export default function PlayersPage() {
         ...doc.data(),
         uid: doc.id,
       })) as User[];
-      setPlayers(playersData);
+      setPlayers(playersData.sort((a, b) => a.displayName!.localeCompare(b.displayName!)));
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching players: ", error);
@@ -109,6 +113,33 @@ export default function PlayersPage() {
         description: 'Não foi possível remover o jogador.',
       });
     }
+  };
+
+  const handleToggleDebtPermission = (playerToUpdate: User) => {
+    startTransition(async () => {
+      if (!isManager || !playerToUpdate) return;
+      
+      const playerDocRef = doc(firestore, "users", playerToUpdate.uid);
+      const newPermission = !(playerToUpdate.allowConfirmationWithDebt ?? false);
+
+      try {
+        await updateDoc(playerDocRef, {
+          allowConfirmationWithDebt: newPermission
+        });
+        toast({
+          variant: 'success',
+          title: 'Permissão Atualizada',
+          description: `A permissão para ${playerToUpdate.displayName} foi ${newPermission ? 'concedida' : 'revogada'}.`,
+        });
+      } catch (error) {
+        console.error("Error updating permission: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao Atualizar',
+          description: 'Não foi possível atualizar a permissão do jogador.',
+        });
+      }
+    });
   };
   
   if (loading) {
@@ -182,9 +213,9 @@ export default function PlayersPage() {
               <FootballSpinner />
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
+                <li key={player.uid} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-4">
                   <div className="flex items-center gap-4">
                     <UserAvatar src={player.photoURL} size={48} />
                     <div>
@@ -193,30 +224,47 @@ export default function PlayersPage() {
                     </div>
                   </div>
                   {isManager && user?.uid !== player.uid && (
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleRemovePlayer(player)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remover
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                     <div className='flex items-center gap-2 flex-wrap'>
+                        <div className="flex items-center space-x-2">
+                           <Checkbox 
+                            id={`debt-${player.uid}`}
+                            checked={player.allowConfirmationWithDebt ?? false}
+                            onCheckedChange={() => handleToggleDebtPermission(player)}
+                            disabled={isPending}
+                          />
+                          <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
+                            Permitir confirmação com pendência
+                          </Label>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <DollarSign className="mr-2 h-4 w-4"/>
+                          Financeiro
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemovePlayer(player)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                     </div>
                   )}
                 </li>
               ))}
