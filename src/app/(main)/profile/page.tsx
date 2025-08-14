@@ -4,14 +4,14 @@
 import { useAuth, UserType, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { signOut, updateProfile } from "firebase/auth";
+import { signOut, updateProfile, deleteUser } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, writeBatch } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
 import Link from "next/link";
 import {
@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -172,6 +173,55 @@ export default function ProfilePage() {
         setIsSaving(false);
     }
   };
+  
+  const handleDeleteProfile = async () => {
+    const currentUser = auth.currentUser;
+    if (!user || !currentUser) {
+      toast({ variant: "destructive", title: "Erro", description: "Usuário não autenticado." });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const batch = writeBatch(firestore);
+      
+      // Se for gestor do grupo, deleta o grupo também
+      if (user.userType === UserType.GESTOR_GRUPO && user.groupId) {
+        const groupDocRef = doc(firestore, "groups", user.groupId);
+        batch.delete(groupDocRef);
+      }
+      
+      // Deleta o documento do usuário
+      const userDocRef = doc(firestore, "users", user.uid);
+      batch.delete(userDocRef);
+      
+      // Comita as deleções no Firestore
+      await batch.commit();
+
+      // Deleta o usuário da autenticação
+      await deleteUser(currentUser);
+      
+      toast({
+        variant: "success",
+        title: "Perfil Deletado",
+        description: "Sua conta e todos os dados associados foram removidos.",
+      });
+      // O AuthProvider cuidará do redirecionamento após a exclusão do usuário
+    } catch (error: any) {
+      console.error("Failed to delete profile:", error);
+      let description = "Ocorreu um erro ao deletar seu perfil.";
+      if (error.code === 'auth/requires-recent-login') {
+          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
+      }
+      toast({
+        variant: "destructive",
+        title: "Falha ao Deletar",
+        description: description,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
 
   if (loading) {
@@ -309,37 +359,68 @@ export default function ProfilePage() {
             </div>
           )}
            
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center pt-4 border-t">
              {isEditing ? (
                  <Button onClick={handleSave} disabled={isSaving}>
                    {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
                  </Button>
              ) : (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleLogout}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
+                <div className="flex gap-2">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline">
+                        <LogOut className="mr-2 h-4 w-4" />
                         Sair
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleLogout}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Sair
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="destructive" disabled={isDeleting}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {isDeleting ? "Deletando..." : "Deletar Perfil"}
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Deletar Perfil Permanentemente?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Esta ação é irreversível e deletará sua conta e todos os dados associados.
+                                  {user.userType === UserType.GESTOR_GRUPO && " Como você é um gestor, seu grupo também será deletado."}
+                                  <br /><br />
+                                  Tem certeza que deseja continuar?
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                  onClick={handleDeleteProfile}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  disabled={isDeleting}
+                              >
+                                  {isDeleting ? "Deletando..." : "Sim, Deletar Tudo"}
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+                </div>
              )}
           </div>
         </CardContent>
