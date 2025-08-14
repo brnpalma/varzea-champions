@@ -172,7 +172,7 @@ function SignupFormComponent() {
     }
 
     try {
-      let user = authUser;
+      let user = auth.currentUser;
 
       // If there's no authenticated user, it means this is a fresh email/password signup.
       if (!user) {
