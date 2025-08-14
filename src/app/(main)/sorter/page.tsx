@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star, Users } from "lucide-react";
+import { Dices, Shuffle, Star, Users, Info } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
@@ -270,45 +270,58 @@ export default function SorterPage() {
               Clique no botão para gerar times equilibrados com base na classificação dos jogadores confirmados.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center items-center gap-4">
-            <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId}>
-              {isSorting ? (
-                <>
-                  <FootballSpinner className="h-6 w-6 mr-2 animate-spin" />
-                  Sorteando...
-                </>
-              ) : (
-                <>
-                  <Shuffle className="mr-2 h-5 w-5" />
-                  Sortear Times
-                </>
-              )}
-            </Button>
+          <CardContent className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-4">
+              <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId || confirmedPlayers.length === 0}>
+                {isSorting ? (
+                  <>
+                    <FootballSpinner className="h-6 w-6 mr-2 animate-spin" />
+                    Sorteando...
+                  </>
+                ) : (
+                  <>
+                    <Shuffle className="mr-2 h-5 w-5" />
+                    Sortear Times
+                  </>
+                )}
+              </Button>
 
-            <Dialog>
-              <DialogTrigger asChild>
-                 <Button variant="outline" size="lg" disabled={!user?.groupId || isFetchingPlayers}>
-                   <Users className="mr-2 h-5 w-5" />
-                   {isFetchingPlayers ? '...' : confirmedPlayers.length}
-                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Jogadores Confirmados ({confirmedPlayers.length})</DialogTitle>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto pr-2">
-                   <ul className="space-y-3">
-                    {confirmedPlayers.map(player => (
-                      <li key={player.uid} className="flex items-center gap-3">
-                        <UserAvatar src={player.photoURL} size={40} />
-                        <span className="font-medium">{player.displayName}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="lg" disabled={!user?.groupId || isFetchingPlayers || confirmedPlayers.length === 0}>
+                    <Users className="mr-2 h-5 w-5" />
+                    {isFetchingPlayers ? '...' : confirmedPlayers.length}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Jogadores Confirmados ({confirmedPlayers.length})</DialogTitle>
+                  </DialogHeader>
+                  <div className="max-h-[60vh] overflow-y-auto pr-2">
+                    {isFetchingPlayers ? (
+                       <div className="flex justify-center items-center py-8">
+                          <FootballSpinner />
+                        </div>
+                    ) : (
+                      <ul className="space-y-3">
+                        {confirmedPlayers.map(player => (
+                          <li key={player.uid} className="flex items-center gap-3">
+                            <UserAvatar src={player.photoURL} size={40} />
+                            <span className="font-medium">{player.displayName}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+             {!isFetchingPlayers && confirmedPlayers.length === 0 && (
+                <div className="flex items-center text-sm text-muted-foreground mt-4">
+                    <Info className="h-4 w-4 mr-2" />
+                    <span>Nenhum jogador confirmado para a próxima partida.</span>
                 </div>
-              </DialogContent>
-            </Dialog>
-
+            )}
           </CardContent>
         </Card>
 
@@ -336,3 +349,5 @@ export default function SorterPage() {
     </div>
   );
 }
+
+    
