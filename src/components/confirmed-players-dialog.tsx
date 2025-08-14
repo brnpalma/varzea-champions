@@ -23,7 +23,11 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" disabled={isFetchingPlayers}>
+        <Button 
+          variant="outline" 
+          size="lg" 
+          disabled={isFetchingPlayers || confirmedPlayers.length === 0}
+        >
           <Users className="mr-2 h-5 w-5" />
           {isFetchingPlayers ? (
             "Carregando..."
@@ -43,7 +47,7 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
             <div className="flex justify-center items-center py-8">
               <FootballSpinner />
             </div>
-          ) : (
+          ) : confirmedPlayers.length > 0 ? (
             <ul className="space-y-3">
               {confirmedPlayers.map(player => (
                 <li key={player.uid} className="flex items-center gap-3">
@@ -52,11 +56,11 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">Nenhum jogador confirmado ainda.</p>
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-    
