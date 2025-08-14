@@ -1,16 +1,23 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User, UserType } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star } from "lucide-react";
+import { Dices, Shuffle, Star, Users } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const shuffleArray = (array: any[]) => {
   for (let i = array.length - 1; i > 0; i--) {
@@ -25,6 +32,39 @@ export default function SorterPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [teams, setTeams] = useState<User[][]>([]);
+  const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
+  const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
+
+  useEffect(() => {
+    if (!user?.groupId) {
+      setIsFetchingPlayers(false);
+      return;
+    }
+
+    const fetchPlayers = async () => {
+      setIsFetchingPlayers(true);
+      try {
+        const playersQuery = query(
+          collection(firestore, 'users'),
+          where('groupId', '==', user.groupId)
+        );
+        const querySnapshot = await getDocs(playersQuery);
+        const allPlayers = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id })) as User[];
+        setConfirmedPlayers(allPlayers);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao buscar jogadores',
+          description: 'Não foi possível carregar a lista de jogadores do grupo.'
+        });
+      } finally {
+        setIsFetchingPlayers(false);
+      }
+    };
+
+    fetchPlayers();
+  }, [user?.groupId, toast]);
+
 
   const handleSort = async () => {
     if (!user?.groupId) {
@@ -32,6 +72,15 @@ export default function SorterPage() {
         variant: 'destructive',
         title: 'Você não está em um grupo',
         description: 'É necessário pertencer a um grupo para sortear os times.'
+      });
+      return;
+    }
+
+    if (confirmedPlayers.length === 0) {
+       toast({
+        variant: 'destructive',
+        title: 'Nenhum jogador encontrado',
+        description: 'Não há jogadores no grupo para sortear.'
       });
       return;
     }
@@ -48,14 +97,7 @@ export default function SorterPage() {
       }
       
       const playersPerTeam = groupDocSnap.data()?.playersPerTeam || 5;
-
-      const playersQuery = query(
-        collection(firestore, 'users'),
-        where('groupId', '==', user.groupId)
-      );
-
-      const querySnapshot = await getDocs(playersQuery);
-      const allPlayers = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id })) as User[];
+      const allPlayers = confirmedPlayers;
       
       const numberOfTeams = Math.floor(allPlayers.length / playersPerTeam);
 
@@ -141,7 +183,7 @@ export default function SorterPage() {
               Clique no botão para gerar times equilibrados com base na classificação dos jogadores.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
+          <CardContent className="flex justify-center items-center gap-4">
             <Button size="lg" onClick={handleSort} disabled={isLoading || !user?.groupId}>
               {isLoading ? (
                 <>
@@ -155,6 +197,31 @@ export default function SorterPage() {
                 </>
               )}
             </Button>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                 <Button variant="outline" size="lg" disabled={!user?.groupId || isFetchingPlayers}>
+                   <Users className="mr-2 h-5 w-5" />
+                   {isFetchingPlayers ? '...' : confirmedPlayers.length}
+                 </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Jogadores Confirmados ({confirmedPlayers.length})</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto pr-2">
+                   <ul className="space-y-3">
+                    {confirmedPlayers.map(player => (
+                      <li key={player.uid} className="flex items-center gap-3">
+                        <UserAvatar src={player.photoURL} size={40} />
+                        <span className="font-medium">{player.displayName}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </DialogContent>
+            </Dialog>
+
           </CardContent>
         </Card>
 
