@@ -11,7 +11,7 @@ import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, 
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { doc, setDoc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
 import Link from "next/link";
 import {
@@ -141,12 +141,16 @@ export default function ProfilePage() {
         
         const userDocRef = doc(firestore, "users", user.uid);
         
-        await setDoc(userDocRef, {
+        // Using writeBatch for consistency, even for a single write
+        const batch = writeBatch(firestore);
+        batch.set(userDocRef, {
             displayName: displayName,
             userType: userType,
             playerSubscriptionType: playerSubscriptionType,
             photoURL: newPhotoURL,
         }, { merge: true });
+
+        await batch.commit();
 
         if (auth.currentUser) {
             await updateProfile(auth.currentUser, {
@@ -183,30 +187,33 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
+      // Step 1: Attempt to delete the user from Firebase Auth first.
+      // This is the sensitive operation that might require recent login.
+      await deleteUser(currentUser);
+      
+      // Step 2: If Auth deletion is successful, proceed with Firestore data deletion.
       const batch = writeBatch(firestore);
       
-      // Se for gestor do grupo, deleta o grupo também
+      // Delete the user's document
+      const userDocRef = doc(firestore, "users", user.uid);
+      batch.delete(userDocRef);
+
+      // If the user is a group manager, delete their group as well
       if (user.userType === UserType.GESTOR_GRUPO && user.groupId) {
         const groupDocRef = doc(firestore, "groups", user.groupId);
         batch.delete(groupDocRef);
       }
       
-      // Deleta o documento do usuário
-      const userDocRef = doc(firestore, "users", user.uid);
-      batch.delete(userDocRef);
-      
-      // Comita as deleções no Firestore
+      // Commit the Firestore deletions
       await batch.commit();
-
-      // Deleta o usuário da autenticação
-      await deleteUser(currentUser);
       
       toast({
         variant: "success",
         title: "Perfil Deletado",
         description: "Sua conta e todos os dados associados foram removidos.",
       });
-      // O AuthProvider cuidará do redirecionamento após a exclusão do usuário
+      // The AuthProvider will handle the redirection after user deletion.
+
     } catch (error: any) {
       console.error("Failed to delete profile:", error);
       let description = "Ocorreu um erro ao deletar seu perfil.";
