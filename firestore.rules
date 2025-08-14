@@ -1,60 +1,51 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if a user is a group manager of a specific group
+    function isManagerOfGroup(userId, groupId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(userId)).data;
+      return userDoc.userType == "Gestor do Grupo" && userDoc.groupId == groupId;
+    }
+
     // Helper function to check if a user is a group manager
     function isGroupManager(userId) {
-      let userData = get(/databases/$(database)/documents/users/$(userId)).data;
-      return userData.userType == 'Gestor do Grupo';
+      return get(/databases/$(database)/documents/users/$(userId)).data.userType == "Gestor do Grupo";
     }
 
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      // READ: Allow users to read their own profile, or allow users to read profiles of others in the same group.
-      allow read: if request.auth != null && 
-                     (request.auth.uid == userId || 
-                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId != null &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId));
-      
-      // WRITE: 
-      // 1. Allow a user to create their own user document.
-      // 2. Allow a user to update their own document.
-      // 3. Allow a group manager to update only the 'allowConfirmationWithDebt' field of another user in the same group.
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && isGroupManager(request.auth.uid) &&
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == get(/databases/$(database)/documents/users/$(userId)).data.groupId &&
-                      request.resource.data.keys().hasOnly(['allowConfirmationWithDebt']);
-    }
-
-    // Rules for the 'groups' collection
-    match /groups/{groupId} {
-      // READ: Allow any authenticated user who is part of the group to read group data.
-      allow read: if request.auth != null && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-      
-      // WRITE: Only allow the group manager to create or update the group.
-      allow write: if request.auth != null &&
-                      // On create, the managerId must be the user's uid.
-                      (resource.data.managerId == request.auth.uid ||
-                      // On update, the existing manager must be the user's uid.
-                       get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid);
-      
-      // DELETE: Only allow the group manager to delete the group.
-      allow delete: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+    // Helper function to check if two users are in the same group
+    function inSameGroup(userId1, userId2) {
+      let user1GroupId = get(/databases/$(database)/documents/users/$(userId1)).data.groupId;
+      let user2GroupId = get(/databases/$(database)/documents/users/$(userId2)).data.groupId;
+      return user1GroupId != null && user1GroupId == user2GroupId;
     }
     
-    match /groups/{groupId}/games/{gameId}/attendees/{attendeeId} {
-        // READ: Allow any authenticated user in the group to read attendee status.
-        allow read: if request.auth != null &&
-                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    // Helper function to check if a user belongs to a group
+    function isMemberOfGroup(userId, groupId) {
+        return get(/databases/$(database)/documents/users/$(userId)).data.groupId == groupId;
+    }
 
-        // WRITE: Allow users to write their own attendance status.
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || inSameGroup(request.auth.uid, userId));
+      allow write: if request.auth != null && (
+        (request.resource.data.keys().hasAll(['displayName', 'userType', 'playerSubscriptionType', 'rating', 'photoURL', 'uid', 'email', 'groupId', 'createdAt', 'allowConfirmationWithDebt']) && request.auth.uid == userId) || // Allow user to create/update their own profile
+        (
+          isGroupManager(request.auth.uid) && // Allow group manager...
+          inSameGroup(request.auth.uid, userId) && // ...in the same group...
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['allowConfirmationWithDebt', 'groupId']) // ...to only update the debt permission or remove from group
+        )
+      );
+    }
+
+    match /groups/{groupId} {
+      allow read: if request.auth != null && isMemberOfGroup(request.auth.uid, groupId);
+      allow write: if request.auth != null && isManagerOfGroup(request.auth.uid, groupId);
+
+      match /games/{gameId}/attendees/{attendeeId} {
+        allow read: if request.auth != null && isMemberOfGroup(request.auth.uid, groupId);
         allow write: if request.auth != null && request.auth.uid == attendeeId;
+      }
     }
   }
 }
