@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -191,6 +192,7 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
+      // Step 1: Delete Firestore data.
       const batch = writeBatch(firestore);
       
       const userDocRef = doc(firestore, "users", user.uid);
@@ -203,6 +205,7 @@ export default function ProfilePage() {
       
       await batch.commit();
       
+      // Step 2: Delete the user from Firebase Auth.
       await deleteUser(currentUser);
       
       toast({
@@ -261,185 +264,202 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <Card className="max-w-2xl mx-auto shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                 <UserAvatar src={photoPreview} size={80} />
-                {isEditing && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1 rounded-full hover:bg-primary/90 transition-colors"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                  accept="image/*"
-                />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
-                <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isManager && !isEditing && (
-                <Button asChild variant="ghost" size="icon">
-                  <Link href="/settings">
-                    <Settings className="h-5 w-5" />
-                  </Link>
-                </Button>
-              )}
-              <Button onClick={handleEditToggle} variant="ghost" size="icon">
-                {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isEditing ? (
-            <div className="space-y-4">
-               <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-muted-foreground mb-1">Nome / Apelido</label>
-                  <Input 
-                    id="displayName" 
-                    value={displayName} 
-                    onChange={(e) => setDisplayName(e.target.value)} 
-                    placeholder="Seu nome ou apelido"
+      <div className="max-w-2xl mx-auto space-y-8">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <UserAvatar src={photoPreview} size={80} />
+                  {isEditing && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1 rounded-full hover:bg-primary/90 transition-colors"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </button>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                    accept="image/*"
                   />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
-                      <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
-                        <SelectTrigger id="userType">
-                          <SelectValue placeholder="Selecione o tipo de usuário" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(UserType).map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                  </div>
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
+                  <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleEditToggle} variant="ghost" size="icon">
+                  {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                    <label htmlFor="displayName" className="block text-sm font-medium text-muted-foreground mb-1">Nome / Apelido</label>
+                    <Input 
+                      id="displayName" 
+                      value={displayName} 
+                      onChange={(e) => setDisplayName(e.target.value)} 
+                      placeholder="Seu nome ou apelido"
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                     <div>
-                    <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
-                      <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
-                        <SelectTrigger id="playerSubscriptionType">
-                          <SelectValue placeholder="Selecione seu plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(PlayerSubscriptionType).map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
+                        <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
+                          <SelectTrigger id="userType">
+                            <SelectValue placeholder="Selecione o tipo de usuário" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.values(UserType).map((type) => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                    </div>
+                      <div>
+                      <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
+                        <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
+                          <SelectTrigger id="playerSubscriptionType">
+                            <SelectValue placeholder="Selecione seu plano" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.values(PlayerSubscriptionType).map((type) => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm">
+                  <div className="flex items-center">
+                      <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium text-foreground">{user.displayName}</span>
                   </div>
-               </div>
-            </div>
-          ) : (
-            <div className="space-y-4 text-sm">
-                <div className="flex items-center">
-                    <User className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{user.displayName}</span>
-                </div>
-                <div className="flex items-center">
-                    <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{user.email}</span>
-                </div>
-                <div className="flex items-center">
-                    <Users className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="text-foreground">
-                        Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "Nenhum grupo"}</span>
-                    </span>
-                </div>
-                <div className="flex items-center">
-                    <WalletCards className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="text-foreground">
-                        Compromisso: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
-                    </span>
-                </div>
-                 <div className="flex items-center">
-                    <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="text-foreground">
-                        Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
-                    </span>
-                </div>
-            </div>
-          )}
-           
-          <div className="flex justify-between items-center pt-4 border-t">
-             {isEditing ? (
-                 <Button onClick={handleSave} disabled={isSaving}>
-                   {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
-                 </Button>
-             ) : (
-                <div className="flex gap-2">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Sair
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleLogout}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          Sair
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <AlertDialog>
+                  <div className="flex items-center">
+                      <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium text-foreground">{user.email}</span>
+                  </div>
+                  <div className="flex items-center">
+                      <Users className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="text-foreground">
+                          Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "Nenhum grupo"}</span>
+                      </span>
+                  </div>
+                  <div className="flex items-center">
+                      <WalletCards className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="text-foreground">
+                          Compromisso: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
+                      </span>
+                  </div>
+                  <div className="flex items-center">
+                      <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="text-foreground">
+                          Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
+                      </span>
+                  </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center pt-4 border-t">
+              {isEditing ? (
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? "Salvando..." : <><Save className="mr-2 h-4 w-4" /> Salvar Alterações</>}
+                  </Button>
+              ) : (
+                  <div className="flex gap-2">
+                    <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="destructive" disabled={isDeleting}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              {isDeleting ? "Deletando..." : "Deletar Perfil"}
-                          </Button>
+                        <Button variant="outline">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Sair
+                        </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                          <AlertDialogHeader>
-                              <AlertDialogTitle>Deletar Perfil Permanentemente?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  Esta ação é irreversível e deletará sua conta e todos os dados associados.
-                                  {user.userType === UserType.GESTOR_GRUPO && " Como você é um gestor, seu grupo também será deletado."}
-                                  <br /><br />
-                                  Tem certeza que deseja continuar?
-                              </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                  onClick={handleDeleteProfile}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  disabled={isDeleting}
-                              >
-                                  {isDeleting ? "Deletando..." : "Sim, Deletar Tudo"}
-                              </AlertDialogAction>
-                          </AlertDialogFooter>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Você precisará fazer login novamente para acessar seu perfil e gerenciar seu time.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleLogout}
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            Sair
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
                       </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-             )}
+                    </AlertDialog>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isDeleting}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {isDeleting ? "Deletando..." : "Deletar Perfil"}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Deletar Perfil Permanentemente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação é irreversível e deletará sua conta e todos os dados associados.
+                                    {user.userType === UserType.GESTOR_GRUPO && " Como você é um gestor, seu grupo também será deletado."}
+                                    <br /><br />
+                                    Tem certeza que deseja continuar?
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDeleteProfile}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? "Deletando..." : "Sim, Deletar Tudo"}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {isManager && (
+          <div>
+            <Label className="text-base font-semibold text-muted-foreground">Configurações</Label>
+            <Card className="shadow-lg mt-2">
+              <CardHeader>
+                <CardTitle>Grupo</CardTitle>
+                <CardDescription>
+                  Gerencie as configurações dos jogos e do seu grupo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Acessar Configurações do Grupo
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }
