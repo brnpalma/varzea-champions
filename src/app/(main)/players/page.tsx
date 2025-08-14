@@ -215,17 +215,17 @@ export default function PlayersPage() {
           ) : (
             <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-4">
-                  <div className="flex items-center gap-4">
+                <li key={player.uid} className="flex items-center justify-between p-3 gap-4">
+                  <div className="flex-1 flex items-center gap-4">
                     <UserAvatar src={player.photoURL} size={48} />
-                    <div>
-                      <p className="font-semibold text-foreground">{player.displayName}</p>
-                      <p className="text-sm text-muted-foreground">{player.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{player.displayName}</p>
+                      <p className="text-sm text-muted-foreground truncate">{player.email}</p>
                     </div>
                   </div>
                   {isManager && user?.uid !== player.uid && (
-                     <div className='flex items-center gap-2 flex-wrap'>
-                        <div className="flex items-center space-x-2">
+                     <div className='flex items-center justify-end gap-2 flex-wrap'>
+                        <div className="flex items-center space-x-2 order-last sm:order-first">
                            <Checkbox 
                             id={`debt-${player.uid}`}
                             checked={player.allowConfirmationWithDebt ?? false}
