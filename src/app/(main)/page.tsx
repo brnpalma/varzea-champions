@@ -105,14 +105,24 @@ export default function HomePage() {
       return;
     }
     setIsGameDateLoading(true);
-    const groupDocRef = doc(firestore, "groups", user.groupId);
-    const docSnap = await getDoc(groupDocRef);
-    if (docSnap.exists()) {
-      const groupData = docSnap.data();
-      const gameDate = getNextGameDate(groupData.gameDays);
-      setNextGameDate(gameDate);
+    try {
+      const groupDocRef = doc(firestore, "groups", user.groupId);
+      const docSnap = await getDoc(groupDocRef);
+      if (docSnap.exists()) {
+        const groupData = docSnap.data();
+        if (groupData.gameDays) {
+          const gameDate = getNextGameDate(groupData.gameDays);
+          setNextGameDate(gameDate);
+        } else {
+          setNextGameDate(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching game settings:", error);
+      setNextGameDate(null);
+    } finally {
+      setIsGameDateLoading(false);
     }
-    setIsGameDateLoading(false);
   }, [user?.groupId]);
 
 
@@ -135,6 +145,10 @@ export default function HomePage() {
     
     const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
         setConfirmedCount(snapshot.size);
+    }, (error) => {
+      // It's ok if this fails, e.g. permission denied or no game doc yet.
+      // Silently fail and show 0.
+      setConfirmedCount(0);
     });
 
     return () => unsubscribe();
@@ -157,6 +171,10 @@ export default function HomePage() {
         } else {
             setConfirmedStatus(null);
         }
+    }, (error) => {
+      // It's ok if this fails, e.g. permission denied.
+      // Silently fail and show no status.
+      setConfirmedStatus(null);
     });
 
     return () => unsubscribe();
@@ -189,7 +207,7 @@ export default function HomePage() {
             rating: user.rating,
             uid: user.uid,
             email: user.email
-        });
+        }, { merge: true });
         toast({
             variant: "success",
             title: "Presença Registrada!",

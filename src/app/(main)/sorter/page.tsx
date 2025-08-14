@@ -106,14 +106,21 @@ export default function SorterPage() {
 
   const fetchGameSettingsAndDate = useCallback(async () => {
     if (!user?.groupId) return null;
-    const groupDocRef = doc(firestore, "groups", user.groupId);
-    const docSnap = await getDoc(groupDocRef);
-    if (docSnap.exists()) {
-      const groupData = docSnap.data();
-      const gameDate = getNextGameDate(groupData.gameDays);
-      setNextGameDate(gameDate);
-      return gameDate;
+    try {
+      const groupDocRef = doc(firestore, "groups", user.groupId);
+      const docSnap = await getDoc(groupDocRef);
+      if (docSnap.exists()) {
+        const groupData = docSnap.data();
+        if (groupData.gameDays) {
+          const gameDate = getNextGameDate(groupData.gameDays);
+          setNextGameDate(gameDate);
+          return gameDate;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching game settings for sorter:", error);
     }
+    setNextGameDate(null);
     return null;
   }, [user?.groupId]);
 
@@ -139,7 +146,7 @@ export default function SorterPage() {
             setConfirmedPlayers(playersData);
             setIsFetchingPlayers(false);
         }, (error) => {
-             console.error("Error fetching confirmed players:", error);
+             // Don't show toast, just update state
              setConfirmedPlayers([]);
              setIsFetchingPlayers(false);
         });
@@ -147,7 +154,7 @@ export default function SorterPage() {
         return () => unsubscribe();
     });
 
-  }, [user?.groupId, authLoading, toast, fetchGameSettingsAndDate]);
+  }, [user?.groupId, authLoading, fetchGameSettingsAndDate]);
 
 
   const handleSort = async () => {
