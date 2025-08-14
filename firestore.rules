@@ -1,38 +1,42 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // As regras a seguir definem o acesso para as coleções 'users' e 'groups'.
 
-    // =================================
-    // COLEÇÃO DE USUÁRIOS (USERS)
-    // =================================
+    // Coleção de Usuários
     match /users/{userId} {
-      // Permite que um usuário leia e atualize seu próprio perfil.
-      allow read, update: if request.auth.uid == userId;
-      // Permite que qualquer usuário autenticado crie seu perfil (cadastro).
-      allow create: if request.auth != null;
-      // Permite que um usuário delete seu próprio perfil.
-      allow delete: if request.auth.uid == userId;
+      // PERMITIR LEITURA: Um usuário autenticado pode ler os dados de outro usuário
+      // se ambos pertencerem ao mesmo grupo.
+      // PERMITIR ESCRITA: Um usuário só pode criar ou atualizar seu próprio perfil.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId;
+      allow write: if request.auth.uid == userId;
     }
 
-    // =================================
-    // COLEÇÃO DE GRUPOS (GROUPS)
-    // =================================
+    // Coleção de Grupos
     match /groups/{groupId} {
-      // Permite que qualquer usuário autenticado leia os dados de um grupo.
+      // PERMITIR LEITURA: Qualquer usuário autenticado pode ler as configurações de um grupo.
+      //                Isso é necessário para que a lógica do convite funcione.
+      // PERMITIR ESCRITA: Apenas o gestor do grupo (cujo UID é o mesmo que o ID do grupo) pode escrever.
       allow read: if request.auth != null;
-      // Permite que um gestor crie, atualize ou delete seu próprio grupo.
-      allow create, update, delete: if request.auth.uid == groupId;
+      allow write: if request.auth.uid == groupId;
 
-      // =================================
-      // SUBCOLEÇÃO DE PARTICIPANTES (ATTENDEES)
-      // =================================
-      match /games/{gameId}/attendees/{userId} {
-          // Permite que qualquer usuário do grupo leia a lista de participantes.
-          allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-          
-          // Permite que um usuário defina seu próprio status de presença se ele pertencer ao grupo.
-          allow create, update: if request.auth.uid == userId && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+      // Subcoleção de Partidas (Games)
+      match /games/{gameId} {
+        // PERMITIR LEITURA e ESCRITA: Por enquanto, qualquer usuário autenticado pode
+        // ler e escrever na subcoleção de partidas.
+        // TODO: Refinar regras para permitir que apenas membros do grupo possam interagir.
+        allow read, write: if request.auth != null;
+        
+        // Subcoleção de Participantes (Attendees)
+        match /attendees/{attendeeId} {
+           // PERMITIR LEITURA: Qualquer usuário autenticado pode ver quem confirmou.
+           // PERMITIR ESCRITA: Um usuário só pode confirmar/recusar a sua própria presença (attendeeId == userId).
+           allow read: if request.auth != null;
+           allow write: if request.auth.uid == attendeeId;
+        }
       }
     }
   }
