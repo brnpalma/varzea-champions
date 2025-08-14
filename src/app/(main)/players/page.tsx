@@ -233,16 +233,15 @@ export default function PlayersPage() {
                             disabled={isPending}
                           />
                           <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
-                            Permitir confirmação com pendência
+                            Permitir confirmação de presença com pendência
                           </Label>
                         </div>
-                        <Button variant="outline" size="sm">
-                          <DollarSign className="mr-2 h-4 w-4"/>
-                          Financeiro
+                        <Button variant="outline" size="icon">
+                          <DollarSign className="h-4 w-4"/>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                             <Button variant="destructive" size="icon">
                                 <Trash2 className="h-5 w-5" />
                               </Button>
                           </AlertDialogTrigger>
