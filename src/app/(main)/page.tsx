@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Calendar, Check, Users, X, Trophy } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
+import { useToast } from "@/hooks/use-toast";
 
 interface GameDaySetting {
   selected: boolean;
@@ -74,60 +75,137 @@ function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null 
     }
   }
 
-
   return nextGameDate;
+}
+
+const formatDateToId = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = (`0${d.getMonth() + 1}`).slice(-2);
+    const day = (`0${d.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
 }
 
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [confirmed, setConfirmed] = useState<boolean | null>(null);
+  const { toast } = useToast();
+  
+  const [confirmedStatus, setConfirmedStatus] = useState<'confirmed' | 'declined' | null>(null);
+  const [confirmedCount, setConfirmedCount] = useState(0);
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [isGameDateLoading, setIsGameDateLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+  const fetchGameSettings = useCallback(async () => {
+    if (!user?.groupId) {
+      setIsGameDateLoading(false);
+      return;
+    }
+    setIsGameDateLoading(true);
+    const groupDocRef = doc(firestore, "groups", user.groupId);
+    const docSnap = await getDoc(groupDocRef);
+    if (docSnap.exists()) {
+      const groupData = docSnap.data();
+      const gameDate = getNextGameDate(groupData.gameDays);
+      setNextGameDate(gameDate);
+    }
+    setIsGameDateLoading(false);
+  }, [user?.groupId]);
+
 
   useEffect(() => {
     if (loading) return;
-
-    async function fetchGameSettings() {
-      if (!user?.groupId) {
-        setIsGameDateLoading(false);
-        return;
-      }
-      setIsGameDateLoading(true);
-      const groupDocRef = doc(firestore, "groups", user.groupId);
-      const docSnap = await getDoc(groupDocRef);
-      if (docSnap.exists()) {
-        const groupData = docSnap.data();
-        const gameDate = getNextGameDate(groupData.gameDays);
-        setNextGameDate(gameDate);
-      }
-      setIsGameDateLoading(false);
-    }
-
     fetchGameSettings();
-  }, [user, loading]);
-
-  const handlePresenceClick = () => {
-    if (!user) {
-      router.push('/login');
+  }, [user, loading, fetchGameSettings]);
+  
+  useEffect(() => {
+    if (!nextGameDate || !user?.groupId) {
+        setConfirmedCount(0);
+        return;
     }
-  };
 
-  const handleConfirm = () => {
-    if (!user) {
-      router.push('/login');
+    const gameId = formatDateToId(nextGameDate);
+    const attendeesQuery = query(
+        collection(firestore, `groups/${user.groupId}/games/${gameId}/attendees`),
+        where("status", "==", "confirmed")
+    );
+    
+    const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
+        setConfirmedCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+
+  }, [nextGameDate, user?.groupId]);
+
+
+  useEffect(() => {
+    if (!nextGameDate || !user?.uid || !user?.groupId) {
+        setConfirmedStatus(null);
+        return;
+    }
+
+    const gameId = formatDateToId(nextGameDate);
+    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    
+    const unsubscribe = onSnapshot(attendeeDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setConfirmedStatus(docSnap.data().status);
+        } else {
+            setConfirmedStatus(null);
+        }
+    });
+
+    return () => unsubscribe();
+    
+  }, [nextGameDate, user?.uid, user?.groupId]);
+
+
+  const handlePresenceClick = async (status: 'confirmed' | 'declined') => {
+    if (!user || !user.groupId || !nextGameDate) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível registrar sua presença. Verifique se você está em um grupo e há um jogo agendado.",
+      });
       return;
     }
-    setConfirmed(true);
-  };
+    
+    setIsSubmitting(true);
+    setConfirmedStatus(status); // Optimistic update
 
-  const handleDecline = () => {
-    if (!user) {
-      router.push('/login');
-      return;
+    const gameId = formatDateToId(nextGameDate);
+    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    
+    try {
+        await setDoc(attendeeDocRef, {
+            status: status,
+            confirmedAt: new Date().toISOString(),
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            rating: user.rating,
+            uid: user.uid,
+            email: user.email
+        });
+        toast({
+            variant: "success",
+            title: "Presença Registrada!",
+            description: `Sua presença foi ${status === 'confirmed' ? 'confirmada' : 'recusada'} com sucesso.`,
+        });
+    } catch (error) {
+        console.error("Error setting presence:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao registrar",
+            description: "Houve um problema ao salvar sua resposta.",
+        });
+        setConfirmedStatus(null); // Revert optimistic update
+    } finally {
+        setIsSubmitting(false);
     }
-    setConfirmed(false);
   };
   
   const formatNextGameDate = (date: Date | null) => {
@@ -189,25 +267,25 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-4">
               <Button 
                 size="lg" 
-                onClick={handleConfirm} 
-                className={`bg-green-600 hover:bg-green-700 text-white ${confirmed === true ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                disabled={!user}
+                onClick={() => handlePresenceClick('confirmed')} 
+                className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                disabled={!user || isSubmitting || !nextGameDate}
               >
                 <Check className="mr-2 h-5 w-5" /> Sim
               </Button>
               <Button 
                 size="lg" 
-                onClick={handleDecline} 
+                onClick={() => handlePresenceClick('declined')} 
                 variant="destructive"
-                className={`${confirmed === false ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                disabled={!user}
+                className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
+                disabled={!user || isSubmitting || !nextGameDate}
               >
                 <X className="mr-2 h-5 w-5" /> Não
               </Button>
             </div>
              <div className="flex items-center justify-center pt-4 text-muted-foreground">
                 <Users className="h-5 w-5 mr-2" />
-                <span className="font-bold">12</span>
+                <span className="font-bold">{confirmedCount}</span>
                 <span className="ml-1">jogadores confirmados</span>
             </div>
           </CardContent>

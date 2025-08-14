@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, User, UserType } from "@/hooks/use-auth";
+import { useAuth, User } from "@/hooks/use-auth";
 import { Dices, Shuffle, Star, Users } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
@@ -19,6 +19,73 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+
+// Duplicated from home page, consider moving to a shared utility file
+interface GameDaySetting {
+  selected: boolean;
+  time: string;
+}
+
+const dayOfWeekMap: Record<string, number> = {
+  domingo: 0,
+  segunda: 1,
+  terca: 2,
+  quarta: 3,
+  quinta: 4,
+  sexta: 5,
+  sabado: 6,
+};
+
+function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null {
+  if (!gameDays || Object.keys(gameDays).length === 0) return null;
+
+  const now = new Date();
+  let nextGameDate: Date | null = null;
+
+  for (let i = 0; i < 7; i++) {
+    const checkingDate = new Date(now);
+    checkingDate.setDate(now.getDate() + i);
+    const dayOfWeek = checkingDate.getDay();
+    const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
+    if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+      const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
+      const gameTime = new Date(checkingDate);
+      gameTime.setHours(hours, minutes, 0, 0);
+      if (gameTime > now) {
+        if (!nextGameDate || gameTime < nextGameDate) {
+          nextGameDate = gameTime;
+        }
+      }
+    }
+  }
+  if (!nextGameDate) {
+     for (let i = 7; i < 14; i++) {
+        const checkingDate = new Date(now);
+        checkingDate.setDate(now.getDate() + i);
+        const dayOfWeek = checkingDate.getDay();
+        const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
+        if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+          const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
+          const gameTime = new Date(checkingDate);
+          gameTime.setHours(hours, minutes, 0, 0);
+           if (!nextGameDate || gameTime < nextGameDate) {
+              nextGameDate = gameTime;
+           }
+        }
+    }
+  }
+  return nextGameDate;
+}
+
+const formatDateToId = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = (`0${d.getMonth() + 1}`).slice(-2);
+    const day = (`0${d.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
+}
+
+
 const shuffleArray = (array: any[]) => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -28,42 +95,63 @@ const shuffleArray = (array: any[]) => {
 };
 
 export default function SorterPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const [isSorting, setIsSorting] = useState(false);
   const [teams, setTeams] = useState<User[][]>([]);
   const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
+  const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
+
+  const fetchGameSettingsAndDate = useCallback(async () => {
+    if (!user?.groupId) return null;
+    const groupDocRef = doc(firestore, "groups", user.groupId);
+    const docSnap = await getDoc(groupDocRef);
+    if (docSnap.exists()) {
+      const groupData = docSnap.data();
+      const gameDate = getNextGameDate(groupData.gameDays);
+      setNextGameDate(gameDate);
+      return gameDate;
+    }
+    return null;
+  }, [user?.groupId]);
 
   useEffect(() => {
-    if (!user?.groupId) {
-      setIsFetchingPlayers(false);
-      return;
-    }
+    if (authLoading) return;
+    
+    setIsFetchingPlayers(true);
+    fetchGameSettingsAndDate().then(gameDate => {
+        if (!gameDate || !user?.groupId) {
+            setConfirmedPlayers([]);
+            setIsFetchingPlayers(false);
+            return;
+        }
 
-    const fetchPlayers = async () => {
-      setIsFetchingPlayers(true);
-      try {
-        const playersQuery = query(
-          collection(firestore, 'users'),
-          where('groupId', '==', user.groupId)
+        const gameId = formatDateToId(gameDate);
+        const attendeesQuery = query(
+            collection(firestore, `groups/${user.groupId}/games/${gameId}/attendees`),
+            where("status", "==", "confirmed")
         );
-        const querySnapshot = await getDocs(playersQuery);
-        const allPlayers = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id })) as User[];
-        setConfirmedPlayers(allPlayers);
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao buscar jogadores',
-          description: 'Não foi possível carregar a lista de jogadores do grupo.'
+        
+        const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
+            const playersData = snapshot.docs.map(doc => doc.data() as User);
+            setConfirmedPlayers(playersData);
+            setIsFetchingPlayers(false);
+        }, (error) => {
+             console.error("Error fetching confirmed players:", error);
+             toast({
+                variant: 'destructive',
+                title: 'Erro ao buscar jogadores',
+                description: 'Não foi possível carregar a lista de jogadores confirmados.'
+             });
+             setIsFetchingPlayers(false);
         });
-      } finally {
-        setIsFetchingPlayers(false);
-      }
-    };
 
-    fetchPlayers();
-  }, [user?.groupId, toast]);
+        return () => unsubscribe();
+    });
+
+  }, [user?.groupId, authLoading, toast, fetchGameSettingsAndDate]);
 
 
   const handleSort = async () => {
@@ -75,17 +163,17 @@ export default function SorterPage() {
       });
       return;
     }
-
+    
     if (confirmedPlayers.length === 0) {
        toast({
         variant: 'destructive',
-        title: 'Nenhum jogador encontrado',
-        description: 'Não há jogadores no grupo para sortear.'
+        title: 'Nenhum jogador confirmado',
+        description: 'Não há jogadores confirmados para o próximo jogo.'
       });
       return;
     }
 
-    setIsLoading(true);
+    setIsSorting(true);
     setTeams([]);
 
     try {
@@ -93,25 +181,24 @@ export default function SorterPage() {
       const groupDocSnap = await getDoc(groupDocRef);
 
       if (!groupDocSnap.exists()) {
-        throw new Error("Group document not found.");
+        throw new Error("Documento do grupo não encontrado.");
       }
       
       const playersPerTeam = groupDocSnap.data()?.playersPerTeam || 5;
-      const allPlayers = confirmedPlayers;
       
-      const numberOfTeams = Math.floor(allPlayers.length / playersPerTeam);
+      const numberOfTeams = Math.floor(confirmedPlayers.length / playersPerTeam);
 
       if (numberOfTeams < 1) {
         toast({
           variant: 'destructive',
           title: 'Jogadores Insuficientes',
-          description: `São necessários pelo menos ${playersPerTeam} jogadores para formar um time.`
+          description: `São necessários pelo menos ${playersPerTeam} jogadores confirmados para formar um time.`
         });
-        setIsLoading(false);
+        setIsSorting(false);
         return;
       }
       
-      const playersToSort = allPlayers.slice(0, numberOfTeams * playersPerTeam);
+      const playersToSort = confirmedPlayers.slice(0, numberOfTeams * playersPerTeam);
       
       const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [], '0': [] };
       playersToSort.forEach(p => {
@@ -145,10 +232,10 @@ export default function SorterPage() {
        toast({
         variant: 'destructive',
         title: 'Erro no Sorteio',
-        description: 'Não foi possível buscar os jogadores para o sorteio.'
+        description: 'Não foi possível buscar as configurações do grupo para o sorteio.'
       });
     } finally {
-      setIsLoading(false);
+      setIsSorting(false);
     }
   };
 
@@ -180,12 +267,12 @@ export default function SorterPage() {
               <span>Sorteador de Times</span>
             </CardTitle>
             <CardDescription>
-              Clique no botão para gerar times equilibrados com base na classificação dos jogadores.
+              Clique no botão para gerar times equilibrados com base na classificação dos jogadores confirmados.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center items-center gap-4">
-            <Button size="lg" onClick={handleSort} disabled={isLoading || !user?.groupId}>
-              {isLoading ? (
+            <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId}>
+              {isSorting ? (
                 <>
                   <FootballSpinner className="h-6 w-6 mr-2 animate-spin" />
                   Sorteando...
@@ -225,13 +312,13 @@ export default function SorterPage() {
           </CardContent>
         </Card>
 
-        {isLoading && (
+        {isSorting && (
            <div className="flex justify-center items-center py-12">
               <FootballSpinner />
             </div>
         )}
 
-        {teams.length > 0 && !isLoading && (
+        {teams.length > 0 && !isSorting && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
             {teams.map((team, index) => (
               <Card key={index}>
