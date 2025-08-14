@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FootballSpinner } from "@/components/ui/football-spinner";
+import { useRouter } from "next/navigation";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -71,6 +72,7 @@ const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
@@ -209,13 +211,14 @@ export default function ProfilePage() {
         title: "Perfil Deletado",
         description: "Sua conta e todos os dados associados foram removidos.",
       });
-      // The AuthProvider will handle the redirection after user deletion.
+
+      router.push('/');
 
     } catch (error: any) {
       console.error("Failed to delete profile:", error);
       let description = "Ocorreu um erro ao deletar seu perfil.";
       if (error.code === 'auth/requires-recent-login') {
-          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil. Seus dados não foram apagados.";
+          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
       }
       toast({
         variant: "destructive",
@@ -432,9 +435,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
