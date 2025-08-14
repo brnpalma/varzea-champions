@@ -5,7 +5,7 @@ import { useAuth, User, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, ClipboardCopy } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -375,8 +375,8 @@ export default function HomePage() {
                     <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
                     <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
                         <code className="truncate">{groupSettings.chavePix}</code>
-                        <Button variant="ghost" size="icon" onClick={handleCopyPix}>
-                            <ClipboardCopy className="h-4 w-4"/>
+                        <Button variant="ghost" size="sm" onClick={handleCopyPix}>
+                            Copiar
                         </Button>
                     </div>
                  </div>
