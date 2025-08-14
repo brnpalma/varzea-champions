@@ -1,48 +1,43 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isGroupManager(groupId) {
-      return isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-    }
-    
-    function userBelongsToGroup(groupId) {
-        return isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+
+    function isManager(groupId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
     }
 
     match /users/{userId} {
-      // Regra Simplificada: Um usuário sempre pode ler seu próprio perfil.
-      allow read: if request.auth.uid == userId;
+      // Allow a user to read their own profile, or allow a user to read profiles of users in the same group.
+      allow read: if request.auth.uid == userId ||
+                   (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId);
 
-      // Um usuário pode criar seu próprio perfil.
-      // Um usuário pode atualizar seu próprio perfil.
-      // Um gestor pode atualizar a permissão de dívida de um jogador do seu grupo.
-      allow write: if (request.auth.uid == userId) || 
-                   (isGroupManager(resource.data.groupId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['allowConfirmationWithDebt']));
+      // Allow a user to create/update their own profile.
+      // Allow a manager to update the 'allowConfirmationWithDebt' field for a user in their group.
+      allow write: if request.auth.uid == userId
+                  || (isManager(resource.data.groupId) && request.resource.data.keys().hasOnly(['allowConfirmationWithDebt']));
     }
 
     match /groups/{groupId} {
-      // Membros do grupo podem ler as configurações do grupo.
-      allow read: if userBelongsToGroup(groupId);
+      // Allow members of a group to read the group document.
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
 
-      // Apenas o gestor pode escrever no grupo.
-      // Permite a criação se o managerId for o próprio usuário.
-      allow write: if (request.resource.data.managerId == request.auth.uid) || isGroupManager(groupId);
-      
+      // Allow a manager to update their group.
+      // Allow a new manager to create their group.
+      allow write: if isManager(groupId) || (request.auth.uid == request.resource.data.managerId && request.resource.data.managerId == groupId);
+
       match /games/{gameId} {
-        // Membros do grupo podem ler os dados dos jogos.
-        allow read: if userBelongsToGroup(groupId);
-        
+        // Allow group members to read game data.
+        allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+
         match /attendees/{userId} {
-            // Membros do grupo podem ler a lista de confirmados.
-            allow read: if userBelongsToGroup(groupId);
-            // Um jogador só pode confirmar/negar a sua própria presença.
-            allow write: if request.auth.uid == userId;
+           // Allow group members to read attendance data.
+           allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+           // Allow a user to write ONLY to their own attendance document.
+           allow write: if request.auth.uid == userId;
         }
       }
     }
