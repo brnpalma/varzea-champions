@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut, updateProfile, deleteUser } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2 } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2, Star } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,6 +95,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
+  const [rating, setRating] = useState<number>(3);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -121,6 +122,7 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
+      setRating(user.rating || 3);
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
@@ -185,6 +187,7 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
+      setRating(user.rating || 3);
       setPhotoFile(null);
       setPhotoPreview(user.photoURL || null);
     }
@@ -216,6 +219,7 @@ export default function ProfilePage() {
             displayName: displayName,
             userType: userType,
             playerSubscriptionType: playerSubscriptionType,
+            rating: rating,
             photoURL: newPhotoURL,
         }, { merge: true });
 
@@ -458,33 +462,50 @@ export default function ProfilePage() {
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</label>
-                        <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
-                          <SelectTrigger id="userType">
-                            <SelectValue placeholder="Selecione o tipo de usuário" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(UserType).map((type) => (
-                              <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                    </div>
-                      <div>
-                      <label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</label>
-                        <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
-                          <SelectTrigger id="playerSubscriptionType">
-                            <SelectValue placeholder="Selecione seu plano" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(PlayerSubscriptionType).map((type) => (
-                              <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</Label>
+                      <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
+                        <SelectTrigger id="userType">
+                          <SelectValue placeholder="Selecione o tipo de usuário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(UserType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</Label>
+                      <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
+                        <SelectTrigger id="playerSubscriptionType">
+                          <SelectValue placeholder="Selecione seu plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(PlayerSubscriptionType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
                 </div>
+                 <div>
+                    <Label htmlFor="rating" className="block text-sm font-medium text-muted-foreground mb-1">Classificação (Estrelas)</Label>
+                    <Select value={rating.toString()} onValueChange={(value) => setRating(Number(value))}>
+                      <SelectTrigger id="rating">
+                        <SelectValue placeholder="Selecione sua classificação" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[5, 4, 3, 2, 1].map(r => (
+                          <SelectItem key={r} value={r.toString()}>
+                            <div className="flex items-center">
+                              {r} {r > 1 ? 'estrelas' : 'estrela'}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                 </div>
               </div>
             ) : (
               <div className="space-y-4 text-sm">
@@ -512,6 +533,12 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="text-foreground">
                           Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
+                      </span>
+                  </div>
+                   <div className="flex items-center">
+                      <Star className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="text-foreground">
+                          Classificação: <span className="font-medium capitalize text-primary">{user.rating || "N/A"} estrelas</span>
                       </span>
                   </div>
               </div>

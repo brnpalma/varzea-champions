@@ -29,8 +29,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { auth, firestore } from "@/lib/firebase";
 import { UserType, PlayerSubscriptionType, useAuth } from "@/hooks/use-auth";
-import { Camera } from "lucide-react";
+import { Camera, Star } from "lucide-react";
 import { UserAvatar } from "./user-avatar";
+import { Label } from "./ui/label";
 
 
 const formSchema = z
@@ -41,6 +42,7 @@ const formSchema = z
     confirmPassword: z.string().optional(),
     userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
     playerSubscriptionType: z.nativeEnum(PlayerSubscriptionType, { required_error: "Por favor, selecione uma opção." }),
+    rating: z.number().min(1).max(5),
     photo: z.instanceof(File).optional(),
   })
   .refine((data) => {
@@ -121,6 +123,7 @@ function SignupFormComponent() {
       confirmPassword: "",
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
       playerSubscriptionType: undefined,
+      rating: 3,
     },
   });
   
@@ -128,6 +131,7 @@ function SignupFormComponent() {
     if (authUser) {
       form.setValue('displayName', authUser.displayName || "");
       form.setValue('email', authUser.email || "");
+      form.setValue('rating', authUser.rating || 3);
       setPhotoPreview(authUser.photoURL || null);
     } else {
       // If user logs out (e.g., deletes profile), clear the form
@@ -138,6 +142,7 @@ function SignupFormComponent() {
         confirmPassword: "",
         userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
         playerSubscriptionType: undefined,
+        rating: 3
       });
       setPhotoPreview(null);
     }
@@ -248,6 +253,7 @@ function SignupFormComponent() {
         photoURL: photoURL,
         userType: values.userType,
         playerSubscriptionType: values.playerSubscriptionType,
+        rating: values.rating,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
       });
@@ -389,6 +395,32 @@ function SignupFormComponent() {
                 <FormMessage />
               </FormItem>
             )}
+          />
+           <FormField
+              control={form.control}
+              name="rating"
+              render={({ field }) => (
+              <FormItem>
+                  <Label>Classificação (Estrelas)</Label>
+                  <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString()} disabled={isLoading}>
+                  <FormControl>
+                      <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                      {[5, 4, 3, 2, 1].map(r => (
+                        <SelectItem key={r} value={r.toString()}>
+                          <div className="flex items-center gap-2">
+                            {r} <Star className="h-4 w-4 text-amber-500 fill-current" />
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                  </Select>
+                  <FormMessage />
+              </FormItem>
+              )}
           />
           {!authUser && (
             <div className="grid grid-cols-2 gap-4">

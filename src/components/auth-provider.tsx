@@ -26,6 +26,7 @@ export interface UserProfile {
   groupName: string | null;
   playerSubscriptionType: PlayerSubscriptionType;
   groupId: string | null;
+  rating: number | null;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -93,9 +94,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userType: userProfileData.userType,
               playerSubscriptionType: userProfileData.playerSubscriptionType,
               groupId: userProfileData.groupId || null,
+              rating: userProfileData.rating || null,
               groupName: user?.groupName || null, // a temp value before the group listener updates it
             };
-            setUser(currentUser);
+            setUser(currentUser as User);
 
             if (currentUser.groupId) {
                 listenToGroupData(currentUser.groupId, currentUser as User);
@@ -112,7 +114,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               groupName: null,
               playerSubscriptionType: undefined as any,
               groupId: null,
-            });
+              rating: null
+            } as User);
           }
            setLoading(false);
         }, (error) => {
