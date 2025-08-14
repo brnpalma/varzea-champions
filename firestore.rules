@@ -1,58 +1,37 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isRequestingOwnData(userId) {
-      return isUserAuthenticated() && request.auth.uid == userId;
-    }
-
-    function getUserData(userId) {
-      return get(/databases/{database}/documents/users/$(userId)).data;
-    }
-    
-    function isGroupManager(groupId) {
-      // O gestor é verificado pelo campo 'managerId' no próprio documento do grupo.
-      // Esta função é segura para 'update' e 'delete', mas não para 'create'.
-      return isUserAuthenticated() && get(/databases/{database}/documents/groups/$(groupId)).data.managerId == request.auth.uid;
-    }
-    
-    // =================================
-    //               USERS
-    // =================================
+    // Regras para a coleção 'users'
     match /users/{userId} {
-      // Permite leitura se o usuário estiver autenticado.
-      // Necessário para a página de jogadores carregar a lista de membros do grupo.
-      allow read: if isUserAuthenticated();
-      
-      // Permite a criação do próprio perfil de usuário.
-      allow create: if isRequestingOwnData(userId);
+      // Qualquer usuário autenticado pode ler perfis.
+      allow read: if request.auth != null;
 
-      // Permite que um usuário atualize seus próprios dados.
-      // Também permite que um gestor de grupo remova um jogador (atualizando o groupId).
-      allow update: if isRequestingOwnData(userId) ||
-                     (isUserAuthenticated() && 
-                      getUserData(request.auth.uid).userType == 'Gestor do Grupo' && 
-                      getUserData(userId).groupId == getUserData(request.auth.uid).groupId);
+      // Um usuário pode criar seu próprio perfil.
+      allow create: if request.auth.uid == userId;
+
+      // Um usuário só pode atualizar seu próprio perfil.
+      allow update: if request.auth.uid == userId;
+
+      // Um usuário só pode deletar seu próprio perfil.
+      allow delete: if request.auth.uid == userId;
     }
-    
-    // =================================
-    //               GROUPS
-    // =================================
-    match /groups/{groupId} {
-      // Permite a leitura se o usuário pertencer ao grupo.
-      allow read: if isUserAuthenticated() && getUserData(request.auth.uid).groupId == groupId;
 
-      // Permite a criação se o 'managerId' no novo documento for o uid do criador.
-      allow create: if isUserAuthenticated() && request.resource.data.managerId == request.auth.uid;
-      
-      // Permite a atualização apenas se o usuário for o gestor do grupo.
-      allow update: if isGroupManager(groupId);
+    // Regras para a coleção 'groups'
+    match /groups/{groupId} {
+      // Qualquer usuário autenticado pode ler os dados de um grupo.
+      allow read: if request.auth != null;
+
+      // Um gestor pode criar um grupo se ele for o manager.
+      // O ID do gestor deve ser o mesmo que o ID do grupo.
+      allow create: if request.auth.uid == groupId && request.resource.data.managerId == request.auth.uid;
+
+      // Um gestor só pode atualizar seu próprio grupo.
+      allow update: if request.auth.uid == resource.data.managerId;
+
+      // Um gestor só pode deletar seu próprio grupo.
+      allow delete: if request.auth.uid == resource.data.managerId;
     }
   }
 }
