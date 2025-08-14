@@ -187,11 +187,7 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
-      // Step 1: Attempt to delete the user from Firebase Auth first.
-      // This is the sensitive operation that might require recent login.
-      await deleteUser(currentUser);
-      
-      // Step 2: If Auth deletion is successful, proceed with Firestore data deletion.
+      // Step 1: Delete Firestore data first.
       const batch = writeBatch(firestore);
       
       // Delete the user's document
@@ -207,6 +203,10 @@ export default function ProfilePage() {
       // Commit the Firestore deletions
       await batch.commit();
       
+      // Step 2: If Firestore deletion is successful, proceed with Auth user deletion.
+      // This is the sensitive operation that might require recent login.
+      await deleteUser(currentUser);
+      
       toast({
         variant: "success",
         title: "Perfil Deletado",
@@ -217,6 +217,8 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error("Failed to delete profile:", error);
       let description = "Ocorreu um erro ao deletar seu perfil.";
+      // This error comes from the `deleteUser` call, so Firestore data might have been deleted.
+      // However, it's better to guide the user to resolve the issue.
       if (error.code === 'auth/requires-recent-login') {
           description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
       }
@@ -435,5 +437,7 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
 
     
