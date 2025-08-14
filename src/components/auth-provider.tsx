@@ -4,7 +4,7 @@
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
 import { FootballSpinner } from "./ui/football-spinner";
 
@@ -49,44 +49,59 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    let profileUnsubscribe: (() => void) | undefined;
+    let profileUnsubscribe: Unsubscribe | undefined;
+    let groupUnsubscribe: Unsubscribe | undefined;
+
+    const cleanupListeners = () => {
+      if (profileUnsubscribe) profileUnsubscribe();
+      if (groupUnsubscribe) groupUnsubscribe();
+      profileUnsubscribe = undefined;
+      groupUnsubscribe = undefined;
+    };
+
+    const listenToGroupData = (groupId: string, currentUser: User) => {
+        if (groupUnsubscribe) groupUnsubscribe(); // Clean up previous listener
+        
+        const groupDocRef = doc(firestore, "groups", groupId);
+        groupUnsubscribe = onSnapshot(groupDocRef, (groupDocSnap) => {
+            const groupName = groupDocSnap.exists() ? groupDocSnap.data().name || null : null;
+            setUser((prevUser) => {
+                if (prevUser && prevUser.uid === currentUser.uid) {
+                    return { ...prevUser, groupName };
+                }
+                return prevUser;
+            });
+        });
+    };
 
     const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (profileUnsubscribe) {
-        profileUnsubscribe();
-      }
+      cleanupListeners();
 
       if (firebaseUser) {
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
         profileUnsubscribe = onSnapshot(userDocRef, async (snap) => {
+          if (groupUnsubscribe) groupUnsubscribe();
+
           if (snap.exists()) {
-            const userProfileData = snap.data() as UserProfile | undefined;
+            const userProfileData = snap.data() as Omit<UserProfile, 'groupName'>; // groupName will be handled separately
             
-            if (!userProfileData) {
-               setUser(null);
-               setLoading(false);
-               return;
-            }
-
-            let groupName = null;
-            if (userProfileData.groupId) {
-              const groupDocRef = doc(firestore, "groups", userProfileData.groupId);
-              const groupDocSnap = await getDoc(groupDocRef);
-              if (groupDocSnap.exists()) {
-                groupName = groupDocSnap.data().name || null;
-              }
-            }
-
-            setUser({
+            const currentUser = {
               ...firebaseUser,
               displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
               photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
               userType: userProfileData.userType,
-              groupName: groupName,
               playerSubscriptionType: userProfileData.playerSubscriptionType,
               groupId: userProfileData.groupId || null,
-            });
+              groupName: user?.groupName || null, // a temp value before the group listener updates it
+            };
+            setUser(currentUser);
+
+            if (currentUser.groupId) {
+                listenToGroupData(currentUser.groupId, currentUser as User);
+            } else {
+                 setUser(prev => prev ? {...prev, groupName: null} : null);
+            }
 
           } else {
              setUser({
@@ -114,11 +129,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       authUnsubscribe();
-      if (profileUnsubscribe) {
-        profileUnsubscribe();
-      }
+      cleanupListeners();
     };
-  }, []);
+  }, [user?.groupName]);
 
   useEffect(() => {
     if (loading) return;
@@ -131,7 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
        return;
     }
     
-    if (user && user.userType && isAuthPage && !isCompletingProfile) {
+    if (user && user.userType && isAuthPage) {
       router.push("/");
     }
     
