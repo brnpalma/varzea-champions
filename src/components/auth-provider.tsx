@@ -47,6 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     let profileUnsubscribe: (() => void) | undefined;
@@ -61,11 +62,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
-          // User document exists, they are a returning user.
-          // Set up the profile listener.
           profileUnsubscribe = onSnapshot(userDocRef, async (snap) => {
-            const userProfileData = snap.data() as UserProfile;
+            const userProfileData = snap.data() as UserProfile | undefined;
             
+            if (!userProfileData) {
+              // User document was deleted, treat as logged out or new user
+              setUser({
+                ...firebaseUser,
+                displayName: firebaseUser.displayName || "Usuário",
+                photoURL: firebaseUser.photoURL,
+                userType: UserType.JOGADOR, // Fallback value
+                groupName: null,
+                playerSubscriptionType: PlayerSubscriptionType.AVULSO, // Fallback value
+                groupId: null,
+              });
+              setLoading(false);
+              return;
+            }
+
             let groupName = null;
             if (userProfileData.groupId) {
               const groupDocRef = doc(firestore, "groups", userProfileData.groupId);
@@ -87,15 +101,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setLoading(false);
           });
         } else {
-          // User document does not exist. This is a new user (e.g., via Google Sign-In).
-          // Set a minimal user object and let the UI handle profile completion.
           setUser({
             ...firebaseUser,
             displayName: firebaseUser.displayName || "Usuário",
             photoURL: firebaseUser.photoURL,
-            userType: UserType.JOGADOR,
+            userType: UserType.JOGADOR, // Fallback, will be updated on profile completion
             groupName: null,
-            playerSubscriptionType: PlayerSubscriptionType.AVULSO,
+            playerSubscriptionType: PlayerSubscriptionType.AVULSO, // Fallback
             groupId: null,
           });
           setLoading(false);
@@ -112,36 +124,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
         profileUnsubscribe();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (loading) return;
+    
+    if (initialLoad) {
+      router.push('/');
+      setInitialLoad(false);
+      return;
+    }
 
     const isAuthPage = pathname === "/login";
     const isCompletingProfile = searchParams.get('complete_profile') === 'true';
 
-    // If user is logged in, but their profile is not complete, redirect to completion page.
+    // If user exists in auth, but not in Firestore (no userType), force profile completion.
     if (user && !user.userType && !isAuthPage) {
        router.push("/login?complete_profile=true");
        return;
     }
-
+    
     if (user && user.userType && isAuthPage) {
+      // If a complete user is on the login page, redirect them away, unless they are there to complete profile.
       if (!isCompletingProfile) {
         router.push("/");
       }
     }
     
+    // This handles a user who logged in via Google and is now joining a group
     if (user && !user.groupId && pathname.startsWith('/login') && searchParams.get('group_id')) {
-        // This case handles a user who logged in via google and is now joining a group
-        // It redirects them to the signup form to confirm their details and join the group
         const params = new URLSearchParams(searchParams);
         params.set('complete_profile', 'true');
         router.push(`/login?${params.toString()}`);
     }
 
-  }, [user, loading, pathname, router, searchParams]);
+  }, [user, loading, pathname, router, searchParams, initialLoad]);
 
 
   if (loading) {
