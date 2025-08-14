@@ -1,17 +1,18 @@
 
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, User } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, Users, X, Trophy } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 
 interface GameDaySetting {
   selected: boolean;
@@ -41,7 +42,7 @@ function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null 
 
     const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
 
-    if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+    if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
       const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
       const gameTime = new Date(checkingDate);
       gameTime.setHours(hours, minutes, 0, 0);
@@ -63,7 +64,7 @@ function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null 
 
         const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
 
-        if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+        if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
           const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
           const gameTime = new Date(checkingDate);
           gameTime.setHours(hours, minutes, 0, 0);
@@ -93,7 +94,8 @@ export default function HomePage() {
   const { toast } = useToast();
   
   const [confirmedStatus, setConfirmedStatus] = useState<'confirmed' | 'declined' | null>(null);
-  const [confirmedCount, setConfirmedCount] = useState(0);
+  const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
+  const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [isGameDateLoading, setIsGameDateLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,10 +139,12 @@ export default function HomePage() {
   
   useEffect(() => {
     if (!nextGameDate || !user?.groupId) {
-        setConfirmedCount(0);
+        setConfirmedPlayers([]);
+        setIsFetchingPlayers(false);
         return;
     }
 
+    setIsFetchingPlayers(true);
     const gameId = formatDateToId(nextGameDate);
     const attendeesQuery = query(
         collection(firestore, `groups/${user.groupId}/games/${gameId}/attendees`),
@@ -148,11 +152,14 @@ export default function HomePage() {
     );
     
     const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
-        setConfirmedCount(snapshot.size);
+        const playersData = snapshot.docs.map(doc => doc.data() as User);
+        setConfirmedPlayers(playersData);
+        setIsFetchingPlayers(false);
     }, (error) => {
       // It's ok if this fails, e.g. permission denied or no game doc yet.
       // Silently fail and show 0.
-      setConfirmedCount(0);
+      setConfirmedPlayers([]);
+      setIsFetchingPlayers(false);
     });
 
     return () => unsubscribe();
@@ -316,10 +323,11 @@ export default function HomePage() {
                 <X className="mr-2 h-5 w-5" /> Não
               </Button>
             </div>
-             <div className="flex items-center justify-center pt-4 text-muted-foreground">
-                <Users className="h-5 w-5 mr-2" />
-                <span className="font-bold">{confirmedCount}</span>
-                <span className="ml-1">jogadores confirmados</span>
+             <div className="flex items-center justify-center pt-4">
+                <ConfirmedPlayersDialog 
+                    confirmedPlayers={confirmedPlayers}
+                    isFetchingPlayers={isFetchingPlayers}
+                />
             </div>
           </CardContent>
         </Card>
@@ -346,3 +354,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

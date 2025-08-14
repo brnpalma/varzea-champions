@@ -5,20 +5,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star, Users, Info } from "lucide-react";
+import { Dices, Shuffle, Star, Info } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
+import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 
 // Duplicated from home page, consider moving to a shared utility file
 interface GameDaySetting {
@@ -47,7 +40,7 @@ function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null 
     checkingDate.setDate(now.getDate() + i);
     const dayOfWeek = checkingDate.getDay();
     const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
-    if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+    if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
       const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
       const gameTime = new Date(checkingDate);
       gameTime.setHours(hours, minutes, 0, 0);
@@ -64,7 +57,7 @@ function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null 
         checkingDate.setDate(now.getDate() + i);
         const dayOfWeek = checkingDate.getDay();
         const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
-        if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+        if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
           const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
           const gameTime = new Date(checkingDate);
           gameTime.setHours(hours, minutes, 0, 0);
@@ -289,35 +282,10 @@ export default function SorterPage() {
                 )}
               </Button>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="lg" disabled={!user?.groupId || isFetchingPlayers || confirmedPlayers.length === 0}>
-                    <Users className="mr-2 h-5 w-5" />
-                    {isFetchingPlayers ? '...' : confirmedPlayers.length}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Jogadores Confirmados ({confirmedPlayers.length})</DialogTitle>
-                  </DialogHeader>
-                  <div className="max-h-[60vh] overflow-y-auto pr-2">
-                    {isFetchingPlayers ? (
-                       <div className="flex justify-center items-center py-8">
-                          <FootballSpinner />
-                        </div>
-                    ) : (
-                      <ul className="space-y-3">
-                        {confirmedPlayers.map(player => (
-                          <li key={player.uid} className="flex items-center gap-3">
-                            <UserAvatar src={player.photoURL} size={40} />
-                            <span className="font-medium">{player.displayName}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <ConfirmedPlayersDialog 
+                confirmedPlayers={confirmedPlayers}
+                isFetchingPlayers={isFetchingPlayers}
+              />
             </div>
              {!isFetchingPlayers && confirmedPlayers.length === 0 && (
                 <div className="flex items-center text-sm text-muted-foreground mt-4">
