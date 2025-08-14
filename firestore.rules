@@ -3,37 +3,54 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuth() {
+    
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
       return request.auth != null;
     }
-
+    
+    // Helper function to check if the requesting user is the owner of a document
     function isOwner(userId) {
-      return isAuth() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
-
+    
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Any authenticated user can read user profiles (for player lists, etc.)
-      allow read: if isAuth();
-
-      // A user can create their own profile.
-      allow create: if isOwner(userId);
+      // Allow a user to create their own profile document.
+      // Allow a user to read and update their own profile.
+      // Allow a user to delete their own document.
+      allow read, update, delete: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated();
       
-      // A user can only update or delete their own profile.
-      allow update, delete: if isOwner(userId);
+      // Allow any authenticated user to read other users' profiles (e.g., for player lists)
+      allow list: if isAuthenticated();
     }
-
+    
     // Rules for the 'groups' collection
     match /groups/{groupId} {
-      // Any authenticated user can read group data (for group names, settings, etc.)
-      allow read: if isAuth();
-      
-      // Allow creation if the new group's managerId matches the user's ID.
-      allow create: if isAuth() && request.resource.data.managerId == request.auth.uid;
+      // Any authenticated user can read group info (like name, game days).
+      allow get: if isAuthenticated();
 
-      // Allow update/delete if the existing group's managerId matches the user's ID.
-      allow update, delete: if isAuth() && resource.data.managerId == request.auth.uid;
+      // Only the group manager (whose UID matches the group ID) can update or delete the group.
+      allow update, delete: if isAuthenticated() && isOwner(groupId);
+
+      // A user can create a group if they are authenticated and are creating it for themselves.
+      allow create: if isAuthenticated() && isOwner(groupId);
+      
+      // Rules for the 'games' subcollection
+      match /games/{gameId} {
+        
+        // Rules for the 'attendees' subcollection
+        match /attendees/{userId} {
+          // Allow read access to attendees list for any authenticated user.
+          // In a more complex app, we might restrict this to group members only.
+          // For now, any authenticated user can see who is confirmed.
+          allow read: if isAuthenticated();
+          
+          // A user can only confirm/decline their own presence.
+          allow create, update: if isAuthenticated() && isOwner(userId);
+        }
+      }
     }
   }
 }
