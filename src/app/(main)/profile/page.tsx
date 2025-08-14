@@ -187,20 +187,17 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
-      // Step 1: Delete Firestore data first.
+      // Step 1: Delete Firestore data first. This respects the security rules.
       const batch = writeBatch(firestore);
       
-      // Delete the user's document
       const userDocRef = doc(firestore, "users", user.uid);
       batch.delete(userDocRef);
 
-      // If the user is a group manager, delete their group as well
       if (user.userType === UserType.GESTOR_GRUPO && user.groupId) {
         const groupDocRef = doc(firestore, "groups", user.groupId);
         batch.delete(groupDocRef);
       }
       
-      // Commit the Firestore deletions
       await batch.commit();
       
       // Step 2: If Firestore deletion is successful, proceed with Auth user deletion.
@@ -217,10 +214,8 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error("Failed to delete profile:", error);
       let description = "Ocorreu um erro ao deletar seu perfil.";
-      // This error comes from the `deleteUser` call, so Firestore data might have been deleted.
-      // However, it's better to guide the user to resolve the issue.
       if (error.code === 'auth/requires-recent-login') {
-          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
+          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil. Seus dados não foram apagados.";
       }
       toast({
         variant: "destructive",
@@ -437,6 +432,8 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
 
     
 
