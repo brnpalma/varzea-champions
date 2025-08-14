@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut, updateProfile, deleteUser } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2 } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2, Settings } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -83,6 +83,8 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isManager = user?.userType === UserType.GESTOR_GRUPO || user?.userType === UserType.GESTOR_QUADRA;
 
   useEffect(() => {
     if (user) {
@@ -189,7 +191,6 @@ export default function ProfilePage() {
 
     setIsDeleting(true);
     try {
-      // Step 1: Delete Firestore data first. This respects the security rules.
       const batch = writeBatch(firestore);
       
       const userDocRef = doc(firestore, "users", user.uid);
@@ -202,7 +203,6 @@ export default function ProfilePage() {
       
       await batch.commit();
       
-      // Step 2: If Firestore deletion is successful, proceed with Auth user deletion.
       await deleteUser(currentUser);
       
       toast({
@@ -288,9 +288,18 @@ export default function ProfilePage() {
                 <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
               </div>
             </div>
-            <Button onClick={handleEditToggle} variant="ghost" size="icon">
-              {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isManager && !isEditing && (
+                <Button asChild variant="ghost" size="icon">
+                  <Link href="/settings">
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                </Button>
+              )}
+              <Button onClick={handleEditToggle} variant="ghost" size="icon">
+                {isEditing ? <X className="h-5 w-5"/> : <Edit className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
