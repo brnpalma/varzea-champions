@@ -115,6 +115,13 @@ function SignupFormComponent() {
     }
   }, [groupIdFromUrl, form]);
 
+  const availableUserTypes = React.useMemo(() => {
+    if (groupIdFromUrl) {
+      return Object.values(UserType);
+    }
+    return Object.values(UserType).filter(type => type !== UserType.JOGADOR);
+  }, [groupIdFromUrl]);
+
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -293,7 +300,7 @@ function SignupFormComponent() {
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {Object.values(UserType).map((type) => (
+                        {availableUserTypes.map((type) => (
                           <SelectItem key={type} value={type} disabled={groupIdFromUrl && type !== UserType.JOGADOR}>
                             {type}
                           </SelectItem>
