@@ -341,7 +341,7 @@ export default function HomePage() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date).replace(' ', '');
+    }).format(date).replace(', ', ' as ');
     
     return {
       line1: weekday.charAt(0).toUpperCase() + weekday.slice(1).replace(',', ''),
