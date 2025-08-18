@@ -1,49 +1,35 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    function isUserAuthenticated() {
-      return request.auth != null;
+    // Helper function to check if a user belongs to a specific group
+    function isGroupMember(groupId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
     }
     
-    function isManager(groupId) {
-      let userProfile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return userProfile.userType == "Gestor do Grupo" && userProfile.groupId == groupId;
-    }
-
-    match /users/{userId} {
-      allow read: if isUserAuthenticated() && 
-                    (request.auth.uid == userId || 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId);
-
-      allow write: if isUserAuthenticated() && 
-                     (request.auth.uid == userId || 
-                      (isManager(resource.data.groupId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['allowConfirmationWithDebt'])));
-    }
-
+    // Groups collection
     match /groups/{groupId} {
-      allow read: if isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-      allow write: if isUserAuthenticated() && 
-                    (isManager(groupId) || (request.resource.data.managerId == request.auth.uid));
-                      
-      match /games/{gameId} {
-        // Allow read for any group member
-        allow read: if isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-        
-        match /attendees/{userId} {
-          allow read: if isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
-
-          // Allow a user to write ONLY to their own attendee document
-          allow write: if isUserAuthenticated() && request.auth.uid == userId;
-        }
-      }
+      allow read: if isGroupMember(groupId);
+      allow write: if request.auth.uid == resource.data.managerId; // Only group manager can write
     }
-    
-    // This rule is necessary for the collectionGroup query in the ranking page
-    match /{path=**}/attendees/{attendeeId} {
-        allow read: if isUserAuthenticated() && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId;
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || 
+                   (isGroupMember(get(/databases/$(database)/documents/users/$(userId)).data.groupId) && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId != null);
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId;
+      allow delete: if request.auth.uid == userId;
+    }
+
+    // Game attendees subcollection
+    match /groups/{groupId}/games/{gameId}/attendees/{userId} {
+      allow read: if isGroupMember(groupId);
+      // Allow user to confirm/decline their own presence or update their goals
+      allow write: if request.auth.uid == userId && isGroupMember(groupId);
     }
   }
 }

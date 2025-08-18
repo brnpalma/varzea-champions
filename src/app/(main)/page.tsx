@@ -8,7 +8,7 @@ import Link from "next/link";
 import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
@@ -289,7 +289,7 @@ export default function HomePage() {
     }
   };
 
-  const handleSaveGoals = async (goals: number) => {
+  const handleSaveGoals = async (newGoals: number) => {
     if (!user || !user.groupId || !nextGameDate) {
       toast({ variant: "destructive", title: "Erro", description: "Dados do usuário ou do jogo não encontrados." });
       return;
@@ -306,13 +306,34 @@ export default function HomePage() {
 
     const gameId = formatDateToId(nextGameDate);
     const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    const userDocRef = doc(firestore, "users", user.uid);
 
     try {
-      await setDoc(attendeeDocRef, { goals: goals }, { merge: true });
+      await runTransaction(firestore, async (transaction) => {
+        const attendeeDoc = await transaction.get(attendeeDocRef);
+        const userDoc = await transaction.get(userDocRef);
+
+        if (!userDoc.exists()) {
+          throw new Error("Documento do usuário não encontrado!");
+        }
+
+        const oldGoals = attendeeDoc.data()?.goals || 0;
+        const goalsDifference = newGoals - oldGoals;
+        
+        const currentTotalGoals = userDoc.data()?.totalGoals || 0;
+        const newTotalGoals = currentTotalGoals + goalsDifference;
+        
+        // Update attendee document with the new goal count for the specific game
+        transaction.set(attendeeDocRef, { goals: newGoals }, { merge: true });
+
+        // Update user document with the new total goals count
+        transaction.update(userDocRef, { totalGoals: newTotalGoals });
+      });
+
       toast({
         variant: "success",
         title: "Gols Salvos!",
-        description: `Você registrou ${goals} gols com sucesso.`,
+        description: `Você registrou ${newGoals} gols com sucesso.`,
       });
       setGoalsSubmitted(true); // Hide the card after saving
     } catch (error) {
@@ -399,7 +420,7 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
+                 <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
                  {!isGameFinished && (
                   <>
                     <div className="grid grid-cols-2 gap-4">

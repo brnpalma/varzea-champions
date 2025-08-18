@@ -28,6 +28,7 @@ export interface UserProfile {
   groupId: string | null;
   rating: number | null;
   allowConfirmationWithDebt?: boolean;
+  totalGoals?: number;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -115,6 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               rating: userProfileData.rating || 1,
               allowConfirmationWithDebt: userProfileData.allowConfirmationWithDebt || false,
               groupName: user?.groupName || null, // a temp value before the group listener updates it
+              totalGoals: userProfileData.totalGoals || 0,
             };
             setUser(currentUser as User);
 
@@ -136,6 +138,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               groupId: null,
               rating: 1,
               allowConfirmationWithDebt: false,
+              totalGoals: 0,
             } as User);
           }
            setLoading(false);

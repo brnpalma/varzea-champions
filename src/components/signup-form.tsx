@@ -255,6 +255,7 @@ function SignupFormComponent() {
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
         allowConfirmationWithDebt: true,
+        totalGoals: 0, // Initialize totalGoals
       });
       
       await batch.commit();
@@ -478,7 +479,3 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
-
-    
-
-    

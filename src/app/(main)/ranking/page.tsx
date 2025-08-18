@@ -7,24 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Star, Goal } from "lucide-react";
 import { useAuth, User } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
-import { collection, query, where, getDocs, collectionGroup, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { UserAvatar } from '@/components/user-avatar';
 import { Badge } from '@/components/ui/badge';
-
-interface PlayerStats extends User {
-  totalGoals: number;
-}
-
-const getOrdinal = (n: number) => {
-  if (n > 3 && n < 21) return 'th';
-  switch (n % 10) {
-    case 1: return 'st';
-    case 2: return 'nd';
-    case 3: return 'rd';
-    default: return 'th';
-  }
-};
 
 const getTrophyColor = (rank: number) => {
   switch(rank) {
@@ -37,77 +23,43 @@ const getTrophyColor = (rank: number) => {
 
 export default function RankingPage() {
   const { user, loading: authLoading } = useAuth();
-  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading || !user?.groupId) {
       if (!authLoading) setIsLoading(false);
-      return () => {}; // Return empty cleanup function
+      return;
     }
 
     setIsLoading(true);
 
-    let unsubscribeGoals: () => void;
-    let unsubscribePlayers: () => void;
-
-    // First, listen to players in the group
-    const playersQuery = query(collection(firestore, 'users'), where('groupId', '==', user.groupId));
+    const playersQuery = query(
+      collection(firestore, 'users'), 
+      where('groupId', '==', user.groupId)
+    );
     
-    unsubscribePlayers = onSnapshot(playersQuery, (playersSnapshot) => {
-      const playersData = playersSnapshot.docs.map(doc => ({ ...doc.data() as User, uid: doc.id }));
-      
-      // Clean up previous goals listener if players list changes
-      if (unsubscribeGoals) unsubscribeGoals(); 
-      
-      // Then, listen to all goals within that group
-      const attendeesQuery = collectionGroup(firestore, 'attendees');
-
-      unsubscribeGoals = onSnapshot(attendeesQuery, (attendeesSnapshot) => {
-        const goalsByPlayer: Record<string, number> = {};
-        
-        attendeesSnapshot.forEach(doc => {
-          const data = doc.data();
-          // Ensure we only count goals for players in the current group
-          if (playersData.some(p => p.uid === data.uid) && data.goals > 0) {
-             goalsByPlayer[data.uid] = (goalsByPlayer[data.uid] || 0) + data.goals;
-          }
-        });
-
-        const combinedStats: PlayerStats[] = playersData.map(player => ({
-          ...player,
-          totalGoals: goalsByPlayer[player.uid] || 0,
-        }));
-
-        setPlayerStats(combinedStats);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching goals stats:", error);
-        // Still update player list even if goals fail
-        setPlayerStats(playersData.map(p => ({ ...p, totalGoals: 0 })));
-        setIsLoading(false);
-      });
+    const unsubscribe = onSnapshot(playersQuery, (snapshot) => {
+      const playersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id }) as User);
+      setPlayers(playersData);
+      setIsLoading(false);
     }, (error) => {
-      console.error("Error fetching players:", error);
+      console.error("Error fetching players for ranking:", error);
       setIsLoading(false);
     });
 
-    // Cleanup function for useEffect
-    return () => {
-      if (unsubscribePlayers) unsubscribePlayers();
-      if (unsubscribeGoals) unsubscribeGoals();
-    };
+    return () => unsubscribe();
   }, [user?.groupId, authLoading]);
 
   const topScorers = useMemo(() => {
-    return [...playerStats].sort((a, b) => b.totalGoals - a.totalGoals);
-  }, [playerStats]);
+    return [...players].sort((a, b) => (b.totalGoals || 0) - (a.totalGoals || 0));
+  }, [players]);
 
   const topRated = useMemo(() => {
-    return [...playerStats].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  }, [playerStats]);
+    return [...players].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }, [players]);
 
-  const renderPlayerList = (players: PlayerStats[], type: 'goals' | 'rating') => {
+  const renderPlayerList = (players: User[], type: 'goals' | 'rating') => {
     if (players.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-secondary/50">
@@ -137,7 +89,7 @@ export default function RankingPage() {
             {type === 'goals' ? (
               <Badge variant="secondary" className="flex items-center gap-2 text-base">
                 <Goal className="h-4 w-4" />
-                {player.totalGoals}
+                {player.totalGoals || 0}
               </Badge>
             ) : (
               <Badge variant="secondary" className="flex items-center gap-2 text-base">
