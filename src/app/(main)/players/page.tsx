@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useAuth, User, UserType } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, Copy, LogIn } from 'lucide-react';
+import { Share2, Trash2, LogIn, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -23,12 +23,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
@@ -53,7 +57,7 @@ export default function PlayersPage() {
         ...doc.data(),
         uid: doc.id,
       })) as User[];
-      setPlayers(playersData);
+      setPlayers(playersData.sort((a, b) => a.displayName!.localeCompare(b.displayName!)));
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching players: ", error);
@@ -109,6 +113,33 @@ export default function PlayersPage() {
         description: 'Não foi possível remover o jogador.',
       });
     }
+  };
+
+  const handleToggleDebtPermission = (playerToUpdate: User) => {
+    startTransition(async () => {
+      if (!isManager || !playerToUpdate) return;
+      
+      const playerDocRef = doc(firestore, "users", playerToUpdate.uid);
+      const newPermission = !(playerToUpdate.allowConfirmationWithDebt ?? false);
+
+      try {
+        await updateDoc(playerDocRef, {
+          allowConfirmationWithDebt: newPermission
+        });
+        toast({
+          variant: 'success',
+          title: 'Permissão Atualizada',
+          description: `A permissão para ${playerToUpdate.displayName} foi ${newPermission ? 'concedida' : 'revogada'}.`,
+        });
+      } catch (error) {
+        console.error("Error updating permission: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao Atualizar',
+          description: 'Não foi possível atualizar a permissão do jogador.',
+        });
+      }
+    });
   };
   
   if (loading) {
@@ -182,42 +213,62 @@ export default function PlayersPage() {
               <FootballSpinner />
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
-                  <div className="flex items-center gap-4">
-                    <UserAvatar src={player.photoURL} size={48} />
-                    <div>
-                      <p className="font-semibold text-foreground">{player.displayName}</p>
-                      <p className="text-sm text-muted-foreground">{player.email}</p>
+                <li key={player.uid} className="flex flex-col p-3 gap-2">
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <UserAvatar src={player.photoURL} size={48} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">{player.displayName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{player.email}</p>
+                      </div>
                     </div>
-                  </div>
-                  {isManager && user?.uid !== player.uid && (
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                            <Trash2 className="h-5 w-5" />
+                    {isManager && user?.uid !== player.uid && (
+                      <div className='flex items-center justify-end gap-2'>
+                          <Button variant="outline" size="icon">
+                            <DollarSign className="h-4 w-4"/>
                           </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleRemovePlayer(player)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remover
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="icon">
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemovePlayer(player)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                      </div>
+                    )}
+                  </div>
+                   {isManager && user?.uid !== player.uid && (
+                      <div className="flex items-center space-x-2 pt-1"> 
+                        <Checkbox 
+                            id={`debt-${player.uid}`}
+                            checked={player.allowConfirmationWithDebt ?? false}
+                            onCheckedChange={() => handleToggleDebtPermission(player)}
+                            disabled={isPending}
+                        />
+                        <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
+                            Permitir confirmação de presença com pendência
+                        </Label>
+                      </div>
+                    )}
                 </li>
               ))}
             </ul>

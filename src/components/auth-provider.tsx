@@ -26,6 +26,9 @@ export interface UserProfile {
   groupName: string | null;
   playerSubscriptionType: PlayerSubscriptionType;
   groupId: string | null;
+  rating: number | null;
+  allowConfirmationWithDebt?: boolean;
+  totalGoals?: number;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -33,7 +36,18 @@ export interface User extends FirebaseAuthUser, UserProfile {}
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
+  groupSettings: GroupSettings | null;
 }
+
+export interface GroupSettings {
+    name?: string;
+    playersPerTeam?: number;
+    gameDays?: Record<string, any>;
+    valorMensalidade?: number;
+    valorAvulso?: number;
+    chavePix?: string;
+}
+
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -43,6 +57,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [groupSettings, setGroupSettings] = useState<GroupSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -64,7 +79,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         const groupDocRef = doc(firestore, "groups", groupId);
         groupUnsubscribe = onSnapshot(groupDocRef, (groupDocSnap) => {
-            const groupName = groupDocSnap.exists() ? groupDocSnap.data().name || null : null;
+            const groupData = groupDocSnap.exists() ? groupDocSnap.data() : null;
+            
+            const groupName = groupData?.name || null;
+            const settings = groupData as GroupSettings | null;
+
+            setGroupSettings(settings);
             setUser((prevUser) => {
                 if (prevUser && prevUser.uid === currentUser.uid) {
                     return { ...prevUser, groupName };
@@ -93,14 +113,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               userType: userProfileData.userType,
               playerSubscriptionType: userProfileData.playerSubscriptionType,
               groupId: userProfileData.groupId || null,
+              rating: userProfileData.rating || 1,
+              allowConfirmationWithDebt: userProfileData.allowConfirmationWithDebt || false,
               groupName: user?.groupName || null, // a temp value before the group listener updates it
+              totalGoals: userProfileData.totalGoals || 0,
             };
-            setUser(currentUser);
+            setUser(currentUser as User);
 
             if (currentUser.groupId) {
                 listenToGroupData(currentUser.groupId, currentUser as User);
             } else {
                  setUser(prev => prev ? {...prev, groupName: null} : null);
+                 setGroupSettings(null);
             }
 
           } else {
@@ -112,7 +136,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
               groupName: null,
               playerSubscriptionType: undefined as any,
               groupId: null,
-            });
+              rating: 1,
+              allowConfirmationWithDebt: false,
+              totalGoals: 0,
+            } as User);
           }
            setLoading(false);
         }, (error) => {
@@ -123,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       } else {
         setUser(null);
+        setGroupSettings(null);
         setLoading(false);
       }
     });
@@ -131,7 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       authUnsubscribe();
       cleanupListeners();
     };
-  }, [user?.groupName]);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -161,7 +189,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, groupSettings }}>
       {children}
     </AuthContext.Provider>
   );
