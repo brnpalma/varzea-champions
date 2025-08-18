@@ -373,62 +373,64 @@ export default function HomePage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-               <div className="flex items-start gap-3">
-                 <Calendar className="h-6 w-6 text-primary mt-1" />
-                 {isGameDateLoading ? (
-                    <div className="w-full flex justify-center items-center py-4">
-                      <FootballSpinner />
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-bold">{formattedDate.line1}</span>
-                      {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
-                    </div>
-                  )}
-               </div>
-               {isGameFinished && (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle className="h-6 w-6" />
-                    <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
-                  </div>
-                )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Button 
-                size="lg" 
-                onClick={() => handlePresenceClick('confirmed')} 
-                className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
-              >
-                <Check className="mr-2 h-5 w-5" /> Sim
-              </Button>
-              <Button 
-                size="lg" 
-                onClick={() => handlePresenceClick('declined')} 
-                variant="destructive"
-                className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
-              >
-                <X className="mr-2 h-5 w-5" /> Não
-              </Button>
-            </div>
-             <div className="flex items-center justify-center pt-4">
-                <ConfirmedPlayersDialog 
-                    confirmedPlayers={confirmedPlayers}
-                    isFetchingPlayers={isFetchingPlayers}
-                />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="md:col-span-2">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                   <div className="flex items-start gap-3">
+                     <Calendar className="h-6 w-6 text-primary mt-1" />
+                     {isGameDateLoading ? (
+                        <div className="w-full flex justify-center items-center py-4">
+                          <FootballSpinner />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="text-2xl font-bold">{formattedDate.line1}</span>
+                          {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
+                        </div>
+                      )}
+                   </div>
+                   {isGameFinished && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-6 w-6" />
+                        <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
+                      </div>
+                    )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button 
+                    size="lg" 
+                    onClick={() => handlePresenceClick('confirmed')} 
+                    className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                    disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
+                  >
+                    <Check className="mr-2 h-5 w-5" /> Sim
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    onClick={() => handlePresenceClick('declined')} 
+                    variant="destructive"
+                    className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
+                    disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
+                  >
+                    <X className="mr-2 h-5 w-5" /> Não
+                  </Button>
+                </div>
+                 <div className="flex items-center justify-center pt-4">
+                    <ConfirmedPlayersDialog 
+                        confirmedPlayers={confirmedPlayers}
+                        isFetchingPlayers={isFetchingPlayers}
+                    />
+                </div>
+              </CardContent>
+            </Card>
+        </div>
         
         {goalsCardState.visible && (
-          <Card className="shadow-lg">
+          <Card className="shadow-lg h-fit">
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
@@ -446,7 +448,7 @@ export default function HomePage() {
         )}
         
         {showPaymentCard && (
-           <Card className="shadow-lg">
+           <Card className="shadow-lg h-fit">
              <CardHeader>
                <CardTitle className="flex items-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
@@ -481,7 +483,7 @@ export default function HomePage() {
            </Card>
         )}
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
@@ -503,5 +505,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
