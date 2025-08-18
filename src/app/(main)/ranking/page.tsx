@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Star, Goal } from "lucide-react";
 import { useAuth, User } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
-import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, getDocs, collectionGroup, onSnapshot } from 'firebase/firestore';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { UserAvatar } from '@/components/user-avatar';
 import { Badge } from '@/components/ui/badge';
@@ -43,46 +43,67 @@ export default function RankingPage() {
   useEffect(() => {
     if (authLoading || !user?.groupId) {
       if (!authLoading) setIsLoading(false);
-      return;
+      return () => {}; // Return empty cleanup function
     }
 
-    const fetchPlayerStats = async () => {
-      setIsLoading(true);
-      try {
-        // 1. Get all players in the group
-        const playersQuery = query(collection(firestore, 'users'), where('groupId', '==', user.groupId));
-        const playersSnapshot = await getDocs(playersQuery);
-        const playersData = playersSnapshot.docs.map(doc => ({ ...doc.data() as User, uid: doc.id }));
+    setIsLoading(true);
 
-        // 2. Get all goals data for the group using a collectionGroup query
-        const attendeesQuery = collectionGroup(firestore, 'attendees');
-        const groupAttendeesQuery = query(attendeesQuery, where('groupId', '==', user.groupId));
-        const attendeesSnapshot = await getDocs(groupAttendeesQuery);
+    let unsubscribeGoals: () => void;
+    let unsubscribePlayers: () => void;
+
+    const setupListeners = async () => {
+      try {
+        const playersQuery = query(collection(firestore, 'users'), where('groupId', '==', user.groupId));
         
-        const goalsByPlayer: Record<string, number> = {};
-        attendeesSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.uid && data.goals > 0) {
-            goalsByPlayer[data.uid] = (goalsByPlayer[data.uid] || 0) + data.goals;
-          }
+        unsubscribePlayers = onSnapshot(playersQuery, async (playersSnapshot) => {
+          const playersData = playersSnapshot.docs.map(doc => ({ ...doc.data() as User, uid: doc.id }));
+          
+          // Now that we have players, set up the goals listener
+          if (unsubscribeGoals) unsubscribeGoals(); // Clean up previous goals listener if players change
+          
+          const attendeesQuery = collectionGroup(firestore, 'attendees');
+          // Note: Firestore security rules should enforce the groupId check for collectionGroup queries
+          // But for client-side filtering and correctness, we ensure it's here too.
+          const groupAttendeesQuery = query(attendeesQuery, where('groupId', '==', user.groupId));
+
+          unsubscribeGoals = onSnapshot(groupAttendeesQuery, (attendeesSnapshot) => {
+            const goalsByPlayer: Record<string, number> = {};
+            attendeesSnapshot.forEach(doc => {
+              const data = doc.data();
+              if (data.uid && data.goals > 0) {
+                goalsByPlayer[data.uid] = (goalsByPlayer[data.uid] || 0) + data.goals;
+              }
+            });
+
+            const combinedStats: PlayerStats[] = playersData.map(player => ({
+              ...player,
+              totalGoals: goalsByPlayer[player.uid] || 0,
+            }));
+
+            setPlayerStats(combinedStats);
+            setIsLoading(false);
+          }, (error) => {
+            console.error("Error fetching goals stats:", error);
+            setIsLoading(false);
+          });
+        }, (error) => {
+          console.error("Error fetching players:", error);
+          setIsLoading(false);
         });
 
-        // 3. Combine player data with goal stats
-        const combinedStats: PlayerStats[] = playersData.map(player => ({
-          ...player,
-          totalGoals: goalsByPlayer[player.uid] || 0,
-        }));
-
-        setPlayerStats(combinedStats);
       } catch (error) {
-        console.error("Error fetching player stats:", error);
-        // Handle error, e.g., show a toast message
-      } finally {
+        console.error("Error setting up listeners:", error);
         setIsLoading(false);
       }
     };
 
-    fetchPlayerStats();
+    setupListeners();
+
+    // Cleanup function for useEffect
+    return () => {
+      if (unsubscribeGoals) unsubscribeGoals();
+      if (unsubscribePlayers) unsubscribePlayers();
+    };
   }, [user?.groupId, authLoading]);
 
   const topScorers = useMemo(() => {
@@ -154,7 +175,7 @@ export default function RankingPage() {
             <span>Ranking de Jogadores</span>
           </CardTitle>
           <CardDescription>
-            Classificação dos artilheiros e os jogadores mais bem avaliados do grupo.
+            Veja a classificação de estrelas e artilheiros
           </CardDescription>
         </CardHeader>
         <CardContent>
