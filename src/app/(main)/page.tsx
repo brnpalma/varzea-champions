@@ -400,31 +400,35 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button 
-                    size="lg" 
-                    onClick={() => handlePresenceClick('confirmed')} 
-                    className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                    disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
-                  >
-                    <Check className="mr-2 h-5 w-5" /> Sim
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    onClick={() => handlePresenceClick('declined')} 
-                    variant="destructive"
-                    className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                    disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
-                  >
-                    <X className="mr-2 h-5 w-5" /> Não
-                  </Button>
-                </div>
-                 <div className="flex items-center justify-center pt-4">
-                    <ConfirmedPlayersDialog 
-                        confirmedPlayers={confirmedPlayers}
-                        isFetchingPlayers={isFetchingPlayers}
-                    />
-                </div>
+                 {!isGameFinished && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button 
+                        size="lg" 
+                        onClick={() => handlePresenceClick('confirmed')} 
+                        className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                        disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
+                      >
+                        <Check className="mr-2 h-5 w-5" /> Sim
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        onClick={() => handlePresenceClick('declined')} 
+                        variant="destructive"
+                        className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
+                        disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
+                      >
+                        <X className="mr-2 h-5 w-5" /> Não
+                      </Button>
+                    </div>
+                     <div className="flex items-center justify-center pt-4">
+                        <ConfirmedPlayersDialog 
+                            confirmedPlayers={confirmedPlayers}
+                            isFetchingPlayers={isFetchingPlayers}
+                        />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
         </div>
@@ -446,6 +450,25 @@ export default function HomePage() {
             </CardContent>
           </Card>
         )}
+
+        <Card className="shadow-lg h-fit">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Trophy className="h-6 w-6 text-amber-500" />
+              <span>Ranking de Jogadores</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Veja a classificação dos artilheiros e os jogadores mais bem avaliados.
+            </p>
+            <Button asChild>
+              <Link href="/ranking">
+                Acessar Ranking <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
         
         {showPaymentCard && (
            <Card className="shadow-lg h-fit">
@@ -482,25 +505,6 @@ export default function HomePage() {
              </CardContent>
            </Card>
         )}
-
-        <Card className="shadow-lg h-fit">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Trophy className="h-6 w-6 text-amber-500" />
-              <span>Ranking de Jogadores</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Veja a classificação dos artilheiros e os jogadores mais bem avaliados.
-            </p>
-            <Button asChild>
-              <Link href="/ranking">
-                Acessar Ranking <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
