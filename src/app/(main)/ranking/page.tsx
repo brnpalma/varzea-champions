@@ -51,58 +51,51 @@ export default function RankingPage() {
     let unsubscribeGoals: () => void;
     let unsubscribePlayers: () => void;
 
-    const setupListeners = async () => {
-      try {
-        const playersQuery = query(collection(firestore, 'users'), where('groupId', '==', user.groupId));
+    // First, listen to players in the group
+    const playersQuery = query(collection(firestore, 'users'), where('groupId', '==', user.groupId));
+    
+    unsubscribePlayers = onSnapshot(playersQuery, (playersSnapshot) => {
+      const playersData = playersSnapshot.docs.map(doc => ({ ...doc.data() as User, uid: doc.id }));
+      
+      // Clean up previous goals listener if players list changes
+      if (unsubscribeGoals) unsubscribeGoals(); 
+      
+      // Then, listen to all goals within that group
+      const attendeesQuery = collectionGroup(firestore, 'attendees');
+
+      unsubscribeGoals = onSnapshot(attendeesQuery, (attendeesSnapshot) => {
+        const goalsByPlayer: Record<string, number> = {};
         
-        unsubscribePlayers = onSnapshot(playersQuery, async (playersSnapshot) => {
-          const playersData = playersSnapshot.docs.map(doc => ({ ...doc.data() as User, uid: doc.id }));
-          
-          // Now that we have players, set up the goals listener
-          if (unsubscribeGoals) unsubscribeGoals(); // Clean up previous goals listener if players change
-          
-          const attendeesQuery = collectionGroup(firestore, 'attendees');
-          // Note: Firestore security rules should enforce the groupId check for collectionGroup queries
-          // But for client-side filtering and correctness, we ensure it's here too.
-          const groupAttendeesQuery = query(attendeesQuery, where('groupId', '==', user.groupId));
-
-          unsubscribeGoals = onSnapshot(groupAttendeesQuery, (attendeesSnapshot) => {
-            const goalsByPlayer: Record<string, number> = {};
-            attendeesSnapshot.forEach(doc => {
-              const data = doc.data();
-              if (data.uid && data.goals > 0) {
-                goalsByPlayer[data.uid] = (goalsByPlayer[data.uid] || 0) + data.goals;
-              }
-            });
-
-            const combinedStats: PlayerStats[] = playersData.map(player => ({
-              ...player,
-              totalGoals: goalsByPlayer[player.uid] || 0,
-            }));
-
-            setPlayerStats(combinedStats);
-            setIsLoading(false);
-          }, (error) => {
-            console.error("Error fetching goals stats:", error);
-            setIsLoading(false);
-          });
-        }, (error) => {
-          console.error("Error fetching players:", error);
-          setIsLoading(false);
+        attendeesSnapshot.forEach(doc => {
+          const data = doc.data();
+          // Ensure we only count goals for players in the current group
+          if (playersData.some(p => p.uid === data.uid) && data.goals > 0) {
+             goalsByPlayer[data.uid] = (goalsByPlayer[data.uid] || 0) + data.goals;
+          }
         });
 
-      } catch (error) {
-        console.error("Error setting up listeners:", error);
-        setIsLoading(false);
-      }
-    };
+        const combinedStats: PlayerStats[] = playersData.map(player => ({
+          ...player,
+          totalGoals: goalsByPlayer[player.uid] || 0,
+        }));
 
-    setupListeners();
+        setPlayerStats(combinedStats);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error fetching goals stats:", error);
+        // Still update player list even if goals fail
+        setPlayerStats(playersData.map(p => ({ ...p, totalGoals: 0 })));
+        setIsLoading(false);
+      });
+    }, (error) => {
+      console.error("Error fetching players:", error);
+      setIsLoading(false);
+    });
 
     // Cleanup function for useEffect
     return () => {
-      if (unsubscribeGoals) unsubscribeGoals();
       if (unsubscribePlayers) unsubscribePlayers();
+      if (unsubscribeGoals) unsubscribeGoals();
     };
   }, [user?.groupId, authLoading]);
 
