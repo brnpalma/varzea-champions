@@ -475,7 +475,7 @@ export default function HomePage() {
              <CardHeader>
                <CardTitle className="flex items-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
-                 <span>Informações de Pagamento</span>
+                 <span>Financeiro</span>
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
