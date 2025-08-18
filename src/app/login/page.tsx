@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 
+// Force dynamic rendering to prevent build errors with useSearchParams
+export const dynamic = 'force-dynamic';
 
 function LoginPageContent() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
