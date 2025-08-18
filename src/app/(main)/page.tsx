@@ -5,7 +5,7 @@ import { useAuth, User, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -13,6 +13,7 @@ import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
+import { GoalsDialog } from "@/components/goals-dialog";
 
 interface GameDaySetting {
   selected: boolean;
@@ -100,6 +101,8 @@ export default function HomePage() {
   const [isGameDateLoading, setIsGameDateLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
+  const [goalsSubmitted, setGoalsSubmitted] = useState(false);
+  const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -112,8 +115,23 @@ export default function HomePage() {
         if (groupSettings && groupSettings.gameDays) {
           const gameDate = getNextGameDate(groupSettings.gameDays);
           setNextGameDate(gameDate);
-          if (gameDate && new Date() > gameDate) {
-            setIsConfirmationLocked(true);
+        
+          if (gameDate) {
+            const now = new Date();
+            const isToday = now.getFullYear() === gameDate.getFullYear() &&
+                            now.getMonth() === gameDate.getMonth() &&
+                            now.getDate() === gameDate.getDate();
+
+            const isGameTimePassed = now > gameDate;
+            const tenHoursAfterGame = new Date(gameDate.getTime() + 10 * 60 * 60 * 1000);
+            const isWithinTenHours = now < tenHoursAfterGame;
+
+            const cardVisible = isToday && isWithinTenHours && !goalsSubmitted;
+            const cardEnabled = isGameTimePassed && isWithinTenHours;
+
+            setGoalsCardState({ visible: cardVisible, enabled: cardEnabled });
+          } else {
+             setGoalsCardState({ visible: false, enabled: false });
           }
         } else {
           setNextGameDate(null);
@@ -124,7 +142,7 @@ export default function HomePage() {
     } finally {
       setIsGameDateLoading(false);
     }
-  }, [user?.groupId, groupSettings]);
+  }, [user?.groupId, groupSettings, goalsSubmitted]);
 
 
   useEffect(() => {
@@ -165,6 +183,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!nextGameDate || !user?.uid || !user?.groupId) {
         setConfirmedStatus(null);
+        setGoalsSubmitted(false);
         return;
     }
 
@@ -173,14 +192,23 @@ export default function HomePage() {
     
     const unsubscribe = onSnapshot(attendeeDocRef, (docSnap) => {
         if (docSnap.exists()) {
-            setConfirmedStatus(docSnap.data().status);
+            const data = docSnap.data();
+            setConfirmedStatus(data.status);
+            // If goals field exists and is not null/undefined, consider it submitted
+            if (data.goals !== null && data.goals !== undefined) {
+              setGoalsSubmitted(true);
+            } else {
+              setGoalsSubmitted(false);
+            }
         } else {
             setConfirmedStatus(null);
+            setGoalsSubmitted(false);
         }
     }, (error) => {
       // It's ok if this fails, e.g. permission denied.
       // Silently fail and show no status.
       setConfirmedStatus(null);
+      setGoalsSubmitted(false);
     });
 
     return () => unsubscribe();
@@ -208,9 +236,6 @@ export default function HomePage() {
         return;
     }
 
-    // Lógica de pendência financeira
-    // Simulação: bloqueia se for AVULSO e a flag `allowConfirmationWithDebt` for false.
-    // A lógica real de verificação de dívida seria mais complexa.
     if (status === 'confirmed' && !user.allowConfirmationWithDebt && user.playerSubscriptionType === PlayerSubscriptionType.AVULSO) {
         toast({
             variant: "destructive",
@@ -252,6 +277,42 @@ export default function HomePage() {
         setConfirmedStatus(oldStatus); // Revert optimistic update
     } finally {
         setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveGoals = async (goals: number) => {
+    if (!user || !user.groupId || !nextGameDate) {
+      toast({ variant: "destructive", title: "Erro", description: "Dados do usuário ou do jogo não encontrados." });
+      return;
+    }
+
+    if (new Date() < nextGameDate) {
+       toast({
+        variant: "destructive",
+        title: "Aguarde",
+        description: "Você só pode registrar gols após o início da partida.",
+      });
+      return;
+    }
+
+    const gameId = formatDateToId(nextGameDate);
+    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+
+    try {
+      await setDoc(attendeeDocRef, { goals: goals }, { merge: true });
+      toast({
+        variant: "success",
+        title: "Gols Salvos!",
+        description: `Você registrou ${goals} gols com sucesso.`,
+      });
+      setGoalsSubmitted(true); // Hide the card after saving
+    } catch (error) {
+      console.error("Error saving goals:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível registrar seus gols. Tente novamente.",
+      });
     }
   };
   
@@ -348,6 +409,24 @@ export default function HomePage() {
             </div>
           </CardContent>
         </Card>
+        
+        {goalsCardState.visible && (
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Goal className="h-6 w-6 text-primary" />
+                <span>Pós-Jogo</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center gap-4">
+              <p className="text-muted-foreground text-center">Quantos gols você marcou hoje?</p>
+              <GoalsDialog
+                onSave={handleSaveGoals}
+                isDisabled={!goalsCardState.enabled}
+              />
+            </CardContent>
+          </Card>
+        )}
         
         {showPaymentCard && (
            <Card className="shadow-lg">
