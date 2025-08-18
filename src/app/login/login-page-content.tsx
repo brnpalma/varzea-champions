@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { SignupForm } from "@/components/signup-form";
@@ -13,13 +13,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/hooks/use-auth";
 
 export function LoginPageContent() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const searchParams = useSearchParams();
   const isCompletingProfile = searchParams.get('complete_profile') === 'true';
-  const { user } = useAuth();
 
   const finalAuthMode = isCompletingProfile ? "signup" : authMode;
 
