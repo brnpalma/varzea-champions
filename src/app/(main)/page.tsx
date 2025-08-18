@@ -460,7 +460,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Veja a classificação dos artilheiros e os jogadores mais bem avaliados.
+              Veja a classificação de estrelas e artilheiros
             </p>
             <Button asChild>
               <Link href="/ranking">
@@ -509,7 +509,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-
-    
