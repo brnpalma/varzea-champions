@@ -5,7 +5,7 @@ import { useAuth, User, PlayerSubscriptionType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -30,55 +30,60 @@ const dayOfWeekMap: Record<string, number> = {
   sabado: 6,
 };
 
-function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null {
-  if (!gameDays || Object.keys(gameDays).length === 0) return null;
+function getActiveOrNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null {
+    if (!gameDays || Object.keys(gameDays).length === 0) return null;
 
-  const now = new Date();
-  let nextGameDate: Date | null = null;
+    const now = new Date();
+    const allGameDates: Date[] = [];
 
-  for (let i = 0; i < 7; i++) {
-    const checkingDate = new Date(now);
-    checkingDate.setDate(now.getDate() + i);
-    const dayOfWeek = checkingDate.getDay();
-
-    const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
-
-    if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
-      const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
-      const gameTime = new Date(checkingDate);
-      gameTime.setHours(hours, minutes, 0, 0);
-
-      if (gameTime > now) {
-        if (!nextGameDate || gameTime < nextGameDate) {
-          nextGameDate = gameTime;
-        }
-      }
-    }
-  }
-  
-  // If no game this week, check next week
-  if (!nextGameDate) {
-     for (let i = 7; i < 14; i++) {
-        const checkingDate = new Date(now);
+    // Look for games from the last 7 days up to 14 days in the future
+    for (let i = -7; i < 14; i++) {
+        const checkingDate = new Date();
         checkingDate.setDate(now.getDate() + i);
         const dayOfWeek = checkingDate.getDay();
-
         const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
 
-        if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
-          const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
-          const gameTime = new Date(checkingDate);
-          gameTime.setHours(hours, minutes, 0, 0);
-
-           if (!nextGameDate || gameTime < nextGameDate) {
-              nextGameDate = gameTime;
-           }
+        if (dayId && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
+            const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
+            const gameTime = new Date(checkingDate);
+            gameTime.setHours(hours, minutes, 0, 0);
+            allGameDates.push(gameTime);
         }
     }
-  }
 
-  return nextGameDate;
+    if (allGameDates.length === 0) return null;
+
+    // Sort dates
+    allGameDates.sort((a, b) => a.getTime() - b.getTime());
+
+    const futureGames = allGameDates.filter(d => d > now);
+    const pastGames = allGameDates.filter(d => d <= now);
+
+    const mostRecentPastGame = pastGames.length > 0 ? pastGames[pastGames.length - 1] : null;
+    const nextFutureGame = futureGames.length > 0 ? futureGames[0] : null;
+
+    if (mostRecentPastGame) {
+        let gracePeriodHours = 10;
+        // Check if the next game is too close
+        if (nextFutureGame) {
+            const hoursUntilNextGame = (nextFutureGame.getTime() - mostRecentPastGame.getTime()) / (1000 * 60 * 60);
+            if (hoursUntilNextGame < 10) {
+                gracePeriodHours = 5;
+            }
+        }
+        
+        const gracePeriodEndDate = new Date(mostRecentPastGame.getTime() + gracePeriodHours * 60 * 60 * 1000);
+
+        // If we are within the grace period of the last game, show it.
+        if (now < gracePeriodEndDate) {
+            return mostRecentPastGame;
+        }
+    }
+
+    // Otherwise, show the next upcoming game.
+    return nextFutureGame;
 }
+
 
 const formatDateToId = (date: Date): string => {
     const d = new Date(date);
@@ -103,6 +108,7 @@ export default function HomePage() {
   const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
+  const [isGameFinished, setIsGameFinished] = useState(false);
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -113,22 +119,25 @@ export default function HomePage() {
     setIsGameDateLoading(true);
     try {
         if (groupSettings && groupSettings.gameDays) {
-          const gameDate = getNextGameDate(groupSettings.gameDays);
+          const gameDate = getActiveOrNextGameDate(groupSettings.gameDays);
           setNextGameDate(gameDate);
-        
+          
           if (gameDate) {
             const now = new Date();
-            const isToday = now.getFullYear() === gameDate.getFullYear() &&
-                            now.getMonth() === gameDate.getMonth() &&
-                            now.getDate() === gameDate.getDate();
+            const gameHasPassed = now > gameDate;
+            setIsGameFinished(gameHasPassed);
+            setIsConfirmationLocked(gameHasPassed);
 
-            const isGameTimePassed = now > gameDate;
+            // Logic for Goals Card
             const tenHoursAfterGame = new Date(gameDate.getTime() + 10 * 60 * 60 * 1000);
-            const isWithinTenHours = now < tenHoursAfterGame;
+            const isWithinTenHoursAfterStart = now > gameDate && now < tenHoursAfterGame;
+            const isToday = now.getFullYear() === gameDate.getFullYear() &&
+                          now.getMonth() === gameDate.getMonth() &&
+                          now.getDate() === gameDate.getDate();
 
-            const cardVisible = isToday && isWithinTenHours && !goalsSubmitted;
-            const cardEnabled = isGameTimePassed && isWithinTenHours;
-
+            const cardVisible = (isToday || isWithinTenHoursAfterStart) && !goalsSubmitted;
+            const cardEnabled = gameHasPassed;
+            
             setGoalsCardState({ visible: cardVisible, enabled: cardEnabled });
           } else {
              setGoalsCardState({ visible: false, enabled: false });
@@ -217,11 +226,11 @@ export default function HomePage() {
 
 
   const handlePresenceClick = async (status: 'confirmed' | 'declined') => {
-    if (!user || !user.groupId || !nextGameDate) {
+    if (!user || !user.groupId || !nextGameDate || isGameFinished) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível registrar sua presença. Verifique se você está em um grupo e há um jogo agendado.",
+        description: isGameFinished ? "Este jogo já foi encerrado." : "Não foi possível registrar sua presença.",
       });
       return;
     }
@@ -356,32 +365,40 @@ export default function HomePage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-4 mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-          Próxima Partida
+          {isGameFinished ? "Última Partida" : "Próxima Partida"}
         </h1>
         <p className="text-muted-foreground text-lg">
-          Confirme sua presença para o jogo da semana.
+          {isGameFinished ? "Veja os detalhes do jogo que acabou." : "Confirme sua presença para o jogo da semana."}
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-start gap-3">
-              <Calendar className="h-6 w-6 text-primary mt-1" />
-               {isGameDateLoading ? (
-                  <div className="w-full flex justify-center items-center py-4">
-                    <FootballSpinner />
-                  </div>
-                ) : (
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{formattedDate.line1}</span>
-                    {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
+            <CardTitle className="flex items-center justify-between">
+               <div className="flex items-start gap-3">
+                 <Calendar className="h-6 w-6 text-primary mt-1" />
+                 {isGameDateLoading ? (
+                    <div className="w-full flex justify-center items-center py-4">
+                      <FootballSpinner />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-bold">{formattedDate.line1}</span>
+                      {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
+                    </div>
+                  )}
+               </div>
+               {isGameFinished && (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-6 w-6" />
+                    <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
                   </div>
                 )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">Você vai participar?</p>
+            <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
             <div className="grid grid-cols-2 gap-4">
               <Button 
                 size="lg" 
@@ -486,3 +503,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
