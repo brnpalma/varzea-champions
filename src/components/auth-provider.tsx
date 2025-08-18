@@ -2,7 +2,7 @@
 "use client";
 
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
 import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
@@ -61,7 +61,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     let profileUnsubscribe: Unsubscribe | undefined;
@@ -165,18 +164,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (loading) return;
 
     const isAuthPage = pathname === "/login";
-    const isCompletingProfile = searchParams.get('complete_profile') === 'true';
     
-    if (user && !user.userType && !isCompletingProfile) {
+    // Redirect to complete profile if user exists but userType doesn't
+    if (user && !user.userType && !isAuthPage) {
        router.push("/login?complete_profile=true");
        return;
     }
     
+    // Redirect to home if user is fully authenticated and on login page
     if (user && user.userType && isAuthPage) {
       router.push("/");
     }
     
-  }, [user, loading, pathname, router, searchParams]);
+  }, [user, loading, pathname, router]);
 
 
   if (loading) {
