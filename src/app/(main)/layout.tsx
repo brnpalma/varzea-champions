@@ -1,11 +1,10 @@
-"use client";
 
-import { AuthProvider } from "@/components/auth-provider";
+import { MainLayout } from "@/components/main-layout";
 
-export default function MainLayout({
+export default function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return <MainLayout>{children}</MainLayout>;
 }
