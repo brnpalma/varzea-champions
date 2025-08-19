@@ -476,7 +476,7 @@ export default function HomePage() {
             <div className="md:col-span-2">
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
+                  <CardTitle className="flex items-center justify-center gap-3">
                     <Share2 className="h-6 w-6 text-primary" />
                     <span>Convidar Jogadores</span>
                   </CardTitle>
