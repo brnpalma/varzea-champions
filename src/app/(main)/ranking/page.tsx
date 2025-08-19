@@ -81,7 +81,7 @@ export default function RankingPage() {
     return (
       <ul className="space-y-3">
         {players.map((player, index) => (
-          <li key={player.uid} className="flex items-center gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
+          <li key={player.uid} className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
             <div className="flex items-center gap-2 w-10">
               <span className={`font-bold text-lg ${index < 3 ? 'text-foreground' : 'text-muted-foreground'}`}>{index + 1}</span>
               {index < 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(index + 1)}`} />}
@@ -91,15 +91,15 @@ export default function RankingPage() {
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-              <p className="text-sm text-muted-foreground truncate">{player.email}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">{player.email}</p>
             </div>
             
             {type === 'goals' ? (
-              <div className="flex items-center justify-end w-12">
-                  <span className="text-2xl font-bold text-primary">{player.totalGoals || 0}</span>
+              <div className="flex items-center justify-end w-12 text-right">
+                  <span className="text-xl sm:text-2xl font-bold text-primary">{player.totalGoals || 0}</span>
               </div>
             ) : (
-              <Badge variant="secondary" className="flex items-center gap-2 text-base">
+              <Badge variant="secondary" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
                  <Star className="h-4 w-4 text-amber-500 fill-current" />
                  {player.rating || 1}
               </Badge>
