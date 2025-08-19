@@ -103,7 +103,6 @@ export default function RankingPage() {
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">{player.email}</p>
             </div>
             
             {type === 'goals' ? (

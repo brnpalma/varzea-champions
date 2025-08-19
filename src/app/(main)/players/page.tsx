@@ -159,63 +159,11 @@ export default function PlayersPage() {
     );
   }
 
-
-  if (!user) {
-     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <Card className="shadow-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Jogadores do grupo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-center py-8 text-muted-foreground">
-                        <p>Faça login para ver os jogadores do seu grupo.</p>
-                    </div>
-                </CardContent>
-            </Card>
-            <div className="mt-8">
-                 <Card className="max-w-2xl mx-auto shadow-lg text-center">
-                    <CardHeader>
-                        <CardTitle>Gerencie seu Grupo</CardTitle>
-                        <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores, ou como jogador para ver os membros do seu time.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild size="lg">
-                            <Link href="/login">
-                            <LogIn className="mr-2" />
-                            Fazer Login ou Criar Conta
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
-  }
-
-  if (!groupId) {
-     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <Card className="max-w-2xl mx-auto shadow-lg text-center">
-          <CardHeader>
-            <CardTitle>Você não está em um grupo</CardTitle>
-            <CardDescription>Para ver e gerenciar jogadores, você precisa fazer parte de um grupo.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {isManager ? "Vá para as configurações para criar um grupo." : "Peça o link de convite ao gestor do seu grupo."}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-center w-full">
+        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
+          <div className="w-full">
             <CardTitle className="text-2xl">
               Jogadores do grupo
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
@@ -230,7 +178,7 @@ export default function PlayersPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-             <div className="flex justify-center items-center py-8">
+             <div className="flex justify-center items-center py-8 h-full">
               <FootballSpinner />
             </div>
           ) : (
@@ -242,13 +190,12 @@ export default function PlayersPage() {
                       <UserAvatar src={player.photoURL} size={48} />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-foreground break-words">{player.displayName}</p>
-                        <p className="text-sm text-muted-foreground break-all">{player.email}</p>
                       </div>
                     </div>
 
                     {isManager && user?.uid !== player.uid && (
                       <div className='flex items-center justify-end gap-2'>
-                          <PaymentHistoryDialog player={player} groupId={groupId} />
+                          <PaymentHistoryDialog player={player} groupId={groupId!} />
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon">
@@ -299,6 +246,39 @@ export default function PlayersPage() {
           )}
         </CardContent>
       </Card>
+        {!user && (
+            <div className="mt-8">
+                 <Card className="max-w-2xl mx-auto shadow-lg text-center">
+                    <CardHeader>
+                        <CardTitle>Gerencie seu Grupo</CardTitle>
+                        <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores, ou como jogador para ver os membros do seu time.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild size="lg">
+                            <Link href="/login">
+                            <LogIn className="mr-2" />
+                            Fazer Login ou Criar Conta
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )}
+       {!groupId && user && (
+         <div className="mt-8">
+          <Card className="max-w-2xl mx-auto shadow-lg text-center">
+            <CardHeader>
+              <CardTitle>Você não está em um grupo</CardTitle>
+              <CardDescription>Para ver e gerenciar jogadores, você precisa fazer parte de um grupo.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {isManager ? "Vá para as configurações para criar um grupo." : "Peça o link de convite ao gestor do seu grupo."}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
