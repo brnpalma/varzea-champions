@@ -404,25 +404,6 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      {!loading && !user && (
-        <Card className="max-w-4xl mx-auto shadow-lg text-center mb-6">
-          <CardHeader>
-            <CardTitle>Bem-vindo ao Várzea Champions</CardTitle>
-            <CardDescription>
-              Faça login para gerenciar seu time, confirmar presença e muito mais.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild size="lg">
-              <Link href="/login">
-                <LogIn className="mr-2" />
-                Fazer Login ou Criar Conta
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="space-y-4 mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
@@ -430,6 +411,24 @@ export default function HomePage() {
         <p className="text-muted-foreground text-lg">
           {isGameFinished ? "Veja os detalhes do jogo que acabou." : "Confirme sua presença para o jogo da semana."}
         </p>
+        {!loading && !user && (
+          <Card className="max-w-4xl mx-auto shadow-lg text-center mt-6">
+            <CardHeader>
+              <CardTitle>Bem-vindo ao Várzea Champions</CardTitle>
+              <CardDescription>
+                Faça login para gerenciar seu time, confirmar presença e muito mais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
@@ -591,5 +590,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
