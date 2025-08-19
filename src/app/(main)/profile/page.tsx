@@ -424,9 +424,9 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto space-y-8">
         <Card className="shadow-lg">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-0 sm:space-x-4 w-full">
+                <div className="relative shrink-0">
                   <UserAvatar src={photoPreview} size={80} />
                   {isEditing && (
                     <button
@@ -444,8 +444,8 @@ export default function ProfilePage() {
                     accept="image/*"
                   />
                 </div>
-                <div>
-                    <div className="flex items-center gap-2">
+                <div className="mt-2 sm:mt-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
                         {!isEditing && (
                             <div className="flex items-center text-amber-500">
@@ -458,7 +458,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               {isEditing && (
-                  <Button onClick={handleEditToggle} variant="ghost" size="icon">
+                  <Button onClick={handleEditToggle} variant="ghost" size="icon" className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto">
                      <X className="h-5 w-5"/>
                   </Button>
               )}
@@ -476,7 +476,7 @@ export default function ProfilePage() {
                       placeholder="Seu nome ou apelido"
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</Label>
                       <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
@@ -553,22 +553,22 @@ export default function ProfilePage() {
               </div>
             )}
             
-            <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t gap-4">
               {isEditing ? (
-                  <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                  <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="w-full sm:w-auto">
                     <Save className="mr-2 h-4 w-4" /> 
                     {isSavingProfile ? "Salvando..." : "Salvar Alterações"}
                   </Button>
               ) : (
                 <>
-                  <Button variant="outline" onClick={handleEditToggle}>
+                  <Button variant="outline" onClick={handleEditToggle} className="w-full sm:w-auto">
                       <Edit className="mr-2 h-4 w-4"/>
                       Editar Perfil
                   </Button>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost">
+                        <Button variant="ghost" className="flex-1">
                           <LogOut className="mr-2 h-4 w-4" />
                           Sair
                         </Button>
@@ -593,9 +593,9 @@ export default function ProfilePage() {
                     </AlertDialog>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={isDeleting}>
+                            <Button variant="destructive" disabled={isDeleting} className="flex-1">
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                {isDeleting ? "Deletando..." : "Deletar Perfil"}
+                                {isDeleting ? "Deletando..." : "Deletar"}
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -646,7 +646,7 @@ export default function ProfilePage() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {isGroupManager && (
-                            <div className="space-y-2">
+                            <div className="space-y-2 sm:col-span-2">
                                 <Label htmlFor="group-name">Nome do Grupo</Label>
                                 <Input
                                     id="group-name"
@@ -656,7 +656,7 @@ export default function ProfilePage() {
                                 />
                             </div>
                         )}
-                        <div className="space-y-2">
+                        <div className="space-y-2 sm:col-span-2">
                             <Label htmlFor="players-per-team">Jogadores por Time</Label>
                             <Input
                                 id="players-per-team"
@@ -713,7 +713,7 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
                       <div className="space-y-4">
                         {daysOfWeek.map((day) => (
-                          <div key={day.id} className="flex items-center space-x-4 justify-between">
+                          <div key={day.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 justify-between">
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id={day.id}
@@ -722,14 +722,14 @@ export default function ProfilePage() {
                                 />
                                 <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
                             </div>
-                            <div>
+                            <div className="w-full sm:w-auto">
                                 <Input
                                     id={`time-${day.id}`}
                                     type="time"
                                     step="1800" // 30 minutos em segundos
                                     value={settings.gameDays[day.id]?.time || ''}
                                     onChange={(e) => handleTimeChange(day.id, e.target.value)}
-                                    className="w-40"
+                                    className="w-full sm:w-40"
                                     disabled={!settings.gameDays[day.id]?.selected}
                                 />
                             </div>
