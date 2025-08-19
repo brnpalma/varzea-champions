@@ -301,7 +301,7 @@ export default function SorterPage() {
         </Card>
 
         {isSorting && (
-           <div className="flex justify-center items-center py-12">
+           <div className="flex justify-center items-center py-12 h-full">
               <FootballSpinner />
             </div>
         )}

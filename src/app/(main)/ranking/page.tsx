@@ -124,7 +124,7 @@ export default function RankingPage() {
   
   if (isLoading || authLoading) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex justify-center">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
         <FootballSpinner />
       </div>
     );
