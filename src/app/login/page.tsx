@@ -33,7 +33,7 @@ function LoginPageContent() {
   }
 
   return (
-     <div className="flex items-center justify-center h-full p-4 sm:p-6 lg:p-8">
+     <div className="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">
@@ -57,7 +57,7 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><FootballSpinner /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><FootballSpinner /></div>}>
       <LoginPageContent />
     </Suspense>
   )

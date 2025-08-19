@@ -1,15 +1,12 @@
 
-import type {NextConfig} from 'next';
-import type { PWAConfig } from 'next-pwa';
+import type { NextConfig } from 'next';
 
 const withPWA = require('next-pwa')({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
-  // runtimeCaching is not needed, as the default behavior already matches the requirements.
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -29,7 +26,7 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
   async redirects() {
