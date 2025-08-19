@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams, useRouter } from 'next/navigation'
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
 import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -169,49 +169,31 @@ function SignupFormComponent() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-
-    if (values.userType === UserType.JOGADOR && !groupIdFromUrl && !authUser) {
-       toast({
-        variant: "destructive",
-        title: "Falha no Cadastro",
-        description: "Jogadores só podem se cadastrar através de um link de convite válido.",
-      });
-      setIsLoading(false);
-      return;
-    }
+    let user = auth.currentUser;
+    let isNewUser = false; // Flag to check if a new user was created in this flow
 
     try {
-      let user = auth.currentUser;
+      if (values.userType === UserType.JOGADOR && !groupIdFromUrl && !authUser) {
+         throw new Error("Jogadores só podem se cadastrar através de um link de convite válido.");
+      }
 
       // If there's no authenticated user, it means this is a fresh email/password signup.
       if (!user) {
         if (!values.password) {
-          toast({ variant: "destructive", title: "Senha obrigatória" });
-          setIsLoading(false);
-          return;
+          throw new Error("Senha é obrigatória para novos cadastros.");
         }
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         user = userCredential.user;
+        isNewUser = true; // Mark that a new user was created
       }
       
       if (!user) {
           throw new Error("Falha na autenticação do usuário.");
       }
-
-      // At this point, `user` is guaranteed to be a FirebaseAuth user object.
       
       let photoURL = user.photoURL; // Keep existing photo by default
       if (values.photo) {
-        try {
           photoURL = await resizeAndEncodeImage(values.photo);
-        } catch (photoError) {
-            console.error("Error processing photo:", photoError);
-            toast({
-              variant: "destructive",
-              title: "Erro na Imagem",
-              description: "Não foi possível processar sua foto, mas seu perfil será salvo sem ela.",
-            });
-        }
       }
 
       await updateProfile(user, {
@@ -255,7 +237,7 @@ function SignupFormComponent() {
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
         allowConfirmationWithDebt: true,
-        totalGoals: 0, // Initialize totalGoals
+        totalGoals: 0,
       });
       
       await batch.commit();
@@ -270,6 +252,14 @@ function SignupFormComponent() {
       
     } catch (error: any) {
       console.error("Signup Error:", error);
+
+      // Rollback user creation if it happened in this flow and something failed afterwards
+      if (isNewUser && user) {
+        await deleteUser(user).catch(deleteError => {
+            console.error("Failed to rollback user deletion:", deleteError);
+        });
+      }
+      
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este e-mail já está em uso. Tente fazer login ou use um e-mail diferente.';
@@ -479,3 +469,5 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
+
+    
