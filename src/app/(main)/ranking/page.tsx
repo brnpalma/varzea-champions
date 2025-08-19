@@ -52,11 +52,19 @@ export default function RankingPage() {
   }, [user?.groupId, authLoading]);
 
   const topScorers = useMemo(() => {
-    return [...players].sort((a, b) => (b.totalGoals || 0) - (a.totalGoals || 0));
+    return [...players].sort((a, b) => {
+      const goalsDiff = (b.totalGoals || 0) - (a.totalGoals || 0);
+      if (goalsDiff !== 0) return goalsDiff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
+    });
   }, [players]);
 
   const topRated = useMemo(() => {
-    return [...players].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    return [...players].sort((a, b) => {
+      const ratingDiff = (b.rating || 0) - (a.rating || 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
+    });
   }, [players]);
 
   const renderPlayerList = (players: User[], type: 'goals' | 'rating') => {
