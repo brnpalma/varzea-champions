@@ -127,6 +127,9 @@ export function BottomNav() {
             </Link>
           ))}
         </nav>
+        <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
+          Versão 0.1.0
+        </div>
         <div className="p-4 border-t">
           {user ? (
             <div className="flex items-center gap-3">

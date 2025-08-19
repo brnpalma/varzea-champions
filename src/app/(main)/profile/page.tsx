@@ -752,6 +752,9 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+      <div className="md:hidden text-center text-sm text-muted-foreground mt-8">
+        Versão 0.1.0
+      </div>
     </div>
   );
 }
