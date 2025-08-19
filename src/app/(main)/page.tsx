@@ -498,6 +498,17 @@ export default function HomePage() {
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4 text-center">
+                {groupSettings.chavePix && (
+                 <div className="pb-2">
+                    <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
+                        <code className="truncate">{groupSettings.chavePix}</code>
+                        <Button variant="ghost" size="sm" onClick={handleCopyPix}>
+                            Copiar
+                        </Button>
+                    </div>
+                 </div>
+               )}
                 {groupSettings.valorMensalidade && (
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Mensalidade:</span>
@@ -510,17 +521,6 @@ export default function HomePage() {
                         <span className="font-bold text-lg">R$ {groupSettings.valorAvulso.toFixed(2)}</span>
                     </div>
                 )}
-               {groupSettings.chavePix && (
-                 <div className="pt-2">
-                    <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
-                    <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
-                        <code className="truncate">{groupSettings.chavePix}</code>
-                        <Button variant="ghost" size="sm" onClick={handleCopyPix}>
-                            Copiar
-                        </Button>
-                    </div>
-                 </div>
-               )}
              </CardContent>
            </Card>
         )}
