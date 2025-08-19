@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { User, PlayerSubscriptionType } from "@/hooks/use-auth";
+import { User } from "@/hooks/use-auth";
 import { DollarSign, PlusCircle } from "lucide-react";
 import { firestore } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
@@ -23,6 +23,7 @@ import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
+import React from "react";
 
 interface Payment {
   id: string;
@@ -38,9 +39,10 @@ interface Payment {
 interface PaymentHistoryDialogProps {
   player: User;
   groupId: string;
+  children: React.ReactNode;
 }
 
-export function PaymentHistoryDialog({ player, groupId }: PaymentHistoryDialogProps) {
+export function PaymentHistoryDialog({ player, groupId, children }: PaymentHistoryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,9 +104,7 @@ export function PaymentHistoryDialog({ player, groupId }: PaymentHistoryDialogPr
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
-          <DollarSign className="h-4 w-4" />
-        </Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>

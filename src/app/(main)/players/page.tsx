@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, LogIn } from 'lucide-react';
+import { Share2, Trash2, LogIn, MoreVertical, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -21,6 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
@@ -131,7 +137,7 @@ export default function PlayersPage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <CardHeader className="text-center">
           <div className="w-full text-center">
             <CardTitle className="text-2xl">
               Jogadores do grupo
@@ -163,33 +169,47 @@ export default function PlayersPage() {
                     </div>
 
                     {isManager && user?.uid !== player.uid && (
-                      <div className='flex items-center justify-end gap-2'>
-                          <PaymentHistoryDialog player={player} groupId={groupId!} />
-                          <AlertDialog>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="shrink-0">
+                              <MoreVertical className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <PaymentHistoryDialog player={player} groupId={groupId!}>
+                               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <DollarSign className="mr-2 h-4 w-4" />
+                                  <span>Histórico Financeiro</span>
+                                </DropdownMenuItem>
+                            </PaymentHistoryDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="icon">
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Remover do Grupo</span>
+                              </DropdownMenuItem>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemovePlayer(player)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remover
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                      </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRemovePlayer(player)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 </li>
