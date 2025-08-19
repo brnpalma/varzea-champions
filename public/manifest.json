@@ -1,6 +1,7 @@
 {
   "name": "Varzea Champions Manager",
-  "short_name": "VCM",
+  "short_name": "Varzea Champions",
+  "description": "Gerencie seu time na várzea",
   "theme_color": "#3F51B5",
   "background_color": "#E8EAF6",
   "display": "standalone",
