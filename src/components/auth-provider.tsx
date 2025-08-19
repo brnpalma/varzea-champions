@@ -82,6 +82,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (groupUnsubscribe) groupUnsubscribe();
 
           const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
+          
+          const isAuthPage = pathname === "/login";
+          
+          if (!userProfileData && !isAuthPage) {
+             router.push("/login?complete_profile=true");
+             setLoading(false);
+             return;
+          }
 
           const currentUser = {
             ...firebaseUser,
@@ -93,22 +101,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
             rating: userProfileData?.rating || 1,
             allowConfirmationWithDebt: userProfileData?.allowConfirmationWithDebt || false,
             totalGoals: userProfileData?.totalGoals || 0,
-            groupName: null, // will be populated by group listener
+            groupName: null,
           } as User;
 
           setUser(currentUser);
           
+          if (currentUser.userType && isAuthPage) {
+              router.push("/");
+          }
+
           if (currentUser.groupId) {
             const groupDocRef = doc(firestore, "groups", currentUser.groupId);
             groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
               const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
               setGroupSettings(groupData);
               setUser(prevUser => prevUser ? { ...prevUser, groupName: groupData?.name || null } : null);
-              setLoading(false); // Finish loading after group data is fetched
-            });
+              setLoading(false);
+            }, () => setLoading(false));
           } else {
             setGroupSettings(null);
-            setLoading(false); // Finish loading if no group
+            setLoading(false);
           }
         }, (error) => {
           console.error("Error fetching user profile:", error);
@@ -127,25 +139,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       authUnsubscribe();
       cleanupListeners();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (loading) return;
-
-    const isAuthPage = pathname === "/login";
-    
-    // Redirect to home if user is fully authenticated and on login page
-    if (user && user.userType && isAuthPage) {
-      router.push("/");
-      return;
-    }
-    
-    // Redirect to complete profile if user exists but userType doesn't
-    if (user && !user.userType && !isAuthPage) {
-       router.push("/login?complete_profile=true");
-    }
-    
-  }, [user, loading, pathname, router]);
 
 
   if (loading) {
