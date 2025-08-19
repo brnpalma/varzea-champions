@@ -397,8 +397,8 @@ export default function HomePage() {
         <div className="md:col-span-2">
             <Card className="shadow-lg">
               <CardHeader className="flex flex-row items-center justify-between">
-                   <div className="flex items-start gap-3">
-                     <Calendar className="h-6 w-6 text-primary mt-1" />
+                   <div className="flex items-center gap-3">
+                     <Calendar className="h-6 w-6 text-primary" />
                      {isGameDateLoading ? (
                         <div className="w-full flex justify-center items-center py-4">
                           <FootballSpinner />
@@ -530,3 +530,5 @@ export default function HomePage() {
 }
 
     
+
+  
