@@ -215,15 +215,16 @@ export default function PlayersPage() {
           ) : (
             <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex flex-col p-3 gap-2">
+                <li key={player.uid} className="flex flex-col gap-3 py-4">
                   <div className="flex items-center justify-between w-full gap-4">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <UserAvatar src={player.photoURL} size={48} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-                        <p className="text-sm text-muted-foreground truncate">{player.email}</p>
+                        <p className="font-semibold text-foreground break-words">{player.displayName}</p>
+                        <p className="text-sm text-muted-foreground break-all">{player.email}</p>
                       </div>
                     </div>
+
                     {isManager && user?.uid !== player.uid && (
                       <div className='flex items-center justify-end gap-2'>
                           <Button variant="outline" size="icon">
@@ -257,7 +258,7 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-center space-x-2 pt-1"> 
+                      <div className="flex items-center space-x-2 pl-1"> 
                         <Checkbox 
                             id={`debt-${player.uid}`}
                             checked={player.allowConfirmationWithDebt ?? false}
