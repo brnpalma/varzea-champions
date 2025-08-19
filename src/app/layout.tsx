@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 export const metadata: Metadata = {
   title: 'Varzea Champions Manager',
   description: 'Gerencie seu time na várzea',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -20,6 +21,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#3F51B5" />
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
