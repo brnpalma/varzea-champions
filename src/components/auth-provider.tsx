@@ -2,7 +2,7 @@
 "use client";
 
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
 import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
@@ -61,6 +61,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Persist group_id from invite link across Google Auth redirects
+    const groupIdFromUrl = searchParams.get('group_id');
+    if (groupIdFromUrl) {
+      sessionStorage.setItem('invite_group_id', groupIdFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let profileUnsubscribe: Unsubscribe | undefined;

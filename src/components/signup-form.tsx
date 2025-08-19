@@ -111,7 +111,10 @@ function SignupFormComponent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const groupIdFromUrl = searchParams.get('group_id');
+  
+  // Read group ID from URL first, then fall back to sessionStorage for Google Auth flow
+  const groupIdFromUrl = searchParams.get('group_id') || sessionStorage.getItem('invite_group_id');
+
   const { user: authUser } = useAuth(); // Get the authenticated user
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -247,6 +250,11 @@ function SignupFormComponent() {
           title: "Cadastro Concluído!",
           description: "Seu perfil foi criado com sucesso.",
       });
+
+      // Clean up sessionStorage after successful signup
+      if (sessionStorage.getItem('invite_group_id')) {
+        sessionStorage.removeItem('invite_group_id');
+      }
 
       router.push('/');
       
@@ -469,5 +477,3 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
-
-    
