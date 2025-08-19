@@ -36,6 +36,8 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
@@ -126,6 +128,11 @@ export default function PlayersPage() {
     }
   };
   
+  const openPaymentHistory = (player: User) => {
+    setSelectedPlayer(player);
+    setIsPaymentHistoryOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
@@ -159,9 +166,9 @@ export default function PlayersPage() {
           ) : (
             <ul className="divide-y divide-border">
               {players.map((player) => (
-                <li key={player.uid} className="flex flex-col gap-3 py-4">
+                <li key={player.uid} className="py-4">
                   <div className="flex items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-4 min-w-0">
                       <UserAvatar src={player.photoURL} size={48} />
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground break-words">{player.displayName}</p>
@@ -177,12 +184,10 @@ export default function PlayersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <PaymentHistoryDialog player={player} groupId={groupId!}>
-                               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <DollarSign className="mr-2 h-4 w-4" />
-                                  <span>Histórico Financeiro</span>
-                                </DropdownMenuItem>
-                            </PaymentHistoryDialog>
+                            <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
+                              <DollarSign className="mr-2 h-4 w-4" />
+                              <span>Histórico Financeiro</span>
+                            </DropdownMenuItem>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem className="text-destructive focus:text-destructive">
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -218,6 +223,14 @@ export default function PlayersPage() {
           )}
         </CardContent>
       </Card>
+      {selectedPlayer && (
+        <PaymentHistoryDialog
+          player={selectedPlayer}
+          groupId={groupId!}
+          isOpen={isPaymentHistoryOpen}
+          setIsOpen={setIsPaymentHistoryOpen}
+        />
+      )}
         {!user && (
             <div className="mt-8">
                  <Card className="max-w-2xl mx-auto shadow-lg text-center">
