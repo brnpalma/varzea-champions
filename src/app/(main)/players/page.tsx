@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, LogIn, DollarSign } from 'lucide-react';
+import { Share2, Trash2, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
@@ -195,8 +196,9 @@ export default function PlayersPage() {
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="text-center sm:text-left w-full">
-            <CardTitle>
-              {user?.groupName || ""}
+            <CardTitle className="text-2xl">
+              Jogadores do grupo
+              <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
             </CardTitle>
           </div>
           {isManager && (
@@ -226,9 +228,7 @@ export default function PlayersPage() {
 
                     {isManager && user?.uid !== player.uid && (
                       <div className='flex items-center justify-end gap-2'>
-                          <Button variant="outline" size="icon">
-                            <DollarSign className="h-4 w-4"/>
-                          </Button>
+                          <PaymentHistoryDialog player={player} groupId={groupId} />
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon">
@@ -257,7 +257,7 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-start pl-16">
+                      <div className="flex items-start ml-0 md:pl-16">
                         <div className="flex items-center h-5">
                             <Checkbox 
                                 id={`debt-${player.uid}`}
