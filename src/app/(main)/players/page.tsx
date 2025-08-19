@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 export default function PlayersPage() {
-  const { user, loading } from useAuth();
+  const { user, loading } = useAuth();
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -196,9 +196,7 @@ export default function PlayersPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="text-center sm:text-left w-full">
             <CardTitle>
-              Jogadores do grupo
-              <br />
-              <span className="text-primary">{user?.groupName || ""}</span>
+              {user?.groupName || ""}
             </CardTitle>
           </div>
           {isManager && (
@@ -259,16 +257,20 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-center space-x-2 pl-[64px]"> 
-                        <Checkbox 
-                            id={`debt-${player.uid}`}
-                            checked={player.allowConfirmationWithDebt ?? false}
-                            onCheckedChange={() => handleToggleDebtPermission(player)}
-                            disabled={isPending}
-                        />
-                        <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
-                            Permitir confirmação de presença com pendência
-                        </Label>
+                      <div className="flex items-start pl-16">
+                        <div className="flex items-center h-5">
+                            <Checkbox 
+                                id={`debt-${player.uid}`}
+                                checked={player.allowConfirmationWithDebt ?? false}
+                                onCheckedChange={() => handleToggleDebtPermission(player)}
+                                disabled={isPending}
+                            />
+                        </div>
+                        <div className="ml-2 text-sm">
+                            <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
+                                Permitir confirmação de presença com pendência
+                            </Label>
+                        </div>
                       </div>
                     )}
                 </li>
