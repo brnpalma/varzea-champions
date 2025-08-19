@@ -673,7 +673,7 @@ export default function ProfilePage() {
                       <Label className="text-base">Financeiro</Label>
                        <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-2">
-                                <Label htmlFor="valor-mensalidade">Valor da Mensalidade (R$)</Label>
+                                <Label htmlFor="valor-mensalidade">Valor Mensal (R$)</Label>
                                 <Input
                                     id="valor-mensalidade"
                                     type="number"
