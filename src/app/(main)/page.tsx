@@ -434,8 +434,8 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
             <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between">
-                   <div className="flex items-center gap-3">
+              <CardHeader className="flex flex-row items-center justify-center relative">
+                   <div className="flex items-center gap-3 text-center">
                      <Calendar className="h-6 w-6 text-primary" />
                      {isGameDateLoading ? (
                         <div className="w-full flex justify-center items-center py-4">
@@ -449,7 +449,7 @@ export default function HomePage() {
                       )}
                    </div>
                    {isGameFinished && (
-                      <div className="flex items-center gap-2 text-green-600">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-green-600">
                         <CheckCircle className="h-6 w-6" />
                         <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
                       </div>
