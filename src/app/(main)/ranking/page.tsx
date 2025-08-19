@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Star, Goal } from "lucide-react";
+import { Trophy, Star } from "lucide-react";
 import { useAuth, User } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -95,10 +95,9 @@ export default function RankingPage() {
             </div>
             
             {type === 'goals' ? (
-              <Badge variant="secondary" className="flex items-center gap-2 text-base">
-                <Goal className="h-4 w-4" />
-                {player.totalGoals || 0}
-              </Badge>
+              <div className="flex items-center justify-end w-12">
+                  <span className="text-2xl font-bold text-primary">{player.totalGoals || 0}</span>
+              </div>
             ) : (
               <Badge variant="secondary" className="flex items-center gap-2 text-base">
                  <Star className="h-4 w-4 text-amber-500 fill-current" />
