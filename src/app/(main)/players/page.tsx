@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 export default function PlayersPage() {
-  const { user, loading } = useAuth();
+  const { user, loading } from useAuth();
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -194,11 +194,12 @@ export default function PlayersPage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle>Jogadores do Grupo</CardTitle>
-            <CardDescription>
-              {user?.groupName ? user.groupName : "Veja os membros do seu grupo."}
-            </CardDescription>
+          <div className="text-center sm:text-left w-full">
+            <CardTitle>
+              Jogadores do grupo
+              <br />
+              <span className="text-primary">{user?.groupName || ""}</span>
+            </CardTitle>
           </div>
           {isManager && (
             <Button onClick={handleShareLink} className="w-full sm:w-auto">
@@ -258,7 +259,7 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-center space-x-2 pl-1"> 
+                      <div className="flex items-center space-x-2 pl-[64px]"> 
                         <Checkbox 
                             id={`debt-${player.uid}`}
                             checked={player.allowConfirmationWithDebt ?? false}
