@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -8,8 +9,9 @@ service cloud.firestore {
     }
     
     function isManager(groupId) {
-      let userProfile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return userProfile.userType == "Gestor do Grupo" && userProfile.groupId == groupId;
+      // Check if user document exists before accessing data
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.exists && userDoc.data.userType == "Gestor do Grupo" && userDoc.data.groupId == groupId;
     }
 
     match /users/{userId} {
@@ -23,7 +25,8 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read: if isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+      // Allow any authenticated user to read group info (e.g., to validate an invite link)
+      allow read: if isUserAuthenticated();
       allow write: if isUserAuthenticated() && 
                     (isManager(groupId) || (request.resource.data.managerId == request.auth.uid));
                       

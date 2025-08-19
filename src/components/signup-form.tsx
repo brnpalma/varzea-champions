@@ -272,7 +272,7 @@ function SignupFormComponent() {
       console.error("Signup Error:", error);
       let description = "Ocorreu um erro desconhecido. Tente novamente.";
       if (error.code === 'auth/email-already-in-use') {
-        description = 'Este e-mail já está em uso.';
+        description = 'Este e-mail já está em uso. Tente fazer login ou use um e-mail diferente.';
       } else if (error.message) {
           description = error.message;
       }
