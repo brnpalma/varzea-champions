@@ -197,7 +197,7 @@ export default function PlayersPage() {
           <div>
             <CardTitle>Jogadores do Grupo</CardTitle>
             <CardDescription>
-              {user?.groupName ? `Membros do grupo "${user.groupName}"` : "Veja os membros do seu grupo."}
+              {user?.groupName ? user.groupName : "Veja os membros do seu grupo."}
             </CardDescription>
           </div>
           {isManager && (
