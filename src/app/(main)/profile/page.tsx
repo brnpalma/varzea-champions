@@ -454,7 +454,7 @@ export default function ProfilePage() {
                             </div>
                         )}
                     </div>
-                  <CardDescription>Veja e gerencie os detalhes do seu perfil.</CardDescription>
+                  <CardDescription className="text-center sm:text-left">Veja e gerencie os detalhes do seu perfil.</CardDescription>
                 </div>
               </div>
               {isEditing && (
@@ -713,7 +713,7 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
                       <div className="space-y-4">
                         {daysOfWeek.map((day) => (
-                          <div key={day.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 justify-between">
+                          <div key={day.id} className="flex flex-row items-center justify-between">
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id={day.id}
@@ -722,17 +722,18 @@ export default function ProfilePage() {
                                 />
                                 <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
                             </div>
-                            <div className="w-full sm:w-auto">
-                                <Input
-                                    id={`time-${day.id}`}
-                                    type="time"
-                                    step="1800" // 30 minutos em segundos
-                                    value={settings.gameDays[day.id]?.time || ''}
-                                    onChange={(e) => handleTimeChange(day.id, e.target.value)}
-                                    className="w-full sm:w-40"
-                                    disabled={!settings.gameDays[day.id]?.selected}
-                                />
-                            </div>
+                            {settings.gameDays[day.id]?.selected && (
+                              <div className="w-auto">
+                                  <Input
+                                      id={`time-${day.id}`}
+                                      type="time"
+                                      step="1800" // 30 minutos em segundos
+                                      value={settings.gameDays[day.id]?.time || ''}
+                                      onChange={(e) => handleTimeChange(day.id, e.target.value)}
+                                      className="w-32 sm:w-40"
+                                  />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
