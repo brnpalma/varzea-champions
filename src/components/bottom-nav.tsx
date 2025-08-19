@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -57,7 +58,7 @@ export function BottomNav() {
   const visibleNavItems = navItems.filter(item => {
     if (loading) return false;
     // For logged in users, filter by role
-    if (item.allowedRoles && (!user || !item.allowedRoles.includes(user.userType))) {
+    if ((item as any).allowedRoles && (!user || !(item as any).allowedRoles.includes(user.userType))) {
       return false;
     }
     return true;
@@ -107,8 +108,8 @@ export function BottomNav() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r fixed h-full z-50">
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 bg-primary rounded-lg">
-              <Users className="h-6 w-6 text-primary-foreground" />
+            <div className="p-2 bg-primary rounded-lg flex items-center justify-center h-10 w-10">
+              <Image src="/icon-512x512.png" alt="Várzea Champions Logo" width={24} height={24} />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
