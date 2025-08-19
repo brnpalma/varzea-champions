@@ -396,8 +396,7 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
             <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between">
                    <div className="flex items-start gap-3">
                      <Calendar className="h-6 w-6 text-primary mt-1" />
                      {isGameDateLoading ? (
@@ -417,8 +416,7 @@ export default function HomePage() {
                         <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
                       </div>
                     )}
-                </CardTitle>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="space-y-4">
                  <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
                  {!isGameFinished && (
@@ -494,12 +492,12 @@ export default function HomePage() {
         {showPaymentCard && (
            <Card className="shadow-lg h-fit">
              <CardHeader>
-               <CardTitle className="flex items-center gap-3">
+               <CardTitle className="flex items-center justify-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
                  <span>Financeiro</span>
                </CardTitle>
              </CardHeader>
-             <CardContent className="space-y-4">
+             <CardContent className="space-y-4 text-center">
                 {groupSettings.valorMensalidade && (
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Mensalidade:</span>
@@ -530,3 +528,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
