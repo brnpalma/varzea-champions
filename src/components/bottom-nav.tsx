@@ -23,12 +23,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
+import packageJson from '../../package.json';
 
 export function BottomNav() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const appVersion = packageJson.version;
 
   const handleLogout = async () => {
     try {
@@ -128,7 +130,7 @@ export function BottomNav() {
           ))}
         </nav>
         <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
-          Versão 0.1.0
+          Versão {appVersion}
         </div>
         <div className="p-4 border-t">
           {user ? (
