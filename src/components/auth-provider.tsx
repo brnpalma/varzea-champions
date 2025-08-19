@@ -69,82 +69,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const cleanupListeners = () => {
       if (profileUnsubscribe) profileUnsubscribe();
       if (groupUnsubscribe) groupUnsubscribe();
-      profileUnsubscribe = undefined;
-      groupUnsubscribe = undefined;
     };
 
-    const listenToGroupData = (groupId: string, currentUser: User) => {
-        if (groupUnsubscribe) groupUnsubscribe(); // Clean up previous listener
-        
-        const groupDocRef = doc(firestore, "groups", groupId);
-        groupUnsubscribe = onSnapshot(groupDocRef, (groupDocSnap) => {
-            const groupData = groupDocSnap.exists() ? groupDocSnap.data() : null;
-            
-            const groupName = groupData?.name || null;
-            const settings = groupData as GroupSettings | null;
-
-            setGroupSettings(settings);
-            setUser((prevUser) => {
-                if (prevUser && prevUser.uid === currentUser.uid) {
-                    return { ...prevUser, groupName };
-                }
-                return prevUser;
-            });
-        });
-    };
-
-    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       cleanupListeners();
+      setLoading(true);
 
       if (firebaseUser) {
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
-        profileUnsubscribe = onSnapshot(userDocRef, async (snap) => {
+        profileUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
           if (groupUnsubscribe) groupUnsubscribe();
 
-          if (snap.exists()) {
-            const userProfileData = snap.data() as Omit<UserProfile, 'groupName'>; // groupName will be handled separately
-            
-            const currentUser = {
-              ...firebaseUser,
-              displayName: userProfileData.displayName || firebaseUser.displayName || "Usuário",
-              photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
-              userType: userProfileData.userType,
-              playerSubscriptionType: userProfileData.playerSubscriptionType,
-              groupId: userProfileData.groupId || null,
-              rating: userProfileData.rating || 1,
-              allowConfirmationWithDebt: userProfileData.allowConfirmationWithDebt || false,
-              groupName: user?.groupName || null, // a temp value before the group listener updates it
-              totalGoals: userProfileData.totalGoals || 0,
-            };
-            setUser(currentUser as User);
+          const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
 
-            if (currentUser.groupId) {
-                listenToGroupData(currentUser.groupId, currentUser as User);
-            } else {
-                 setUser(prev => prev ? {...prev, groupName: null} : null);
-                 setGroupSettings(null);
-            }
+          const currentUser = {
+            ...firebaseUser,
+            displayName: userProfileData?.displayName || firebaseUser.displayName,
+            photoURL: userProfileData?.photoURL || firebaseUser.photoURL,
+            userType: userProfileData?.userType,
+            playerSubscriptionType: userProfileData?.playerSubscriptionType,
+            groupId: userProfileData?.groupId || null,
+            rating: userProfileData?.rating || 1,
+            allowConfirmationWithDebt: userProfileData?.allowConfirmationWithDebt || false,
+            totalGoals: userProfileData?.totalGoals || 0,
+            groupName: null, // will be populated by group listener
+          } as User;
 
+          setUser(currentUser);
+          
+          if (currentUser.groupId) {
+            const groupDocRef = doc(firestore, "groups", currentUser.groupId);
+            groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
+              const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
+              setGroupSettings(groupData);
+              setUser(prevUser => prevUser ? { ...prevUser, groupName: groupData?.name || null } : null);
+              setLoading(false); // Finish loading after group data is fetched
+            });
           } else {
-             setUser({
-              ...firebaseUser,
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              userType: undefined as any, 
-              groupName: null,
-              playerSubscriptionType: undefined as any,
-              groupId: null,
-              rating: 1,
-              allowConfirmationWithDebt: false,
-              totalGoals: 0,
-            } as User);
+            setGroupSettings(null);
+            setLoading(false); // Finish loading if no group
           }
-           setLoading(false);
         }, (error) => {
-            console.error("Snapshot listener error:", error);
-            setUser(null);
-            setLoading(false);
+          console.error("Error fetching user profile:", error);
+          setUser(null);
+          setLoading(false);
         });
 
       } else {
@@ -165,15 +134,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const isAuthPage = pathname === "/login";
     
-    // Redirect to complete profile if user exists but userType doesn't
-    if (user && !user.userType && !isAuthPage) {
-       router.push("/login?complete_profile=true");
-       return;
-    }
-    
     // Redirect to home if user is fully authenticated and on login page
     if (user && user.userType && isAuthPage) {
       router.push("/");
+      return;
+    }
+    
+    // Redirect to complete profile if user exists but userType doesn't
+    if (user && !user.userType && !isAuthPage) {
+       router.push("/login?complete_profile=true");
     }
     
   }, [user, loading, pathname, router]);

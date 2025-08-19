@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { SignupForm } from "@/components/signup-form";
@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Suspense } from "react";
+import { FootballSpinner } from "@/components/ui/football-spinner";
 
 function LoginPageContent() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -57,7 +57,7 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Carregando...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><FootballSpinner /></div>}>
       <LoginPageContent />
     </Suspense>
   )
