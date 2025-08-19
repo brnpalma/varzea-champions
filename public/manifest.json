@@ -1,11 +1,10 @@
 {
   "name": "Varzea Champions Manager",
-  "short_name": "Varzea CM",
-  "description": "Gerencie seu time na várzea",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#E8EAF6",
+  "short_name": "VCM",
   "theme_color": "#3F51B5",
+  "background_color": "#E8EAF6",
+  "display": "standalone",
+  "start_url": "/",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -16,6 +15,20 @@
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://placehold.co/1080x1920.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://placehold.co/1920x1080.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ]
 }

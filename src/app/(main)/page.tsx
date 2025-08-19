@@ -2,10 +2,10 @@
 "use client";
 
 import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2 } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
@@ -411,12 +411,30 @@ export default function HomePage() {
         <p className="text-muted-foreground text-lg">
           {isGameFinished ? "Veja os detalhes do jogo que acabou." : "Confirme sua presença para o jogo da semana."}
         </p>
+        {!loading && !user && (
+          <Card className="max-w-4xl mx-auto shadow-lg text-center mt-6">
+            <CardHeader>
+              <CardTitle>Bem-vindo ao Várzea Champions</CardTitle>
+              <CardDescription>
+                Faça login para gerenciar seu time, confirmar presença e muito mais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
             <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-center relative text-center">
                    <div className="flex items-center gap-3">
                      <Calendar className="h-6 w-6 text-primary" />
                      {isGameDateLoading ? (
@@ -431,15 +449,15 @@ export default function HomePage() {
                       )}
                    </div>
                    {isGameFinished && (
-                      <div className="flex items-center gap-2 text-green-600">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-green-600">
                         <CheckCircle className="h-6 w-6" />
                         <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
                       </div>
                     )}
                 </CardHeader>
               <CardContent className="space-y-4">
-                 <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
-                 {!isGameFinished && (
+                 <p className="text-muted-foreground text-center">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
+                 {!isGameFinished && user && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <Button 
@@ -468,23 +486,29 @@ export default function HomePage() {
                     </div>
                   </>
                 )}
+                 {!isGameFinished && !user && (
+                    <p className="text-sm text-center text-muted-foreground pt-4">
+                      Você precisa fazer login para confirmar sua presença.
+                    </p>
+                )}
               </CardContent>
             </Card>
         </div>
         
         {isManager && (
-          <Card className="shadow-lg h-fit">
+          <Card className="shadow-lg h-fit text-center">
             <CardHeader>
               <CardTitle className="flex items-center justify-center gap-3">
                 <Share2 className="h-6 w-6 text-primary" />
                 <span>Convidar Jogadores</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+            <CardContent className="flex flex-col items-center justify-center gap-4">
               <p className="text-muted-foreground">
                 Compartilhe o link para que novos jogadores entrem no seu grupo.
               </p>
               <Button onClick={handleShareLink}>
+                <Share2 className="mr-2 h-4 w-4" />
                 Copiar Link de Convite
               </Button>
             </CardContent>
@@ -492,14 +516,14 @@ export default function HomePage() {
         )}
 
         {goalsCardState.visible && (
-          <Card className="shadow-lg h-fit">
+          <Card className="shadow-lg h-fit text-center">
             <CardHeader>
               <CardTitle className="flex items-center justify-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
                 <span>Pós-Jogo</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+            <CardContent className="flex flex-col items-center justify-center gap-4">
               <p className="text-muted-foreground">Quantos gols você marcou hoje?</p>
               <GoalsDialog
                 onSave={handleSaveGoals}
@@ -509,14 +533,14 @@ export default function HomePage() {
           </Card>
         )}
 
-        <Card className="shadow-lg h-fit">
+        <Card className="shadow-lg h-fit text-center">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Ranking</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+          <CardContent className="flex flex-col items-center justify-center gap-4">
             <p className="text-muted-foreground">
               Veja a classificação de estrelas e artilheiros
             </p>
@@ -529,14 +553,14 @@ export default function HomePage() {
         </Card>
         
         {showPaymentCard && (
-           <Card className="shadow-lg h-fit">
+           <Card className="shadow-lg h-fit text-center">
              <CardHeader>
                <CardTitle className="flex items-center justify-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
                  <span>Financeiro</span>
                </CardTitle>
              </CardHeader>
-             <CardContent className="space-y-4 text-center">
+             <CardContent className="space-y-4">
                 {groupSettings.chavePix && (
                  <div className="pb-2">
                     <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
@@ -567,5 +591,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

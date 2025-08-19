@@ -162,22 +162,34 @@ export default function PlayersPage() {
 
   if (!user) {
      return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <Card className="max-w-2xl mx-auto shadow-lg text-center">
-          <CardHeader>
-            <CardTitle>Gerencie seu Grupo</CardTitle>
-            <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores, ou como jogador para ver os membros do seu time.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Button asChild size="lg">
-                <Link href="/login">
-                  <LogIn className="mr-2" />
-                  Fazer Login ou Criar Conta
-                </Link>
-              </Button>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <Card className="shadow-lg">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Jogadores do grupo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p>Faça login para ver os jogadores do seu grupo.</p>
+                    </div>
+                </CardContent>
+            </Card>
+            <div className="mt-8">
+                 <Card className="max-w-2xl mx-auto shadow-lg text-center">
+                    <CardHeader>
+                        <CardTitle>Gerencie seu Grupo</CardTitle>
+                        <CardDescription>Faça login como Gestor de Grupo para adicionar e remover jogadores, ou como jogador para ver os membros do seu time.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild size="lg">
+                            <Link href="/login">
+                            <LogIn className="mr-2" />
+                            Fazer Login ou Criar Conta
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
     );
   }
 
@@ -202,8 +214,8 @@ export default function PlayersPage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="text-center sm:text-left w-full">
+        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center w-full">
             <CardTitle className="text-2xl">
               Jogadores do grupo
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>

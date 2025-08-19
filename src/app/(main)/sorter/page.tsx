@@ -5,13 +5,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star, Info } from "lucide-react";
+import { Dices, Shuffle, Star, Info, LogIn } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
+import Link from "next/link";
 
 // Duplicated from home page, consider moving to a shared utility file
 interface GameDaySetting {
@@ -260,8 +261,8 @@ export default function SorterPage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
               <Dices className="h-7 w-7 text-primary" />
               <span>Sorteador de Times</span>
             </CardTitle>
@@ -300,7 +301,7 @@ export default function SorterPage() {
         </Card>
 
         {isSorting && (
-           <div className="flex justify-center items-center py-12">
+           <div className="flex justify-center items-center py-12 h-full">
               <FootballSpinner />
             </div>
         )}
@@ -317,6 +318,27 @@ export default function SorterPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {!authLoading && !user && (
+          <div className="mt-8">
+            <Card className="shadow-lg text-center">
+              <CardHeader>
+                <CardTitle>Faça Login para Sortear</CardTitle>
+                <CardDescription>
+                  Você precisa estar em um grupo para sortear os times.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild size="lg">
+                  <Link href="/login">
+                    <LogIn className="mr-2" />
+                    Fazer Login ou Criar Conta
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

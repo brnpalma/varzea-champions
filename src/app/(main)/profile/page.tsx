@@ -29,6 +29,7 @@ import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import packageJson from '../../../../package.json';
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -89,6 +90,7 @@ export default function ProfilePage() {
   const { user, loading, groupSettings } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const appVersion = packageJson.version;
   
   // Profile Editing State
   const [isEditing, setIsEditing] = useState(false);
@@ -671,9 +673,9 @@ export default function ProfilePage() {
 
                     <div className="space-y-2">
                       <Label className="text-base">Financeiro</Label>
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                       <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-2">
-                                <Label htmlFor="valor-mensalidade">Valor da Mensalidade (R$)</Label>
+                                <Label htmlFor="valor-mensalidade">Valor Mensal (R$)</Label>
                                 <Input
                                     id="valor-mensalidade"
                                     type="number"
@@ -751,6 +753,9 @@ export default function ProfilePage() {
             </Card>
           </div>
         )}
+      </div>
+      <div className="md:hidden text-center text-sm text-muted-foreground mt-8">
+        Versão {appVersion}
       </div>
     </div>
   );

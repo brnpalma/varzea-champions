@@ -4,13 +4,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Star } from "lucide-react";
+import { Trophy, Star, LogIn } from "lucide-react";
 import { useAuth, User } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { UserAvatar } from '@/components/user-avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 const getTrophyColor = (rank: number) => {
   switch(rank) {
@@ -68,11 +70,21 @@ export default function RankingPage() {
   }, [players]);
 
   const renderPlayerList = (players: User[], type: 'goals' | 'rating') => {
-    if (players.length === 0) {
+    if (players.length === 0 && user) {
       return (
         <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-secondary/50">
           <p className="text-muted-foreground">
             Ainda não há dados suficientes para exibir o ranking.
+          </p>
+        </div>
+      );
+    }
+
+     if (players.length === 0 && !user) {
+      return (
+        <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-secondary/50">
+          <p className="text-muted-foreground">
+            Faça login para ver o ranking do seu grupo.
           </p>
         </div>
       );
@@ -112,7 +124,7 @@ export default function RankingPage() {
   
   if (isLoading || authLoading) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex justify-center">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
         <FootballSpinner />
       </div>
     );
@@ -120,31 +132,52 @@ export default function RankingPage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <Card className="max-w-4xl mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-2xl">
-            <Trophy className="h-7 w-7 text-amber-500" />
-            <span>Ranking</span>
-          </CardTitle>
-          <CardDescription>
-            Veja a classificação de estrelas e artilheiros
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="scorers">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
-              <TabsTrigger value="rated">Melhores Avaliados</TabsTrigger>
-            </TabsList>
-            <TabsContent value="scorers" className="mt-4">
-              {renderPlayerList(topScorers, 'goals')}
-            </TabsContent>
-            <TabsContent value="rated" className="mt-4">
-              {renderPlayerList(topRated, 'rating')}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <div className="max-w-4xl mx-auto space-y-8">
+        <Card className="shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
+              <Trophy className="h-7 w-7 text-amber-500" />
+              <span>Ranking</span>
+            </CardTitle>
+            <CardDescription>
+              Veja a classificação de estrelas e artilheiros
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="scorers">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
+                <TabsTrigger value="rated">Melhores Avaliados</TabsTrigger>
+              </TabsList>
+              <TabsContent value="scorers" className="mt-4">
+                {renderPlayerList(topScorers, 'goals')}
+              </TabsContent>
+              <TabsContent value="rated" className="mt-4">
+                {renderPlayerList(topRated, 'rating')}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {!authLoading && !user && (
+          <Card className="shadow-lg text-center">
+            <CardHeader>
+              <CardTitle>Faça Login para ver o Ranking</CardTitle>
+              <CardDescription>
+                Você precisa estar em um grupo para ver a classificação.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild size="lg">
+                <Link href="/login">
+                  <LogIn className="mr-2" />
+                  Fazer Login ou Criar Conta
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

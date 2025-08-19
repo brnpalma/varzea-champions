@@ -22,12 +22,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
+import packageJson from '../../package.json';
 
 export function BottomNav() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const appVersion = packageJson.version;
 
   const handleLogout = async () => {
     try {
@@ -57,7 +60,7 @@ export function BottomNav() {
   const visibleNavItems = navItems.filter(item => {
     if (loading) return false;
     // For logged in users, filter by role
-    if (item.allowedRoles && (!user || !item.allowedRoles.includes(user.userType))) {
+    if ((item as any).allowedRoles && (!user || !(item as any).allowedRoles.includes(user.userType))) {
       return false;
     }
     return true;
@@ -107,10 +110,8 @@ export function BottomNav() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r fixed h-full z-50">
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 bg-primary rounded-lg">
-              <Users className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
+            <Image src="/logo-transp.png" alt="Várzea Champions Logo" width={60} height={60} />
+            <h1 className="text-xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
@@ -128,6 +129,9 @@ export function BottomNav() {
             </Link>
           ))}
         </nav>
+        <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
+          Versão {appVersion}
+        </div>
         <div className="p-4 border-t">
           {user ? (
             <div className="flex items-center gap-3">

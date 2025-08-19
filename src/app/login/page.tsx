@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { SignupForm } from "@/components/signup-form";
@@ -14,11 +14,36 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FootballSpinner } from "@/components/ui/football-spinner";
+import { firestore } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 function LoginPageContent() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [isLoadingGroup, setIsLoadingGroup] = useState(false);
   const searchParams = useSearchParams();
   const isCompletingProfile = searchParams.get('complete_profile') === 'true';
+  const groupId = searchParams.get('group_id');
+
+  useEffect(() => {
+    const fetchGroupName = async () => {
+      if (groupId) {
+        setIsLoadingGroup(true);
+        try {
+          const groupDocRef = doc(firestore, "groups", groupId);
+          const groupDocSnap = await getDoc(groupDocRef);
+          if (groupDocSnap.exists()) {
+            setGroupName(groupDocSnap.data().name);
+          }
+        } catch (error) {
+          console.error("Error fetching group name: ", error);
+        } finally {
+          setIsLoadingGroup(false);
+        }
+      }
+    };
+    fetchGroupName();
+  }, [groupId]);
 
   const finalAuthMode = isCompletingProfile ? "signup" : authMode;
 
@@ -29,6 +54,11 @@ function LoginPageContent() {
 
   const getDescription = () => {
     if (isCompletingProfile) return 'Falta pouco! Preencha os dados abaixo para finalizar.';
+    if (groupId) {
+      if (isLoadingGroup) return 'Carregando informações do grupo...';
+      if (groupName) return `Você está sendo convidado para o grupo ${groupName}.`;
+      return 'Crie sua conta para aceitar o convite.';
+    }
     return finalAuthMode === 'login' ? 'Faça login na sua conta para continuar.' : 'Insira seus dados abaixo para começar.';
   }
 
