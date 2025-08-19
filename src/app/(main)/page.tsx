@@ -434,8 +434,8 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
             <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-center relative">
-                   <div className="flex items-center gap-3 text-center">
+              <CardHeader className="flex flex-row items-center justify-center relative text-center">
+                   <div className="flex items-center gap-3">
                      <Calendar className="h-6 w-6 text-primary" />
                      {isGameDateLoading ? (
                         <div className="w-full flex justify-center items-center py-4">
@@ -496,18 +496,19 @@ export default function HomePage() {
         </div>
         
         {isManager && (
-          <Card className="shadow-lg h-fit">
-            <CardHeader className="text-center">
+          <Card className="shadow-lg h-fit text-center">
+            <CardHeader>
               <CardTitle className="flex items-center justify-center gap-3">
                 <Share2 className="h-6 w-6 text-primary" />
                 <span>Convidar Jogadores</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+            <CardContent className="flex flex-col items-center justify-center gap-4">
               <p className="text-muted-foreground">
                 Compartilhe o link para que novos jogadores entrem no seu grupo.
               </p>
               <Button onClick={handleShareLink}>
+                <Share2 className="mr-2 h-4 w-4" />
                 Copiar Link de Convite
               </Button>
             </CardContent>
@@ -515,14 +516,14 @@ export default function HomePage() {
         )}
 
         {goalsCardState.visible && (
-          <Card className="shadow-lg h-fit">
-            <CardHeader className="text-center">
+          <Card className="shadow-lg h-fit text-center">
+            <CardHeader>
               <CardTitle className="flex items-center justify-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
                 <span>Pós-Jogo</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+            <CardContent className="flex flex-col items-center justify-center gap-4">
               <p className="text-muted-foreground">Quantos gols você marcou hoje?</p>
               <GoalsDialog
                 onSave={handleSaveGoals}
@@ -532,14 +533,14 @@ export default function HomePage() {
           </Card>
         )}
 
-        <Card className="shadow-lg h-fit">
-          <CardHeader className="text-center">
+        <Card className="shadow-lg h-fit text-center">
+          <CardHeader>
             <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Ranking</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+          <CardContent className="flex flex-col items-center justify-center gap-4">
             <p className="text-muted-foreground">
               Veja a classificação de estrelas e artilheiros
             </p>
@@ -552,14 +553,14 @@ export default function HomePage() {
         </Card>
         
         {showPaymentCard && (
-           <Card className="shadow-lg h-fit">
-             <CardHeader className="text-center">
+           <Card className="shadow-lg h-fit text-center">
+             <CardHeader>
                <CardTitle className="flex items-center justify-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
                  <span>Financeiro</span>
                </CardTitle>
              </CardHeader>
-             <CardContent className="space-y-4 text-center">
+             <CardContent className="space-y-4">
                 {groupSettings.chavePix && (
                  <div className="pb-2">
                     <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
