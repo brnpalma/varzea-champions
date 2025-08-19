@@ -1,5 +1,6 @@
 
 import Image from 'next/image';
+import { User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface UserAvatarProps {
@@ -9,6 +10,8 @@ interface UserAvatarProps {
 }
 
 export function UserAvatar({ src, size = 40, className }: UserAvatarProps) {
+  const iconSize = size * 0.6;
+
   return (
     <div
       className={cn(
@@ -17,13 +20,20 @@ export function UserAvatar({ src, size = 40, className }: UserAvatarProps) {
       )}
       style={{ width: size, height: size }}
     >
-      <Image
-        src={src || `https://placehold.co/${size}x${size}.png`}
-        alt="Foto do Perfil"
-        fill
-        className="object-cover"
-        sizes={`${size}px`}
-      />
+      {src ? (
+        <Image
+          src={src}
+          alt="Foto do Perfil"
+          fill
+          className="object-cover"
+          sizes={`${size}px`}
+        />
+      ) : (
+        <UserIcon
+          className="text-muted-foreground"
+          style={{ width: iconSize, height: iconSize }}
+        />
+      )}
     </div>
   );
 }
