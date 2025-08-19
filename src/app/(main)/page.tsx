@@ -2,10 +2,10 @@
 "use client";
 
 import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2 } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
@@ -404,6 +404,25 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      {!loading && !user && (
+        <Card className="max-w-4xl mx-auto shadow-lg text-center mb-6">
+          <CardHeader>
+            <CardTitle>Bem-vindo ao Várzea Champions</CardTitle>
+            <CardDescription>
+              Faça login para gerenciar seu time, confirmar presença e muito mais.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild size="lg">
+              <Link href="/login">
+                <LogIn className="mr-2" />
+                Fazer Login ou Criar Conta
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4 mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
@@ -439,7 +458,7 @@ export default function HomePage() {
                 </CardHeader>
               <CardContent className="space-y-4">
                  <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
-                 {!isGameFinished && (
+                 {!isGameFinished && user && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <Button 
@@ -467,6 +486,11 @@ export default function HomePage() {
                         />
                     </div>
                   </>
+                )}
+                 {!isGameFinished && !user && (
+                    <p className="text-sm text-center text-muted-foreground pt-4">
+                      Você precisa fazer login para confirmar sua presença.
+                    </p>
                 )}
               </CardContent>
             </Card>
