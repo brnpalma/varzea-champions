@@ -81,13 +81,13 @@ export default function RankingPage() {
     return (
       <ul className="space-y-3">
         {players.map((player, index) => (
-          <li key={player.uid} className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
+          <li key={player.uid} className="flex items-center gap-2 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
             <div className="flex items-center gap-2 w-10">
               <span className={`font-bold text-lg ${index < 3 ? 'text-foreground' : 'text-muted-foreground'}`}>{index + 1}</span>
               {index < 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(index + 1)}`} />}
             </div>
             
-            <UserAvatar src={player.photoURL} size={48} />
+            <UserAvatar src={player.photoURL} size={40} className="sm:h-12 sm:w-12" />
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{player.displayName}</p>
