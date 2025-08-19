@@ -83,9 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
           
-          const isAuthPage = pathname === "/login";
-          
-          if (!userProfileData && !isAuthPage) {
+          if (!userProfileData && pathname !== "/login") {
              router.push("/login?complete_profile=true");
              setLoading(false);
              return;
@@ -106,10 +104,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           setUser(currentUser);
           
-          if (currentUser.userType && isAuthPage) {
-              router.push("/");
-          }
-
           if (currentUser.groupId) {
             const groupDocRef = doc(firestore, "groups", currentUser.groupId);
             groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {

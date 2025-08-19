@@ -11,6 +11,7 @@ import {
   GoogleAuthProvider,
 } from "firebase/auth";
 import { Apple } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ const formSchema = z.object({
 export function LoginForm() {
   const [isLoading, setIsLoading] = React.useState<"email" | "google" | "apple" | false>(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,7 +52,7 @@ export function LoginForm() {
     setIsLoading("email");
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // Toast on successful login is handled by redirection or auth provider now
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -67,10 +69,8 @@ export function LoginForm() {
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
-       // The AuthProvider will now handle redirection to profile completion if needed.
-       // No toast here, as the user might need to complete their profile first.
+      router.push('/');
     } catch (error: any) {
-      // Don't show an error if the user closes the popup
       if (error.code === 'auth/popup-closed-by-user') {
         setIsLoading(false);
         return;
