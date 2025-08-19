@@ -502,7 +502,7 @@ export default function HomePage() {
                  <div className="pb-2">
                     <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
                     <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
-                        <code className="truncate">{groupSettings.chavePix}</code>
+                        <code className="flex-1 break-all text-left">{groupSettings.chavePix}</code>
                         <Button variant="ghost" size="sm" onClick={handleCopyPix}>
                             Copiar
                         </Button>
@@ -530,5 +530,3 @@ export default function HomePage() {
 }
 
     
-
-  
