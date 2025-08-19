@@ -473,25 +473,23 @@ export default function HomePage() {
         </div>
         
         {isManager && (
-            <div className="md:col-span-2">
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-center gap-3">
-                    <Share2 className="h-6 w-6 text-primary" />
-                    <span>Convidar Jogadores</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-                  <p className="text-muted-foreground flex-1">
-                    Compartilhe o link para que novos jogadores entrem no seu grupo.
-                  </p>
-                  <Button onClick={handleShareLink}>
-                    Copiar Link de Convite
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          <Card className="shadow-lg h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-3">
+                <Share2 className="h-6 w-6 text-primary" />
+                <span>Convidar Jogadores</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+              <p className="text-muted-foreground">
+                Compartilhe o link para que novos jogadores entrem no seu grupo.
+              </p>
+              <Button onClick={handleShareLink}>
+                Copiar Link de Convite
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {goalsCardState.visible && (
           <Card className="shadow-lg h-fit">
