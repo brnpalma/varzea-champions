@@ -270,8 +270,8 @@ export default function SorterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-4">
-              <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId || confirmedPlayers.length === 0}>
+             <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
+              <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId || confirmedPlayers.length === 0} className="w-full sm:w-auto">
                 {isSorting ? (
                   <>
                     <FootballSpinner className="h-6 w-6 mr-2 animate-spin" />
@@ -291,8 +291,8 @@ export default function SorterPage() {
               />
             </div>
              {!isFetchingPlayers && confirmedPlayers.length === 0 && (
-                <div className="flex items-center text-sm text-muted-foreground mt-4">
-                    <Info className="h-4 w-4 mr-2" />
+                <div className="flex items-center text-sm text-muted-foreground mt-4 text-center">
+                    <Info className="h-4 w-4 mr-2 shrink-0" />
                     <span>Nenhum jogador confirmado para a próxima partida.</span>
                 </div>
             )}
