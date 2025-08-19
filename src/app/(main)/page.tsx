@@ -462,8 +462,8 @@ export default function HomePage() {
                 <span>Pós-Jogo</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4">
-              <p className="text-muted-foreground text-center">Quantos gols você marcou hoje?</p>
+            <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+              <p className="text-muted-foreground">Quantos gols você marcou hoje?</p>
               <GoalsDialog
                 onSave={handleSaveGoals}
                 isDisabled={!goalsCardState.enabled}
@@ -479,8 +479,8 @@ export default function HomePage() {
               <span>Ranking de Jogadores</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
+          <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
+            <p className="text-muted-foreground">
               Veja a classificação de estrelas e artilheiros
             </p>
             <Button asChild>
