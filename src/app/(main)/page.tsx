@@ -246,7 +246,7 @@ export default function HomePage() {
         return;
     }
 
-    if (status === 'confirmed' && !user.allowConfirmationWithDebt && user.playerSubscriptionType === PlayerSubscriptionType.AVULSO) {
+    if (status === 'confirmed' && !groupSettings?.allowConfirmationWithDebt && user.playerSubscriptionType === PlayerSubscriptionType.AVULSO) {
         toast({
             variant: "destructive",
             title: "Pendência Financeira",
@@ -270,7 +270,6 @@ export default function HomePage() {
             photoURL: user.photoURL,
             rating: user.rating,
             uid: user.uid,
-            email: user.email
         }, { merge: true });
         toast({
             variant: "success",
@@ -497,7 +496,7 @@ export default function HomePage() {
         
         {isManager && (
           <Card className="shadow-lg h-fit text-center">
-            <CardHeader>
+            <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-3">
                 <Share2 className="h-6 w-6 text-primary" />
                 <span>Convidar Jogadores</span>
@@ -517,7 +516,7 @@ export default function HomePage() {
 
         {goalsCardState.visible && (
           <Card className="shadow-lg h-fit text-center">
-            <CardHeader>
+            <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
                 <span>Pós-Jogo</span>
@@ -534,7 +533,7 @@ export default function HomePage() {
         )}
 
         <Card className="shadow-lg h-fit text-center">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Ranking</span>
@@ -554,7 +553,7 @@ export default function HomePage() {
         
         {showPaymentCard && (
            <Card className="shadow-lg h-fit text-center">
-             <CardHeader>
+             <CardHeader className="text-center">
                <CardTitle className="flex items-center justify-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
                  <span>Financeiro</span>
@@ -591,3 +590,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

@@ -27,7 +27,6 @@ export interface UserProfile {
   playerSubscriptionType: PlayerSubscriptionType;
   groupId: string | null;
   rating: number | null;
-  allowConfirmationWithDebt?: boolean;
   totalGoals?: number;
 }
 
@@ -46,6 +45,7 @@ export interface GroupSettings {
     valorMensalidade?: number;
     valorAvulso?: number;
     chavePix?: string;
+    allowConfirmationWithDebt?: boolean;
 }
 
 
@@ -106,7 +106,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             playerSubscriptionType: userProfileData?.playerSubscriptionType,
             groupId: userProfileData?.groupId || null,
             rating: userProfileData?.rating || 1,
-            allowConfirmationWithDebt: userProfileData?.allowConfirmationWithDebt || false,
             totalGoals: userProfileData?.totalGoals || 0,
             groupName: null,
           } as User;
@@ -161,3 +160,5 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
+
+    

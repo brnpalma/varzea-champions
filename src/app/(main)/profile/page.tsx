@@ -115,6 +115,7 @@ export default function ProfilePage() {
   const [valorMensalidade, setValorMensalidade] = useState<number | ''>('');
   const [valorAvulso, setValorAvulso] = useState<number | ''>('');
   const [chavePix, setChavePix] = useState("");
+  const [allowConfirmationWithDebt, setAllowConfirmationWithDebt] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -159,6 +160,7 @@ export default function ProfilePage() {
       setValorMensalidade(groupSettings.valorMensalidade || '');
       setValorAvulso(groupSettings.valorAvulso || '');
       setChavePix(groupSettings.chavePix || "");
+      setAllowConfirmationWithDebt(groupSettings.allowConfirmationWithDebt ?? false);
     }
     setIsSettingsLoading(false);
     
@@ -364,6 +366,7 @@ export default function ProfilePage() {
           valorMensalidade: Number(valorMensalidade) || null,
           valorAvulso: Number(valorAvulso) || null,
           chavePix: chavePix.trim() || null,
+          allowConfirmationWithDebt: allowConfirmationWithDebt,
       };
 
       if (isGroupManager) {
@@ -708,6 +711,20 @@ export default function ProfilePage() {
                                 placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
                             />
                         </div>
+                        <div className="flex items-start pt-4">
+                            <div className="flex items-center h-5">
+                                <Checkbox
+                                    id="allow-debt"
+                                    checked={allowConfirmationWithDebt}
+                                    onCheckedChange={(checked) => setAllowConfirmationWithDebt(Boolean(checked))}
+                                />
+                            </div>
+                            <div className="ml-2 text-sm">
+                                <Label htmlFor="allow-debt" className="text-xs text-muted-foreground cursor-pointer">
+                                    Permitir confirmação de presença com pendência financeira
+                                </Label>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
@@ -760,3 +777,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

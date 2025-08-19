@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth, User, UserType } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
@@ -23,8 +23,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
 
 export default function PlayersPage() {
@@ -32,9 +30,7 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-
-
+  
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
 
@@ -123,33 +119,6 @@ export default function PlayersPage() {
       });
     }
   };
-
-  const handleToggleDebtPermission = (playerToUpdate: User) => {
-    startTransition(async () => {
-      if (!isManager || !playerToUpdate) return;
-      
-      const playerDocRef = doc(firestore, "users", playerToUpdate.uid);
-      const newPermission = !(playerToUpdate.allowConfirmationWithDebt ?? false);
-
-      try {
-        await updateDoc(playerDocRef, {
-          allowConfirmationWithDebt: newPermission
-        });
-        toast({
-          variant: 'success',
-          title: 'Permissão Atualizada',
-          description: `A permissão para ${playerToUpdate.displayName} foi ${newPermission ? 'concedida' : 'revogada'}.`,
-        });
-      } catch (error) {
-        console.error("Error updating permission: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao Atualizar',
-          description: 'Não foi possível atualizar a permissão do jogador.',
-        });
-      }
-    });
-  };
   
   if (loading) {
     return (
@@ -163,7 +132,7 @@ export default function PlayersPage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
-          <div className="w-full">
+          <div className="w-full text-center">
             <CardTitle className="text-2xl">
               Jogadores do grupo
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
@@ -223,23 +192,6 @@ export default function PlayersPage() {
                       </div>
                     )}
                   </div>
-                   {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-start pl-[64px] sm:pl-16">
-                        <div className="flex items-center h-5">
-                            <Checkbox 
-                                id={`debt-${player.uid}`}
-                                checked={player.allowConfirmationWithDebt ?? false}
-                                onCheckedChange={() => handleToggleDebtPermission(player)}
-                                disabled={isPending}
-                            />
-                        </div>
-                        <div className="ml-2 text-sm">
-                            <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
-                                Permitir confirmação de presença com pendência
-                            </Label>
-                        </div>
-                      </div>
-                    )}
                 </li>
               ))}
             </ul>
@@ -282,3 +234,5 @@ export default function PlayersPage() {
     </div>
   );
 }
+
+    
