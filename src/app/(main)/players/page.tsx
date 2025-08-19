@@ -257,7 +257,7 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-start ml-0 md:pl-16">
+                      <div className="flex items-start ml-0 pl-16">
                         <div className="flex items-center h-5">
                             <Checkbox 
                                 id={`debt-${player.uid}`}
