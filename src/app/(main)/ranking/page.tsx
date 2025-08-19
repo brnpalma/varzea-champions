@@ -124,7 +124,7 @@ export default function RankingPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl">
             <Trophy className="h-7 w-7 text-amber-500" />
-            <span>Ranking de Jogadores</span>
+            <span>Ranking</span>
           </CardTitle>
           <CardDescription>
             Veja a classificação de estrelas e artilheiros

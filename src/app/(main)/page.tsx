@@ -476,7 +476,7 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
-              <span>Ranking de Jogadores</span>
+              <span>Ranking</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center gap-4 text-center">
