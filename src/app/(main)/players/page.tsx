@@ -131,7 +131,7 @@ export default function PlayersPage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
+        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full text-center">
             <CardTitle className="text-2xl">
               Jogadores do grupo
@@ -157,7 +157,7 @@ export default function PlayersPage() {
                   <div className="flex items-center justify-between w-full gap-4">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <UserAvatar src={player.photoURL} size={48} />
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0">
                         <p className="font-semibold text-foreground break-words">{player.displayName}</p>
                       </div>
                     </div>
@@ -234,5 +234,3 @@ export default function PlayersPage() {
     </div>
   );
 }
-
-    
