@@ -108,9 +108,7 @@ export function BottomNav() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r fixed h-full z-50">
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 bg-primary rounded-lg flex items-center justify-center h-10 w-10">
-              <Image src="/icon-512x512.png" alt="Várzea Champions Logo" width={24} height={24} />
-            </div>
+            <Image src="/logo-transp.png" alt="Várzea Champions Logo" width={40} height={40} />
             <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
         </div>
