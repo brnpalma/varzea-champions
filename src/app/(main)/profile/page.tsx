@@ -424,8 +424,8 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto space-y-8">
         <Card className="shadow-lg">
           <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-0 sm:space-x-4 w-full">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+              <div className="flex flex-col items-center sm:flex-row sm:items-start space-x-0 sm:space-x-4 w-full">
                 <div className="relative shrink-0">
                   <UserAvatar src={photoPreview} size={80} />
                   {isEditing && (
@@ -444,8 +444,8 @@ export default function ProfilePage() {
                     accept="image/*"
                   />
                 </div>
-                <div className="mt-2 sm:mt-0">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <div className="mt-2 sm:mt-0 text-center sm:text-left">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
                         <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
                         {!isEditing && (
                             <div className="flex items-center text-amber-500">
