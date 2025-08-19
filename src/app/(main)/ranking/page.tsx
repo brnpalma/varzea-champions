@@ -142,7 +142,7 @@ export default function RankingPage() {
               Veja a classificação de estrelas e artilheiros
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <Tabs defaultValue="scorers" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
