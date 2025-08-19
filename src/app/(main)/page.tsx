@@ -456,7 +456,7 @@ export default function HomePage() {
                     )}
                 </CardHeader>
               <CardContent className="space-y-4">
-                 <p className="text-muted-foreground">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
+                 <p className="text-muted-foreground text-center">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
                  {!isGameFinished && user && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
@@ -497,7 +497,7 @@ export default function HomePage() {
         
         {isManager && (
           <Card className="shadow-lg h-fit">
-            <CardHeader>
+            <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-3">
                 <Share2 className="h-6 w-6 text-primary" />
                 <span>Convidar Jogadores</span>
@@ -516,7 +516,7 @@ export default function HomePage() {
 
         {goalsCardState.visible && (
           <Card className="shadow-lg h-fit">
-            <CardHeader>
+            <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
                 <span>Pós-Jogo</span>
@@ -533,7 +533,7 @@ export default function HomePage() {
         )}
 
         <Card className="shadow-lg h-fit">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Ranking</span>
@@ -553,7 +553,7 @@ export default function HomePage() {
         
         {showPaymentCard && (
            <Card className="shadow-lg h-fit">
-             <CardHeader>
+             <CardHeader className="text-center">
                <CardTitle className="flex items-center justify-center gap-3">
                  <Wallet className="h-6 w-6 text-primary" />
                  <span>Financeiro</span>

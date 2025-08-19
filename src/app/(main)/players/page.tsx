@@ -164,7 +164,7 @@ export default function PlayersPage() {
      return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <Card className="shadow-lg">
-                <CardHeader>
+                <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Jogadores do grupo</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -214,8 +214,8 @@ export default function PlayersPage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="text-center sm:text-left w-full">
+        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center w-full">
             <CardTitle className="text-2xl">
               Jogadores do grupo
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>

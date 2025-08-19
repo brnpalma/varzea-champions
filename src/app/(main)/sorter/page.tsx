@@ -261,8 +261,8 @@ export default function SorterPage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
               <Dices className="h-7 w-7 text-primary" />
               <span>Sorteador de Times</span>
             </CardTitle>
