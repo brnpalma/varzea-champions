@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useAuth, User, PlayerSubscriptionType } from "@/hooks/use-auth";
+import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
@@ -109,6 +109,7 @@ export default function HomePage() {
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
   const [isGameFinished, setIsGameFinished] = useState(false);
+  const isManager = user?.userType === UserType.GESTOR_GRUPO;
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -379,6 +380,25 @@ export default function HomePage() {
     });
   };
 
+   const handleShareLink = () => {
+    if (!user || !isManager) return;
+    const inviteLink = `${window.location.origin}/login?group_id=${user?.groupId}`;
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      toast({
+        variant: 'success',
+        title: 'Link Copiado!',
+        description: 'O link de convite foi copiado para a sua área de transferência.',
+      });
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      toast({
+        variant: 'destructive',
+        title: 'Falha ao Copiar',
+        description: 'Não foi possível copiar o link.',
+      });
+    });
+  };
+
   const formattedDate = formatNextGameDate(nextGameDate);
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
 
@@ -452,6 +472,27 @@ export default function HomePage() {
             </Card>
         </div>
         
+        {isManager && (
+            <div className="md:col-span-2">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <Share2 className="h-6 w-6 text-primary" />
+                    <span>Convidar Jogadores</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                  <p className="text-muted-foreground flex-1">
+                    Compartilhe o link para que novos jogadores entrem no seu grupo.
+                  </p>
+                  <Button onClick={handleShareLink}>
+                    Copiar Link de Convite
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
         {goalsCardState.visible && (
           <Card className="shadow-lg h-fit">
             <CardHeader>

@@ -58,7 +58,15 @@ export default function PlayersPage() {
         ...doc.data(),
         uid: doc.id,
       })) as User[];
-      setPlayers(playersData.sort((a, b) => a.displayName!.localeCompare(b.displayName!)));
+      
+      const sortedPlayers = playersData.sort((a, b) => {
+        // Prioritize the logged-in user
+        if (user && a.uid === user.uid) return -1;
+        if (user && b.uid === user.uid) return 1;
+        // Then sort by display name
+        return a.displayName!.localeCompare(b.displayName!);
+      });
+      setPlayers(sortedPlayers);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching players: ", error);
@@ -71,7 +79,7 @@ export default function PlayersPage() {
     });
 
     return () => unsubscribe();
-  }, [groupId, toast, loading]);
+  }, [groupId, toast, loading, user]);
 
   const handleShareLink = () => {
     if (!user || !isManager) return;
@@ -257,7 +265,7 @@ export default function PlayersPage() {
                     )}
                   </div>
                    {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-start ml-0 pl-16">
+                      <div className="flex items-start pl-[64px] sm:pl-16">
                         <div className="flex items-center h-5">
                             <Checkbox 
                                 id={`debt-${player.uid}`}
