@@ -26,7 +26,7 @@ import Image from "next/image";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { user, loading } from useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -108,8 +108,8 @@ export function BottomNav() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r fixed h-full z-50">
         <div className="p-6 border-b">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo-transp.png" alt="Várzea Champions Logo" width={60} height={60} />
-            <h1 className="text-2xl font-bold text-foreground">Várzea Champions</h1>
+            <Image src="/logo-transp.png" alt="Várzea Champions Logo" width={50} height={50} />
+            <h1 className="text-xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
