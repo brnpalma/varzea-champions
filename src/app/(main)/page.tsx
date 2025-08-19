@@ -457,7 +457,7 @@ export default function HomePage() {
         {goalsCardState.visible && (
           <Card className="shadow-lg h-fit">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center justify-center gap-3">
                 <Goal className="h-6 w-6 text-primary" />
                 <span>Pós-Jogo</span>
               </CardTitle>
@@ -474,7 +474,7 @@ export default function HomePage() {
 
         <Card className="shadow-lg h-fit">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+            <CardTitle className="flex items-center justify-center gap-3">
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Ranking de Jogadores</span>
             </CardTitle>
