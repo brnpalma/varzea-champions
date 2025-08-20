@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth, User, UserType } from '@/hooks/use-auth';
 import { firestore } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, LogIn } from 'lucide-react';
+import { Share2, Trash2, LogIn, MoreVertical, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -21,10 +21,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
 
 export default function PlayersPage() {
@@ -32,9 +36,9 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-
-
+  const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
 
@@ -123,34 +127,12 @@ export default function PlayersPage() {
       });
     }
   };
-
-  const handleToggleDebtPermission = (playerToUpdate: User) => {
-    startTransition(async () => {
-      if (!isManager || !playerToUpdate) return;
-      
-      const playerDocRef = doc(firestore, "users", playerToUpdate.uid);
-      const newPermission = !(playerToUpdate.allowConfirmationWithDebt ?? false);
-
-      try {
-        await updateDoc(playerDocRef, {
-          allowConfirmationWithDebt: newPermission
-        });
-        toast({
-          variant: 'success',
-          title: 'Permissão Atualizada',
-          description: `A permissão para ${playerToUpdate.displayName} foi ${newPermission ? 'concedida' : 'revogada'}.`,
-        });
-      } catch (error) {
-        console.error("Error updating permission: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao Atualizar',
-          description: 'Não foi possível atualizar a permissão do jogador.',
-        });
-      }
-    });
-  };
   
+  const openPaymentHistory = (player: User) => {
+    setSelectedPlayer(player);
+    setIsPaymentHistoryOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
@@ -159,20 +141,97 @@ export default function PlayersPage() {
     );
   }
 
-
-  if (!user) {
-     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <Card className="shadow-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Jogadores do grupo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-center py-8 text-muted-foreground">
-                        <p>Faça login para ver os jogadores do seu grupo.</p>
+  return (
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <Card className="shadow-lg">
+        <CardHeader className="text-center">
+          <div className="w-full text-center">
+            <CardTitle className="text-2xl">
+              Jogadores do grupo
+              <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
+            </CardTitle>
+          </div>
+          {isManager && (
+            <Button onClick={handleShareLink} className="w-full sm:w-auto">
+              <Share2 className="mr-2 h-4 w-4" />
+              Compartilhar link
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+             <div className="flex justify-center items-center py-8 h-full">
+              <FootballSpinner />
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {players.map((player) => (
+                <li key={player.uid} className="py-4">
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <UserAvatar src={player.photoURL} size={48} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground break-words">{player.displayName}</p>
+                      </div>
                     </div>
-                </CardContent>
-            </Card>
+
+                    {isManager && user?.uid !== player.uid && (
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="shrink-0">
+                              <MoreVertical className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
+                              <DollarSign className="mr-2 h-4 w-4" />
+                              <span>Histórico Financeiro</span>
+                            </DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Remover do Grupo</span>
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRemovePlayer(player)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+      {selectedPlayer && (
+        <PaymentHistoryDialog
+          player={selectedPlayer}
+          groupId={groupId!}
+          isOpen={isPaymentHistoryOpen}
+          setIsOpen={setIsPaymentHistoryOpen}
+        />
+      )}
+        {!user && (
             <div className="mt-8">
                  <Card className="max-w-2xl mx-auto shadow-lg text-center">
                     <CardHeader>
@@ -189,116 +248,22 @@ export default function PlayersPage() {
                     </CardContent>
                 </Card>
             </div>
+        )}
+       {!groupId && user && (
+         <div className="mt-8">
+          <Card className="max-w-2xl mx-auto shadow-lg text-center">
+            <CardHeader>
+              <CardTitle>Você não está em um grupo</CardTitle>
+              <CardDescription>Para ver e gerenciar jogadores, você precisa fazer parte de um grupo.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {isManager ? "Vá para as configurações para criar um grupo." : "Peça o link de convite ao gestor do seu grupo."}
+              </p>
+            </CardContent>
+          </Card>
         </div>
-    );
-  }
-
-  if (!groupId) {
-     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <Card className="max-w-2xl mx-auto shadow-lg text-center">
-          <CardHeader>
-            <CardTitle>Você não está em um grupo</CardTitle>
-            <CardDescription>Para ver e gerenciar jogadores, você precisa fazer parte de um grupo.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {isManager ? "Vá para as configurações para criar um grupo." : "Peça o link de convite ao gestor do seu grupo."}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-center w-full">
-            <CardTitle className="text-2xl">
-              Jogadores do grupo
-              <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
-            </CardTitle>
-          </div>
-          {isManager && (
-            <Button onClick={handleShareLink} className="w-full sm:w-auto">
-              <Share2 className="mr-2 h-4 w-4" />
-              Compartilhar link
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-             <div className="flex justify-center items-center py-8">
-              <FootballSpinner />
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {players.map((player) => (
-                <li key={player.uid} className="flex flex-col gap-3 py-4">
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <UserAvatar src={player.photoURL} size={48} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground break-words">{player.displayName}</p>
-                        <p className="text-sm text-muted-foreground break-all">{player.email}</p>
-                      </div>
-                    </div>
-
-                    {isManager && user?.uid !== player.uid && (
-                      <div className='flex items-center justify-end gap-2'>
-                          <PaymentHistoryDialog player={player} groupId={groupId} />
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="icon">
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemovePlayer(player)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remover
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                      </div>
-                    )}
-                  </div>
-                   {isManager && user?.uid !== player.uid && (
-                      <div className="flex items-start pl-[64px] sm:pl-16">
-                        <div className="flex items-center h-5">
-                            <Checkbox 
-                                id={`debt-${player.uid}`}
-                                checked={player.allowConfirmationWithDebt ?? false}
-                                onCheckedChange={() => handleToggleDebtPermission(player)}
-                                disabled={isPending}
-                            />
-                        </div>
-                        <div className="ml-2 text-sm">
-                            <Label htmlFor={`debt-${player.uid}`} className="text-xs text-muted-foreground cursor-pointer">
-                                Permitir confirmação de presença com pendência
-                            </Label>
-                        </div>
-                      </div>
-                    )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      )}
     </div>
   );
 }

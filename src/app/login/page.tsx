@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { SignupForm } from "@/components/signup-form";
 import { AuthToggle } from "@/components/auth-toggle";
@@ -16,14 +16,26 @@ import {
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { firestore } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
 function LoginPageContent() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [groupName, setGroupName] = useState<string | null>(null);
   const [isLoadingGroup, setIsLoadingGroup] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  
   const isCompletingProfile = searchParams.get('complete_profile') === 'true';
   const groupId = searchParams.get('group_id');
+
+  useEffect(() => {
+    // If the auth state is loaded and a user exists, they shouldn't be on the login page.
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
 
   useEffect(() => {
     const fetchGroupName = async () => {
@@ -60,6 +72,15 @@ function LoginPageContent() {
       return 'Crie sua conta para aceitar o convite.';
     }
     return finalAuthMode === 'login' ? 'Faça login na sua conta para continuar.' : 'Insira seus dados abaixo para começar.';
+  }
+
+  // If we are still loading the auth state, or if we are about to redirect, show a spinner.
+  if (loading || user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <FootballSpinner />
+      </div>
+    );
   }
 
   return (

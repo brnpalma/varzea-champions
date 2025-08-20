@@ -94,24 +94,23 @@ export default function RankingPage() {
       <ul className="space-y-3">
         {players.map((player, index) => (
           <li key={player.uid} className="flex items-center gap-2 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
-            <div className="flex items-center gap-2 w-10">
-              <span className={`font-bold text-lg ${index < 3 ? 'text-foreground' : 'text-muted-foreground'}`}>{index + 1}</span>
+            <div className="flex items-center gap-2 w-10 shrink-0">
+              <span className={`font-bold text-lg w-5 text-center ${index < 3 ? 'text-foreground' : 'text-muted-foreground'}`}>{index + 1}</span>
               {index < 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(index + 1)}`} />}
             </div>
             
-            <UserAvatar src={player.photoURL} size={40} className="sm:h-12 sm:w-12" />
+            <UserAvatar src={player.photoURL} size={40} className="shrink-0" />
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">{player.email}</p>
             </div>
             
             {type === 'goals' ? (
-              <div className="flex items-center justify-end w-12 text-right">
-                  <span className="text-xl sm:text-2xl font-bold text-primary">{player.totalGoals || 0}</span>
+              <div className="flex items-center justify-end w-12 text-right shrink-0">
+                  <span className="text-xl font-bold text-primary">{player.totalGoals || 0}</span>
               </div>
             ) : (
-              <Badge variant="secondary" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <Badge variant="secondary" className="flex items-center gap-1 text-sm shrink-0">
                  <Star className="h-4 w-4 text-amber-500 fill-current" />
                  {player.rating || 1}
               </Badge>
@@ -133,18 +132,18 @@ export default function RankingPage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-8">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg overflow-hidden">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-3 text-2xl">
               <Trophy className="h-7 w-7 text-amber-500" />
               <span>Ranking</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-center">
               Veja a classificação de estrelas e artilheiros
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="scorers">
+          <CardContent className="px-2 sm:px-6">
+            <Tabs defaultValue="scorers" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
                 <TabsTrigger value="rated">Melhores Avaliados</TabsTrigger>

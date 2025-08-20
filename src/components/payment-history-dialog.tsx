@@ -9,12 +9,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { User, PlayerSubscriptionType } from "@/hooks/use-auth";
-import { DollarSign, PlusCircle } from "lucide-react";
+import { User } from "@/hooks/use-auth";
+import { PlusCircle } from "lucide-react";
 import { firestore } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { FootballSpinner } from "./ui/football-spinner";
@@ -38,10 +37,11 @@ interface Payment {
 interface PaymentHistoryDialogProps {
   player: User;
   groupId: string;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
-export function PaymentHistoryDialog({ player, groupId }: PaymentHistoryDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: PaymentHistoryDialogProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingPayment, setIsAddingPayment] = useState(false);
@@ -101,11 +101,6 @@ export function PaymentHistoryDialog({ player, groupId }: PaymentHistoryDialogPr
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
-          <DollarSign className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Histórico Financeiro</DialogTitle>

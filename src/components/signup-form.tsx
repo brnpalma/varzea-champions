@@ -217,7 +217,8 @@ function SignupFormComponent() {
             name: groupName,
             managerId: user.uid,
             createdAt: new Date().toISOString(),
-            gameDays: {}
+            gameDays: {},
+            allowConfirmationWithDebt: false,
         });
       } else if (values.userType === UserType.JOGADOR && groupIdFromUrl) {
         const groupDocRef = doc(firestore, "groups", groupIdFromUrl);
@@ -239,7 +240,6 @@ function SignupFormComponent() {
         rating: values.rating,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
-        allowConfirmationWithDebt: true,
         totalGoals: 0,
       });
       
@@ -477,3 +477,5 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
+
+    
