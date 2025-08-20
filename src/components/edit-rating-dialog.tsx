@@ -13,9 +13,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { User } from "@/hooks/use-auth";
-import { Star } from "lucide-react";
 import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { RatingSelect } from "./rating-select";
 
 interface EditRatingDialogProps {
   player: User;
@@ -55,24 +54,11 @@ export function EditRatingDialog({ player, isOpen, onOpenChange, onSave }: EditR
               Estrelas
             </Label>
             <div className="col-span-3">
-              <Select value={rating.toString()} onValueChange={(value) => setRating(Number(value))}>
-                <SelectTrigger id="rating">
-                  <SelectValue placeholder="Selecione a classificação" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 4, 3, 2, 1].map(r => (
-                    <SelectItem key={r} value={r.toString()}>
-                      <div className="flex items-center gap-2">
-                        {r}
-                        <div className="flex items-center">
-                            {[...Array(r)].map((_, i) => <Star key={`filled-${i}`} className="h-4 w-4 text-amber-500 fill-current" />)}
-                            {[...Array(5-r)].map((_, i) => <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground/30" />)}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <RatingSelect
+                id="rating"
+                value={rating}
+                onValueChange={setRating}
+              />
             </div>
           </div>
         </div>
@@ -88,4 +74,3 @@ export function EditRatingDialog({ player, isOpen, onOpenChange, onSave }: EditR
     </Dialog>
   );
 }
-

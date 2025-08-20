@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import packageJson from '../../../../package.json';
+import { RatingSelect } from "@/components/rating-select";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -512,20 +513,11 @@ export default function ProfilePage() {
                 </div>
                  <div>
                     <Label htmlFor="rating" className="block text-sm font-medium text-muted-foreground mb-1">Classificação (Estrelas)</Label>
-                    <Select value={rating.toString()} onValueChange={(value) => setRating(Number(value))}>
-                      <SelectTrigger id="rating">
-                        <SelectValue placeholder="Selecione sua classificação" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[5, 4, 3, 2, 1].map(r => (
-                          <SelectItem key={r} value={r.toString()}>
-                            <div className="flex items-center">
-                              {r} {r > 1 ? 'estrelas' : 'estrela'}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <RatingSelect
+                      id="rating"
+                      value={rating}
+                      onValueChange={setRating}
+                    />
                  </div>
               </div>
             ) : (
@@ -778,5 +770,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

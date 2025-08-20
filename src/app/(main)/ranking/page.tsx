@@ -51,7 +51,7 @@ export default function RankingPage() {
     });
 
     return () => unsubscribe();
-  }, [user?.groupId, authLoading]);
+  }, [user?.groupId, authLoading, user?.uid]);
 
   const topScorers = useMemo(() => {
     return [...players].sort((a, b) => {
@@ -143,16 +143,16 @@ export default function RankingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
-            <Tabs defaultValue="scorers" className="w-full">
+            <Tabs defaultValue="rated" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
                 <TabsTrigger value="rated">Melhores Avaliados</TabsTrigger>
+                <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
               </TabsList>
-              <TabsContent value="scorers" className="mt-4">
-                {renderPlayerList(topScorers, 'goals')}
-              </TabsContent>
               <TabsContent value="rated" className="mt-4">
                 {renderPlayerList(topRated, 'rating')}
+              </TabsContent>
+              <TabsContent value="scorers" className="mt-4">
+                {renderPlayerList(topScorers, 'goals')}
               </TabsContent>
             </Tabs>
           </CardContent>
