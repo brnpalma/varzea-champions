@@ -169,6 +169,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.removeItem('invite_group_id');
       await signOut(auth);
       toast({
         variant: "success",
