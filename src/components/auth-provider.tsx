@@ -32,12 +32,6 @@ export interface UserProfile {
 
 export interface User extends FirebaseAuthUser, UserProfile {}
 
-export interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  groupSettings: GroupSettings | null;
-}
-
 export interface GroupSettings {
     name?: string;
     playersPerTeam?: number;
@@ -47,6 +41,7 @@ export interface GroupSettings {
     chavePix?: string;
     allowConfirmationWithDebt?: boolean;
     enableEquipmentManager?: boolean;
+    createdAt?: string;
 }
 
 
@@ -54,6 +49,12 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 interface AuthProviderProps {
   children: ReactNode;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  groupSettings: GroupSettings | null;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {

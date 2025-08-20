@@ -94,12 +94,12 @@ const formatDateToId = (date: Date): string => {
     return `${year}-${month}-${day}`;
 }
 
-const getWeekNumber = (d: Date): number => {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-    return weekNo;
+const getWeeksSinceDate = (startDate: Date): number => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const diff = now.getTime() - start.getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    return Math.floor(days / 7);
 };
 
 
@@ -202,7 +202,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchEquipmentManager = async () => {
-      if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
+      if (!groupSettings?.enableEquipmentManager || !user?.groupId || !groupSettings?.createdAt) {
         setEquipmentManager(null);
         return;
       }
@@ -218,8 +218,9 @@ export default function HomePage() {
         
         if (allPlayers.length > 0) {
           allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
-          const weekNumber = getWeekNumber(new Date());
-          const managerIndex = weekNumber % allPlayers.length;
+          const groupCreationDate = new Date(groupSettings.createdAt);
+          const weeksSinceCreation = getWeeksSinceDate(groupCreationDate);
+          const managerIndex = weeksSinceCreation % allPlayers.length;
           setEquipmentManager(allPlayers[managerIndex]);
         } else {
           setEquipmentManager(null);
@@ -233,7 +234,7 @@ export default function HomePage() {
     };
 
     fetchEquipmentManager();
-  }, [groupSettings?.enableEquipmentManager, user?.groupId, user?.uid]);
+  }, [groupSettings, user?.groupId]);
 
 
   useEffect(() => {
