@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, LogIn, MoreVertical, DollarSign } from 'lucide-react';
+import { Share2, Trash2, LogIn, MoreVertical, DollarSign, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ import {
 import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
+import { EditRatingDialog } from '@/components/edit-rating-dialog';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
@@ -38,6 +39,7 @@ export default function PlayersPage() {
   const { toast } = useToast();
   const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [playerToEditRating, setPlayerToEditRating] = useState<User | null>(null);
   
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const groupId = user?.groupId;
@@ -133,6 +135,36 @@ export default function PlayersPage() {
     setIsPaymentHistoryOpen(true);
   };
 
+  const handleEditRating = (player: User) => {
+    setPlayerToEditRating(player);
+  };
+
+  const handleSaveRating = async (newRating: number) => {
+    if (!isManager || !playerToEditRating) return;
+
+    try {
+      const playerDocRef = doc(firestore, "users", playerToEditRating.uid);
+      await updateDoc(playerDocRef, {
+        rating: newRating,
+      });
+
+      toast({
+        variant: 'success',
+        title: 'Classificação Atualizada',
+        description: `A classificação de ${playerToEditRating.displayName} foi atualizada para ${newRating} estrelas.`,
+      });
+      setPlayerToEditRating(null); // Close dialog
+    } catch (error) {
+      console.error("Error updating rating: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao Atualizar',
+        description: 'Não foi possível atualizar a classificação.',
+      });
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center h-full">
@@ -165,60 +197,71 @@ export default function PlayersPage() {
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {players.map((player) => (
-                <li key={player.uid} className="py-4">
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <UserAvatar src={player.photoURL} size={48} />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground break-words">{player.displayName}</p>
+              {players.map((player) => {
+                const playerRating = player.rating || 1;
+                return (
+                  <li key={player.uid} className="py-4">
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <UserAvatar src={player.photoURL} size={48} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground break-words">{player.displayName}</p>
+                          <div className="flex items-center text-amber-500">
+                            {[...Array(playerRating)].map((_, i) => <Star key={`filled-${i}`} className="h-4 w-4 fill-current" />)}
+                            {[...Array(5 - playerRating)].map((_, i) => <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground/30" />)}
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {isManager && user?.uid !== player.uid && (
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="shrink-0">
-                              <MoreVertical className="h-5 w-5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
-                              <DollarSign className="mr-2 h-4 w-4" />
-                              <span>Histórico Financeiro</span>
-                            </DropdownMenuItem>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Remover do Grupo</span>
+                      {isManager && user?.uid !== player.uid && (
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="shrink-0">
+                                <MoreVertical className="h-5 w-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => handleEditRating(player)}>
+                                <Star className="mr-2 h-4 w-4" />
+                                <span>Editar Estrelas</span>
                               </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
+                                <DollarSign className="mr-2 h-4 w-4" />
+                                <span>Histórico Financeiro</span>
+                              </DropdownMenuItem>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <span>Remover do Grupo</span>
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
 
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleRemovePlayer(player)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </li>
-              ))}
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemovePlayer(player)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>
@@ -229,6 +272,14 @@ export default function PlayersPage() {
           groupId={groupId!}
           isOpen={isPaymentHistoryOpen}
           setIsOpen={setIsPaymentHistoryOpen}
+        />
+      )}
+      {playerToEditRating && (
+        <EditRatingDialog
+          player={playerToEditRating}
+          isOpen={!!playerToEditRating}
+          onOpenChange={(isOpen) => !isOpen && setPlayerToEditRating(null)}
+          onSave={handleSaveRating}
         />
       )}
         {!user && (
