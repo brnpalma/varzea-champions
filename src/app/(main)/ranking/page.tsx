@@ -13,7 +13,6 @@ import { UserAvatar } from '@/components/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { logError } from '@/lib/logger';
 
 const getTrophyColor = (rank: number) => {
   switch(rank) {
@@ -48,12 +47,6 @@ export default function RankingPage() {
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching players for ranking:", error);
-      logError(error, {
-        userId: user?.uid,
-        operation: 'read',
-        collectionName: 'users',
-        context: 'RankingPage - onSnapshot',
-      });
       setIsLoading(false);
     });
 
