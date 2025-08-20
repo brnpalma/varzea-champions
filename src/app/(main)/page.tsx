@@ -156,7 +156,7 @@ export default function HomePage() {
     } finally {
       setIsGameDateLoading(false);
     }
-  }, [user?.groupId, user?.uid, groupSettings, goalsSubmitted]);
+  }, [user?.groupId, groupSettings, goalsSubmitted]);
 
 
   useEffect(() => {
@@ -180,8 +180,10 @@ export default function HomePage() {
           if (remainingPlayers.length === 0) {
               // Reset for all players in the group
               allPlayers.forEach(player => {
-                  const playerRef = doc(firestore, 'users', player.uid);
-                  batch.update(playerRef, { lavouColete: false });
+                  if (player.uid !== currentManager.uid) { // Don't reset the current one yet
+                    const playerRef = doc(firestore, 'users', player.uid);
+                    batch.update(playerRef, { lavouColete: false });
+                  }
               });
               toast({
                 title: "Rodízio de Coletes Reiniciado!",
@@ -191,6 +193,8 @@ export default function HomePage() {
           }
   
           await batch.commit();
+          // After commit, refetch to show the new "next" person
+          fetchEquipmentManager();
       } catch (error) {
           console.error("Error updating equipment manager rotation:", error);
           toast({
@@ -199,12 +203,12 @@ export default function HomePage() {
               variant: "destructive"
           });
       }
-  }, [user?.groupId, toast]);
+  }, [user?.groupId, toast, fetchEquipmentManager]);
 
   const fetchEquipmentManager = useCallback(async () => {
       if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
           setEquipmentManager({ current: null, next: null });
-          return;
+          return { currentManager: null, allPlayers: [] };
       }
   
       setIsLoadingManager(true);
@@ -220,13 +224,27 @@ export default function HomePage() {
               allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
               
               // Find the current manager (first one who hasn't washed)
-              const currentManager = allPlayers.find(p => !p.lavouColete) || allPlayers[0];
+              let currentManager = allPlayers.find(p => !p.lavouColete);
+
+              // If all have washed, reset everyone except the last one to wash and pick first
+              if (!currentManager) {
+                  currentManager = allPlayers[0];
+              }
               
               // Find the next manager
-              const currentIndex = allPlayers.findIndex(p => p.uid === currentManager.uid);
+              const currentIndex = allPlayers.findIndex(p => p.uid === currentManager!.uid);
               const nextIndex = (currentIndex + 1) % allPlayers.length;
-              const nextManager = allPlayers[nextIndex];
-  
+              let nextManager = allPlayers[nextIndex];
+
+              // If the current manager is the last one in the "not washed" list, the next one is the first in the "not washed" list (or start of list)
+              const notWashedPlayers = allPlayers.filter(p => !p.lavouColete);
+              if (notWashedPlayers.length > 1 && notWashedPlayers[notWashedPlayers.length - 1].uid === currentManager.uid) {
+                  nextManager = notWashedPlayers[0];
+              } else if (notWashedPlayers.length === 1) {
+                  // Only one left, so the next is the start of the whole list
+                  nextManager = allPlayers.find(p => p.uid !== currentManager!.uid) || allPlayers[0];
+              }
+               
               setEquipmentManager({ current: currentManager, next: nextManager });
               return { currentManager, allPlayers }; // Return for rotation logic
           } else {
@@ -250,7 +268,7 @@ export default function HomePage() {
       if (previousGameDateRef.current && nextGameDate && previousGameDateRef.current < new Date() && nextGameDate > new Date()) {
           // The game has just rolled over. Time to update the manager.
           fetchEquipmentManager().then(({ currentManager, allPlayers }) => {
-              if (currentManager) {
+              if (currentManager && allPlayers.length > 0) {
                   updateEquipmentManagerRotation(currentManager, allPlayers);
               }
           });
@@ -717,3 +735,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
