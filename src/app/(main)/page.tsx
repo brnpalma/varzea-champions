@@ -5,7 +5,7 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, RefreshCw } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs, writeBatch } from "firebase/firestore";
@@ -637,7 +637,7 @@ export default function HomePage() {
             <Card className="shadow-lg h-fit text-center">
                 <CardHeader className="text-center">
                     <CardTitle className="flex items-center justify-center gap-3">
-                         <RefreshCw className="h-5 w-5 text-primary" />
+                         <Shirt className="h-5 w-5 text-primary" />
                         <span>Próximo responsável</span>
                     </CardTitle>
                      <CardDescription className="text-xs text-muted-foreground">
