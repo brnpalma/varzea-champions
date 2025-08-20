@@ -110,7 +110,7 @@ export default function HomePage() {
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
   const [isGameFinished, setIsGameFinished] = useState(false);
-  const [equipmentManager, setEquipmentManager] = useState<{current: User | null, next: User | null}>({ current: null, next: null });
+  const [equipmentManager, setEquipmentManager] = useState<{next: User | null}>({ next: null });
   const [isLoadingManager, setIsLoadingManager] = useState(false);
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
   const previousGameDateRef = useRef<Date | null>(null);
@@ -166,8 +166,8 @@ export default function HomePage() {
   
   const fetchEquipmentManager = useCallback(async () => {
       if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
-          setEquipmentManager({ current: null, next: null });
-          return { currentManager: null, allPlayers: [] };
+          setEquipmentManager({ next: null });
+          return;
       }
   
       setIsLoadingManager(true);
@@ -190,59 +190,79 @@ export default function HomePage() {
                   nextManager = allPlayers[0];
               }
                
-              setEquipmentManager({ current: null, next: nextManager });
-              return { currentManager: nextManager, allPlayers: allPlayers };
+              setEquipmentManager({ next: nextManager });
           } else {
-              setEquipmentManager({ current: null, next: null });
+              setEquipmentManager({ next: null });
           }
       } catch (error) {
           console.error("Error fetching players for equipment manager:", error);
-          setEquipmentManager({ current: null, next: null });
+          setEquipmentManager({ next: null });
       } finally {
           setIsLoadingManager(false);
       }
-      return { currentManager: null, allPlayers: [] };
   }, [groupSettings, user?.groupId]);
 
-  const updateEquipmentManagerRotation = useCallback(async (currentManager: User | null, allPlayers: User[]) => {
-      if (!user?.groupId || !currentManager) return;
-  
-      try {
-          const batch = writeBatch(firestore);
-          
-          const currentManagerRef = doc(firestore, 'users', currentManager.uid);
-          batch.update(currentManagerRef, { lavouColete: true });
-  
-          // Check if after this update, all players will have completed their turn
-          const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
-  
-          if (remainingPlayers.length === 0) {
-              // Reset for all other players (the current one is already being set to true)
-              allPlayers.forEach(player => {
-                  if (player.uid !== currentManager.uid) {
-                    const playerRef = doc(firestore, 'users', player.uid);
-                    batch.update(playerRef, { lavouColete: false });
-                  }
-              });
-              toast({
-                title: "Rodízio de Coletes Reiniciado!",
-                description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
-                variant: "success"
-              })
-          }
-  
-          await batch.commit();
-          // After commit, refetch to show the new "next" person
-          fetchEquipmentManager();
-      } catch (error) {
-          console.error("Error updating equipment manager rotation:", error);
-          toast({
-              title: "Erro ao atualizar rodízio",
-              description: "Não foi possível atualizar o responsável pelos coletes.",
-              variant: "destructive"
-          });
-      }
-  }, [user?.groupId, toast, fetchEquipmentManager]);
+
+  const updateEquipmentManagerRotation = useCallback(async () => {
+    if (!user?.groupId || !groupSettings?.enableEquipmentManager) return;
+    try {
+        const playersQuery = query(
+            collection(firestore, 'users'),
+            where('groupId', '==', user.groupId)
+        );
+        const querySnapshot = await getDocs(playersQuery);
+        let allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
+
+        if (allPlayers.length === 0) return;
+
+        allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+
+        // Find the current responsible player (the one for the game that just passed)
+        let currentManager = allPlayers.find(p => !p.lavouColete);
+        if (!currentManager) {
+            // If everyone has washed, it means the cycle just reset. The responsible was the last in alphabetical order.
+            currentManager = allPlayers[allPlayers.length - 1];
+        }
+
+        if (!currentManager) return; // Should not happen if there are players
+
+        const batch = writeBatch(firestore);
+        
+        // Mark the current manager as done
+        const currentManagerRef = doc(firestore, 'users', currentManager.uid);
+        batch.update(currentManagerRef, { lavouColete: true });
+
+        // Check if this was the last person in the cycle
+        const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
+
+        if (remainingPlayers.length === 0) {
+            // Reset for all other players (the current one is already being set to true)
+            allPlayers.forEach(player => {
+                if (player.uid !== currentManager.uid) {
+                  const playerRef = doc(firestore, 'users', player.uid);
+                  batch.update(playerRef, { lavouColete: false });
+                }
+            });
+            toast({
+              title: "Rodízio de Coletes Reiniciado!",
+              description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
+              variant: "success"
+            });
+        }
+
+        await batch.commit();
+        // After commit, refetch to show the new "next" person
+        fetchEquipmentManager();
+    } catch (error) {
+        console.error("Error updating equipment manager rotation:", error);
+        toast({
+            title: "Erro ao atualizar rodízio",
+            description: "Não foi possível atualizar o responsável pelos coletes.",
+            variant: "destructive"
+        });
+    }
+  }, [user?.groupId, groupSettings?.enableEquipmentManager, toast, fetchEquipmentManager]);
+
 
   useEffect(() => {
     fetchEquipmentManager();
@@ -252,15 +272,11 @@ export default function HomePage() {
       // Check if the game date has changed from a past date to a new future date
       if (previousGameDateRef.current && nextGameDate && previousGameDateRef.current < new Date() && nextGameDate > new Date()) {
           // The game has just rolled over. Time to update the manager.
-          fetchEquipmentManager().then(({ currentManager, allPlayers }) => {
-              if (currentManager && allPlayers.length > 0) {
-                  updateEquipmentManagerRotation(currentManager, allPlayers);
-              }
-          });
+          updateEquipmentManagerRotation();
       }
       // Update the ref to the current game date for the next render
       previousGameDateRef.current = nextGameDate;
-  }, [nextGameDate, fetchEquipmentManager, updateEquipmentManagerRotation]);
+  }, [nextGameDate, updateEquipmentManagerRotation]);
 
 
   useEffect(() => {
@@ -721,3 +737,4 @@ export default function HomePage() {
   );
 }
 
+    
