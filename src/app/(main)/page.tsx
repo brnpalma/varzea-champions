@@ -5,7 +5,7 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt, RefreshCw } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs, writeBatch } from "firebase/firestore";
@@ -638,19 +638,19 @@ export default function HomePage() {
                 <CardHeader className="text-center">
                     <CardTitle className="flex items-center justify-center gap-3">
                          <RefreshCw className="h-5 w-5 text-primary" />
-                        <span>Próximo a Lavar os Coletes</span>
+                        <span>Próximo responsável</span>
                     </CardTitle>
+                     <CardDescription className="text-xs text-muted-foreground">
+                        Pela limpeza do equipamento coletivo
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-4">
+                <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
                     {isLoadingManager ? (
                         <FootballSpinner />
                     ) : equipmentManager.next ? (
                         <>
                             <UserAvatar src={equipmentManager.next.photoURL} size={64} />
                             <p className="text-lg font-bold text-foreground">{equipmentManager.next.displayName}</p>
-                             <p className="text-sm text-muted-foreground -mt-3">
-                                Responsável atual: <span className="font-medium text-foreground">{equipmentManager.current?.displayName || 'N/A'}</span>
-                            </p>
                         </>
                     ) : (
                         <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
