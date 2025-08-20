@@ -156,8 +156,10 @@ function SignupFormComponent() {
   const availableUserTypes = React.useMemo(() => {
     const allTypes = Object.values(UserType);
     if (groupIdFromUrl) {
+      // If it's an invite, only "Jogador" is allowed.
       return allTypes.filter(type => type === UserType.JOGADOR);
     }
+    // If it's a new signup without an invite, only manager types are allowed.
     return allTypes.filter(type => type !== UserType.JOGADOR);
   }, [groupIdFromUrl]);
 
@@ -477,5 +479,3 @@ export function SignupForm() {
     </React.Suspense>
   )
 }
-
-    
