@@ -13,6 +13,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { logError } from '@/lib/logger';
 
 const getTrophyColor = (rank: number) => {
   switch(rank) {
@@ -47,11 +48,17 @@ export default function RankingPage() {
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching players for ranking:", error);
+      logError(error, {
+        userId: user?.uid,
+        operation: 'read',
+        collectionName: 'users',
+        context: 'RankingPage - onSnapshot',
+      });
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user?.groupId, authLoading]);
+  }, [user?.groupId, authLoading, user?.uid]);
 
   const topScorers = useMemo(() => {
     return [...players].sort((a, b) => {
@@ -143,16 +150,16 @@ export default function RankingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
-            <Tabs defaultValue="scorers" className="w-full">
+            <Tabs defaultValue="rated" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
                 <TabsTrigger value="rated">Melhores Avaliados</TabsTrigger>
+                <TabsTrigger value="scorers">Artilheiros</TabsTrigger>
               </TabsList>
-              <TabsContent value="scorers" className="mt-4">
-                {renderPlayerList(topScorers, 'goals')}
-              </TabsContent>
               <TabsContent value="rated" className="mt-4">
                 {renderPlayerList(topRated, 'rating')}
+              </TabsContent>
+              <TabsContent value="scorers" className="mt-4">
+                {renderPlayerList(topScorers, 'goals')}
               </TabsContent>
             </Tabs>
           </CardContent>
