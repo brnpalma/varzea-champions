@@ -5,15 +5,16 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn } from "lucide-react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import { GoalsDialog } from "@/components/goals-dialog";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface GameDaySetting {
   selected: boolean;
@@ -93,6 +94,14 @@ const formatDateToId = (date: Date): string => {
     return `${year}-${month}-${day}`;
 }
 
+const getWeekNumber = (d: Date): number => {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return weekNo;
+};
+
 
 export default function HomePage() {
   const { user, groupSettings, loading } = useAuth();
@@ -109,6 +118,8 @@ export default function HomePage() {
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
   const [isGameFinished, setIsGameFinished] = useState(false);
+  const [equipmentManager, setEquipmentManager] = useState<User | null>(null);
+  const [isLoadingManager, setIsLoadingManager] = useState(false);
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
 
 
@@ -152,7 +163,7 @@ export default function HomePage() {
     } finally {
       setIsGameDateLoading(false);
     }
-  }, [user?.groupId, groupSettings, goalsSubmitted]);
+  }, [user?.groupId, user?.uid, groupSettings, goalsSubmitted]);
 
 
   useEffect(() => {
@@ -188,6 +199,41 @@ export default function HomePage() {
     return () => unsubscribe();
 
   }, [nextGameDate, user?.groupId]);
+
+  useEffect(() => {
+    const fetchEquipmentManager = async () => {
+      if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
+        setEquipmentManager(null);
+        return;
+      }
+
+      setIsLoadingManager(true);
+      try {
+        const playersQuery = query(
+          collection(firestore, 'users'),
+          where('groupId', '==', user.groupId)
+        );
+        const querySnapshot = await getDocs(playersQuery);
+        const allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
+        
+        if (allPlayers.length > 0) {
+          allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+          const weekNumber = getWeekNumber(new Date());
+          const managerIndex = weekNumber % allPlayers.length;
+          setEquipmentManager(allPlayers[managerIndex]);
+        } else {
+          setEquipmentManager(null);
+        }
+      } catch (error) {
+        console.error("Error fetching players for equipment manager:", error);
+        setEquipmentManager(null);
+      } finally {
+        setIsLoadingManager(false);
+      }
+    };
+
+    fetchEquipmentManager();
+  }, [groupSettings?.enableEquipmentManager, user?.groupId, user?.uid]);
 
 
   useEffect(() => {
@@ -400,6 +446,7 @@ export default function HomePage() {
 
   const formattedDate = formatNextGameDate(nextGameDate);
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
+  const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -531,6 +578,30 @@ export default function HomePage() {
             </CardContent>
           </Card>
         )}
+        
+        {showEquipmentCard && (
+            <Card className="shadow-lg h-fit text-center">
+                <CardHeader className="text-center">
+                    <CardTitle className="flex items-center justify-center gap-3">
+                        <Shirt className="h-6 w-6 text-primary" />
+                        <span>Responsável da Semana</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-4">
+                    {isLoadingManager ? (
+                        <FootballSpinner />
+                    ) : equipmentManager ? (
+                        <>
+                            <UserAvatar src={equipmentManager.photoURL} size={64} />
+                            <p className="text-lg font-bold text-foreground">{equipmentManager.displayName}</p>
+                            <p className="text-sm text-muted-foreground -mt-3">é o responsável pelos coletes esta semana.</p>
+                        </>
+                    ) : (
+                        <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
+                    )}
+                </CardContent>
+            </Card>
+        )}
 
         <Card className="shadow-lg h-fit text-center">
           <CardHeader className="text-center">
@@ -590,5 +661,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
