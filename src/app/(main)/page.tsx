@@ -113,7 +113,7 @@ export default function HomePage() {
   const [equipmentManager, setEquipmentManager] = useState<{next: User | null}>({ next: null });
   const [isLoadingManager, setIsLoadingManager] = useState(false);
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
-  const previousGameDateRef = useRef<Date | null>(null);
+  const previousGameDateRef = useRef<string | null>(null);
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -182,10 +182,8 @@ export default function HomePage() {
           if (allPlayers.length > 0) {
               allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
               
-              // Find the next responsible player (the first one who hasn't washed)
               let nextManager = allPlayers.find(p => !p.lavouColete);
 
-              // If everyone has washed, reset the cycle and the next manager is the first player
               if (!nextManager) {
                   nextManager = allPlayers[0];
               }
@@ -269,13 +267,19 @@ export default function HomePage() {
   }, [fetchEquipmentManager]);
 
   useEffect(() => {
+      const currentGameId = nextGameDate ? formatDateToId(nextGameDate) : null;
+      
       // Check if the game date has changed from a past date to a new future date
-      if (previousGameDateRef.current && nextGameDate && previousGameDateRef.current < new Date() && nextGameDate > new Date()) {
-          // The game has just rolled over. Time to update the manager.
-          updateEquipmentManagerRotation();
+      if (previousGameDateRef.current && currentGameId && previousGameDateRef.current !== currentGameId) {
+          const previousDate = new Date(previousGameDateRef.current);
+          const now = new Date();
+          // If the previous game is in the past and the new one is in the future, it's a rollover.
+          if (previousDate < now && nextGameDate! > now) {
+            updateEquipmentManagerRotation();
+          }
       }
-      // Update the ref to the current game date for the next render
-      previousGameDateRef.current = nextGameDate;
+      // Update the ref to the current game date ID for the next render
+      previousGameDateRef.current = currentGameId;
   }, [nextGameDate, updateEquipmentManagerRotation]);
 
 
