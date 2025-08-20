@@ -29,9 +29,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { auth, firestore } from "@/lib/firebase";
 import { UserType, PlayerSubscriptionType, useAuth } from "@/hooks/use-auth";
-import { Camera, Star } from "lucide-react";
+import { Camera } from "lucide-react";
 import { UserAvatar } from "./user-avatar";
 import { Label } from "./ui/label";
+import { RatingSelect } from "./rating-select";
 
 
 const formSchema = z
@@ -402,22 +403,13 @@ function SignupFormComponent() {
               render={({ field }) => (
               <FormItem>
                   <Label>Classificação (Estrelas)</Label>
-                  <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString()} disabled={isLoading}>
                   <FormControl>
-                      <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
+                    <RatingSelect 
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isLoading}
+                    />
                   </FormControl>
-                  <SelectContent>
-                      {[5, 4, 3, 2, 1].map(r => (
-                        <SelectItem key={r} value={r.toString()}>
-                          <div className="flex items-center gap-2">
-                            {r} <Star className="h-4 w-4 text-amber-500 fill-current" />
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                  </Select>
                   <FormMessage />
               </FormItem>
               )}
