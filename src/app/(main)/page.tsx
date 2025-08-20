@@ -164,47 +164,6 @@ export default function HomePage() {
     fetchGameSettings();
   }, [user, loading, fetchGameSettings]);
   
-  const updateEquipmentManagerRotation = useCallback(async (currentManager: User | null, allPlayers: User[]) => {
-      if (!user?.groupId || !currentManager) return;
-  
-      try {
-          const batch = writeBatch(firestore);
-          
-          // Mark current manager as having completed their turn
-          const currentManagerRef = doc(firestore, 'users', currentManager.uid);
-          batch.update(currentManagerRef, { lavouColete: true });
-  
-          // Check if all players have completed their turn
-          const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
-  
-          if (remainingPlayers.length === 0) {
-              // Reset for all players in the group
-              allPlayers.forEach(player => {
-                  if (player.uid !== currentManager.uid) { // Don't reset the current one yet
-                    const playerRef = doc(firestore, 'users', player.uid);
-                    batch.update(playerRef, { lavouColete: false });
-                  }
-              });
-              toast({
-                title: "Rodízio de Coletes Reiniciado!",
-                description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
-                variant: "success"
-              })
-          }
-  
-          await batch.commit();
-          // After commit, refetch to show the new "next" person
-          fetchEquipmentManager();
-      } catch (error) {
-          console.error("Error updating equipment manager rotation:", error);
-          toast({
-              title: "Erro ao atualizar rodízio",
-              description: "Não foi possível atualizar o responsável pelos coletes.",
-              variant: "destructive"
-          });
-      }
-  }, [user?.groupId, toast, fetchEquipmentManager]);
-
   const fetchEquipmentManager = useCallback(async () => {
       if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
           setEquipmentManager({ current: null, next: null });
@@ -258,6 +217,47 @@ export default function HomePage() {
       }
       return { currentManager: null, allPlayers: [] };
   }, [groupSettings, user?.groupId]);
+
+  const updateEquipmentManagerRotation = useCallback(async (currentManager: User | null, allPlayers: User[]) => {
+      if (!user?.groupId || !currentManager) return;
+  
+      try {
+          const batch = writeBatch(firestore);
+          
+          // Mark current manager as having completed their turn
+          const currentManagerRef = doc(firestore, 'users', currentManager.uid);
+          batch.update(currentManagerRef, { lavouColete: true });
+  
+          // Check if all players have completed their turn
+          const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
+  
+          if (remainingPlayers.length === 0) {
+              // Reset for all players in the group
+              allPlayers.forEach(player => {
+                  if (player.uid !== currentManager.uid) { // Don't reset the current one yet
+                    const playerRef = doc(firestore, 'users', player.uid);
+                    batch.update(playerRef, { lavouColete: false });
+                  }
+              });
+              toast({
+                title: "Rodízio de Coletes Reiniciado!",
+                description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
+                variant: "success"
+              })
+          }
+  
+          await batch.commit();
+          // After commit, refetch to show the new "next" person
+          fetchEquipmentManager();
+      } catch (error) {
+          console.error("Error updating equipment manager rotation:", error);
+          toast({
+              title: "Erro ao atualizar rodízio",
+              description: "Não foi possível atualizar o responsável pelos coletes.",
+              variant: "destructive"
+          });
+      }
+  }, [user?.groupId, toast, fetchEquipmentManager]);
 
   useEffect(() => {
     fetchEquipmentManager();
