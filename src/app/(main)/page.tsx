@@ -182,30 +182,16 @@ export default function HomePage() {
           if (allPlayers.length > 0) {
               allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
               
-              // Find the current manager (first one who hasn't washed)
-              let currentManager = allPlayers.find(p => !p.lavouColete);
+              // Find the next responsible player (the first one who hasn't washed)
+              let nextManager = allPlayers.find(p => !p.lavouColete);
 
-              // If all have washed, reset everyone except the last one to wash and pick first
-              if (!currentManager) {
-                  currentManager = allPlayers[0];
-              }
-              
-              // Find the next manager
-              const currentIndex = allPlayers.findIndex(p => p.uid === currentManager!.uid);
-              const nextIndex = (currentIndex + 1) % allPlayers.length;
-              let nextManager = allPlayers[nextIndex];
-
-              // If the current manager is the last one in the "not washed" list, the next one is the first in the "not washed" list (or start of list)
-              const notWashedPlayers = allPlayers.filter(p => !p.lavouColete);
-              if (notWashedPlayers.length > 1 && notWashedPlayers[notWashedPlayers.length - 1].uid === currentManager.uid) {
-                  nextManager = notWashedPlayers[0];
-              } else if (notWashedPlayers.length === 1) {
-                  // Only one left, so the next is the start of the whole list
-                  nextManager = allPlayers.find(p => p.uid !== currentManager!.uid) || allPlayers[0];
+              // If everyone has washed, reset the cycle and the next manager is the first player
+              if (!nextManager) {
+                  nextManager = allPlayers[0];
               }
                
-              setEquipmentManager({ current: currentManager, next: nextManager });
-              return { currentManager, allPlayers }; // Return for rotation logic
+              setEquipmentManager({ current: null, next: nextManager });
+              return { currentManager: nextManager, allPlayers: allPlayers };
           } else {
               setEquipmentManager({ current: null, next: null });
           }
@@ -224,17 +210,16 @@ export default function HomePage() {
       try {
           const batch = writeBatch(firestore);
           
-          // Mark current manager as having completed their turn
           const currentManagerRef = doc(firestore, 'users', currentManager.uid);
           batch.update(currentManagerRef, { lavouColete: true });
   
-          // Check if all players have completed their turn
+          // Check if after this update, all players will have completed their turn
           const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
   
           if (remainingPlayers.length === 0) {
-              // Reset for all players in the group
+              // Reset for all other players (the current one is already being set to true)
               allPlayers.forEach(player => {
-                  if (player.uid !== currentManager.uid) { // Don't reset the current one yet
+                  if (player.uid !== currentManager.uid) {
                     const playerRef = doc(firestore, 'users', player.uid);
                     batch.update(playerRef, { lavouColete: false });
                   }
@@ -736,4 +721,3 @@ export default function HomePage() {
   );
 }
 
-    
