@@ -28,6 +28,7 @@ export interface UserProfile {
   groupId: string | null;
   rating: number | null;
   totalGoals?: number;
+  lavouColete?: boolean;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -109,6 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             groupId: userProfileData?.groupId || null,
             rating: userProfileData?.rating || 1,
             totalGoals: userProfileData?.totalGoals || 0,
+            lavouColete: userProfileData?.lavouColete || false,
             groupName: null,
           } as User;
           

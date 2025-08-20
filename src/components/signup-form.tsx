@@ -244,6 +244,7 @@ function SignupFormComponent() {
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
         totalGoals: 0,
+        lavouColete: false,
       });
       
       await batch.commit();

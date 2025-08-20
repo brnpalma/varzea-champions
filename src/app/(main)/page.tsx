@@ -5,10 +5,10 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs, writeBatch } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
@@ -94,14 +94,6 @@ const formatDateToId = (date: Date): string => {
     return `${year}-${month}-${day}`;
 }
 
-const getWeeksSinceDate = (startDate: Date): number => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const diff = now.getTime() - start.getTime();
-    const days = diff / (1000 * 60 * 60 * 24);
-    return Math.floor(days / 7);
-};
-
 
 export default function HomePage() {
   const { user, groupSettings, loading } = useAuth();
@@ -118,9 +110,10 @@ export default function HomePage() {
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
   const [isGameFinished, setIsGameFinished] = useState(false);
-  const [equipmentManager, setEquipmentManager] = useState<User | null>(null);
+  const [equipmentManager, setEquipmentManager] = useState<{current: User | null, next: User | null}>({ current: null, next: null });
   const [isLoadingManager, setIsLoadingManager] = useState(false);
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
+  const previousGameDateRef = useRef<Date | null>(null);
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -171,6 +164,102 @@ export default function HomePage() {
     fetchGameSettings();
   }, [user, loading, fetchGameSettings]);
   
+  const updateEquipmentManagerRotation = useCallback(async (currentManager: User | null, allPlayers: User[]) => {
+      if (!user?.groupId || !currentManager) return;
+  
+      try {
+          const batch = writeBatch(firestore);
+          
+          // Mark current manager as having completed their turn
+          const currentManagerRef = doc(firestore, 'users', currentManager.uid);
+          batch.update(currentManagerRef, { lavouColete: true });
+  
+          // Check if all players have completed their turn
+          const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
+  
+          if (remainingPlayers.length === 0) {
+              // Reset for all players in the group
+              allPlayers.forEach(player => {
+                  const playerRef = doc(firestore, 'users', player.uid);
+                  batch.update(playerRef, { lavouColete: false });
+              });
+              toast({
+                title: "Rodízio de Coletes Reiniciado!",
+                description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
+                variant: "success"
+              })
+          }
+  
+          await batch.commit();
+      } catch (error) {
+          console.error("Error updating equipment manager rotation:", error);
+          toast({
+              title: "Erro ao atualizar rodízio",
+              description: "Não foi possível atualizar o responsável pelos coletes.",
+              variant: "destructive"
+          });
+      }
+  }, [user?.groupId, toast]);
+
+  const fetchEquipmentManager = useCallback(async () => {
+      if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
+          setEquipmentManager({ current: null, next: null });
+          return;
+      }
+  
+      setIsLoadingManager(true);
+      try {
+          const playersQuery = query(
+              collection(firestore, 'users'),
+              where('groupId', '==', user.groupId)
+          );
+          const querySnapshot = await getDocs(playersQuery);
+          let allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
+          
+          if (allPlayers.length > 0) {
+              allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+              
+              // Find the current manager (first one who hasn't washed)
+              const currentManager = allPlayers.find(p => !p.lavouColete) || allPlayers[0];
+              
+              // Find the next manager
+              const currentIndex = allPlayers.findIndex(p => p.uid === currentManager.uid);
+              const nextIndex = (currentIndex + 1) % allPlayers.length;
+              const nextManager = allPlayers[nextIndex];
+  
+              setEquipmentManager({ current: currentManager, next: nextManager });
+              return { currentManager, allPlayers }; // Return for rotation logic
+          } else {
+              setEquipmentManager({ current: null, next: null });
+          }
+      } catch (error) {
+          console.error("Error fetching players for equipment manager:", error);
+          setEquipmentManager({ current: null, next: null });
+      } finally {
+          setIsLoadingManager(false);
+      }
+      return { currentManager: null, allPlayers: [] };
+  }, [groupSettings, user?.groupId]);
+
+  useEffect(() => {
+    fetchEquipmentManager();
+  }, [fetchEquipmentManager]);
+
+  useEffect(() => {
+      // Check if the game date has changed from a past date to a new future date
+      if (previousGameDateRef.current && nextGameDate && previousGameDateRef.current < new Date() && nextGameDate > new Date()) {
+          // The game has just rolled over. Time to update the manager.
+          fetchEquipmentManager().then(({ currentManager, allPlayers }) => {
+              if (currentManager) {
+                  updateEquipmentManagerRotation(currentManager, allPlayers);
+              }
+          });
+      }
+      // Update the ref to the current game date for the next render
+      previousGameDateRef.current = nextGameDate;
+  }, [nextGameDate, fetchEquipmentManager, updateEquipmentManagerRotation]);
+
+
   useEffect(() => {
     if (!nextGameDate || !user?.groupId) {
         setConfirmedPlayers([]);
@@ -199,42 +288,6 @@ export default function HomePage() {
     return () => unsubscribe();
 
   }, [nextGameDate, user?.groupId]);
-
-  useEffect(() => {
-    const fetchEquipmentManager = async () => {
-      if (!groupSettings?.enableEquipmentManager || !user?.groupId || !groupSettings?.createdAt) {
-        setEquipmentManager(null);
-        return;
-      }
-
-      setIsLoadingManager(true);
-      try {
-        const playersQuery = query(
-          collection(firestore, 'users'),
-          where('groupId', '==', user.groupId)
-        );
-        const querySnapshot = await getDocs(playersQuery);
-        const allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
-        
-        if (allPlayers.length > 0) {
-          allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
-          const groupCreationDate = new Date(groupSettings.createdAt);
-          const weeksSinceCreation = getWeeksSinceDate(groupCreationDate);
-          const managerIndex = weeksSinceCreation % allPlayers.length;
-          setEquipmentManager(allPlayers[managerIndex]);
-        } else {
-          setEquipmentManager(null);
-        }
-      } catch (error) {
-        console.error("Error fetching players for equipment manager:", error);
-        setEquipmentManager(null);
-      } finally {
-        setIsLoadingManager(false);
-      }
-    };
-
-    fetchEquipmentManager();
-  }, [groupSettings, user?.groupId]);
 
 
   useEffect(() => {
@@ -580,22 +633,24 @@ export default function HomePage() {
           </Card>
         )}
         
-        {showEquipmentCard && (
+         {showEquipmentCard && (
             <Card className="shadow-lg h-fit text-center">
                 <CardHeader className="text-center">
                     <CardTitle className="flex items-center justify-center gap-3">
-                        <Shirt className="h-6 w-6 text-primary" />
-                        <span>Responsável da Semana</span>
+                         <RefreshCw className="h-5 w-5 text-primary" />
+                        <span>Próximo a Lavar os Coletes</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4">
                     {isLoadingManager ? (
                         <FootballSpinner />
-                    ) : equipmentManager ? (
+                    ) : equipmentManager.next ? (
                         <>
-                            <UserAvatar src={equipmentManager.photoURL} size={64} />
-                            <p className="text-lg font-bold text-foreground">{equipmentManager.displayName}</p>
-                            <p className="text-sm text-muted-foreground -mt-3">é o responsável pelos coletes esta semana.</p>
+                            <UserAvatar src={equipmentManager.next.photoURL} size={64} />
+                            <p className="text-lg font-bold text-foreground">{equipmentManager.next.displayName}</p>
+                             <p className="text-sm text-muted-foreground -mt-3">
+                                Responsável atual: <span className="font-medium text-foreground">{equipmentManager.current?.displayName || 'N/A'}</span>
+                            </p>
                         </>
                     ) : (
                         <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
