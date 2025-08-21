@@ -233,7 +233,10 @@ export default function SorterPage() {
         finalTeams.push(leftoverPlayers);
       }
       
-      setTeams(finalTeams);
+      // Shuffle each team internally for random display order
+      const shuffledTeams = finalTeams.map(team => shuffleArray([...team]));
+
+      setTeams(shuffledTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
