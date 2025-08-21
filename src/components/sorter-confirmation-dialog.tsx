@@ -74,7 +74,7 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
   };
 
   const renderPlayerList = (players: User[]) => (
-    <ul className="space-y-2">
+    <ul className="space-y-2 pt-2">
       {players.map(player => (
         <li key={player.uid} className="flex items-center gap-3 p-2 rounded-md bg-secondary/30">
           <UserAvatar src={player.photoURL} size={32} />
@@ -98,26 +98,24 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
             <FootballSpinner />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh]">
-            <div>
-              <h3 className="font-semibold text-sm mb-2 flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                Confirmados ({confirmed.length})
-              </h3>
-              <ScrollArea className="h-64 rounded-md border p-2">
-                {renderPlayerList(confirmed)}
-              </ScrollArea>
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm mb-2 flex items-center gap-2 text-red-600">
-                <XCircle className="h-5 w-5" />
-                Não Confirmados ({notConfirmed.length})
-              </h3>
-              <ScrollArea className="h-64 rounded-md border p-2">
-                 {renderPlayerList(notConfirmed)}
-              </ScrollArea>
-            </div>
-          </div>
+          <ScrollArea className="max-h-[60vh] rounded-md border p-4">
+              <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-sm flex items-center gap-2 text-green-600">
+                        <CheckCircle2 className="h-5 w-5" />
+                        Confirmados ({confirmed.length})
+                    </h3>
+                    {confirmed.length > 0 ? renderPlayerList(confirmed) : <p className="text-xs text-muted-foreground pt-2">Nenhum jogador confirmado.</p>}
+                  </div>
+                   <div>
+                    <h3 className="font-semibold text-sm flex items-center gap-2 text-red-600">
+                        <XCircle className="h-5 w-5" />
+                        Não Confirmados ({notConfirmed.length})
+                    </h3>
+                     {notConfirmed.length > 0 ? renderPlayerList(notConfirmed) : <p className="text-xs text-muted-foreground pt-2">Todos os jogadores confirmaram.</p>}
+                  </div>
+              </div>
+          </ScrollArea>
         )}
         <DialogFooter className="pt-4">
           <DialogClose asChild>
