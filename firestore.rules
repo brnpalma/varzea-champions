@@ -1,26 +1,51 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite que um usuário autenticado crie, leia, atualize e delete seu próprio documento.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+  
+    // METODOS
+    function isUserAuthenticated() {
+      return request.auth != null;
     }
 
-    // Permite que gestores de grupo leiam e escrevam nos seus próprios grupos.
-    match /groups/{groupId} {
-       allow read, write: if request.auth != null && request.auth.uid == groupId;
+    function isUserSelf(userId) {
+      return request.auth.uid == userId;
     }
     
-    // Permite que usuários autenticados no grupo possam ler/escrever nos documentos de jogos (presença, gols).
-    match /groups/{groupId}/games/{gameId}/{document=**} {
-      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    function isManager(groupId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.exists && userDoc.data.userType == "Gestor do Grupo" && userDoc.data.groupId == groupId;
     }
 
-    // Permite que gestores de grupo gerenciem os pagamentos dentro de seus grupos.
-    match /groups/{groupId}/payments/{paymentId} {
-        allow read, write: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+    function isGuestGroup(groupId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    }
+//////////////////////////////////////////////////////////////
+
+    match /users/{userId} {
+      allow read, write: if isUserAuthenticated() 
+                          && (isUserSelf(userId) || isManager(resource.data.groupId) || isGuestGroup(resource.data.groupId));
+    }
+
+    match /groups/{groupId} {
+      allow read: if isUserAuthenticated();
+      
+      allow write: if isUserAuthenticated() 
+                    && (isManager(groupId) || request.resource.data.managerId == request.auth.uid);
+                      
+      match /games/{gameId} {
+        allow read: if isUserAuthenticated() && (isManager(groupId) || isGuestGroup(groupId));
+        
+        match /attendees/{userId} {
+          allow read: if isUserAuthenticated() && (isManager(groupId) || isGuestGroup(groupId));
+          allow write: if isUserAuthenticated() && (isManager(groupId) || isUserSelf(userId));
+        }
+      }
+    }
+    
+    match /{path=**}/attendees/{attendeeId} {
+        allow read: if isUserAuthenticated() && (isManager(resource.data.groupId) || isGuestGroup(resource.data.groupId));
     }
   }
 }
