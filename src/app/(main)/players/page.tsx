@@ -199,6 +199,8 @@ export default function PlayersPage() {
             <ul className="divide-y divide-border">
               {players.map((player) => {
                 const playerRating = player.rating || 1;
+                const isCurrentUser = user?.uid === player.uid;
+
                 return (
                   <li key={player.uid} className="py-4">
                     <div className="flex items-center justify-between w-full gap-4">
@@ -212,8 +214,8 @@ export default function PlayersPage() {
                           </div>
                         </div>
                       </div>
-
-                      {isManager && user?.uid !== player.uid && (
+                      
+                      {isManager && (
                         <AlertDialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -230,32 +232,36 @@ export default function PlayersPage() {
                                 <DollarSign className="mr-2 h-4 w-4" />
                                 <span>Histórico Financeiro</span>
                               </DropdownMenuItem>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  <span>Remover do Grupo</span>
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
+                              {!isCurrentUser && (
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Remover do Grupo</span>
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
 
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleRemovePlayer(player)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Remover
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
+                          {!isCurrentUser && (
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemovePlayer(player)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          )}
                         </AlertDialog>
                       )}
                     </div>
