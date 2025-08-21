@@ -179,45 +179,72 @@ export default function SorterPage() {
     setTeams([]);
 
     try {
-      // Fetch the latest rating for each confirmed player
       const playerPromises = finalPlayerList.map(async (player) => {
         const userDocRef = doc(firestore, 'users', player.uid);
         const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          return { ...player, ...userDocSnap.data() } as User;
+        return userDocSnap.exists() ? { ...player, ...userDocSnap.data() } as User : player;
+      });
+      
+      const updatedPlayers = await Promise.all(playerPromises);
+
+      // 1. Group players by rating
+      const playersByRating: Record<number, User[]> = { 5: [], 4: [], 3: [], 2: [], 1: [] };
+      updatedPlayers.forEach(player => {
+        const rating = player.rating || 1;
+        if (playersByRating[rating]) {
+          playersByRating[rating].push(player);
         }
-        return player;
       });
 
-      const updatedPlayers = await Promise.all(playerPromises);
+      // 2. Shuffle each rating group
+      Object.keys(playersByRating).forEach(rating => {
+        playersByRating[Number(rating)] = shuffleArray(playersByRating[Number(rating)]);
+      });
       
-      const shuffledPlayers = shuffleArray([...updatedPlayers]);
-      
-      const numberOfTeams = Math.floor(shuffledPlayers.length / playersPerTeamConfig);
-
-      if (numberOfTeams < 1) {
-         setTeams([shuffledPlayers]);
-         setIsSorting(false);
-         return;
-      }
-      
+      const numberOfTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
       const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
-      const playersToDistribute = [...shuffledPlayers];
-      const playersPerFullTeam = numberOfTeams * playersPerTeamConfig;
-
-      for (let i = 0; i < playersPerFullTeam; i++) {
-          const player = playersToDistribute.shift();
-          if (player) {
-              finalTeams[i % numberOfTeams].push(player);
+      
+      // 3. Distribute players in a "snake draft" style
+      for (let i = 0; i < playersPerTeamConfig; i++) {
+        const ratingLevel = 5 - (i % 5); // Cycles through 5, 4, 3, 2, 1, 5, 4...
+        for (let teamIndex = 0; teamIndex < numberOfTeams; teamIndex++) {
+          if (playersByRating[ratingLevel] && playersByRating[ratingLevel].length > 0) {
+            const player = playersByRating[ratingLevel].pop();
+            if (player) {
+              finalTeams[teamIndex].push(player);
+            }
           }
+        }
       }
 
-      // Add leftover players to their own group
-      if (playersToDistribute.length > 0) {
-        finalTeams.push(playersToDistribute);
+      // 4. Distribute any remaining players
+      let allRemainingPlayers: User[] = [];
+      Object.values(playersByRating).forEach(group => {
+          allRemainingPlayers.push(...group);
+      });
+      allRemainingPlayers = shuffleArray(allRemainingPlayers);
+
+      if (allRemainingPlayers.length > 0) {
+        // Add leftover players to their own group, or distribute them if needed
+        const leftoversTeamIndex = finalTeams.findIndex(team => team.length < playersPerTeamConfig);
+        if (leftoversTeamIndex !== -1) {
+            let currentTeamIndex = leftoversTeamIndex;
+            while(allRemainingPlayers.length > 0) {
+                if(finalTeams[currentTeamIndex].length < playersPerTeamConfig) {
+                    const player = allRemainingPlayers.shift();
+                    if(player) finalTeams[currentTeamIndex].push(player);
+                }
+                currentTeamIndex = (currentTeamIndex + 1) % numberOfTeams;
+            }
+        } else if (allRemainingPlayers.length > 0) {
+            finalTeams.push(allRemainingPlayers);
+        }
       }
       
-      setTeams(finalTeams);
+      // Shuffle each team internally for random display order
+      const shuffledTeams = finalTeams.map(team => shuffleArray(team));
+
+      setTeams(shuffledTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
@@ -329,9 +356,11 @@ export default function SorterPage() {
         {teams.length > 0 && !isSorting && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
             {teams.map((team, index) => {
-              const isLeftoverTeam = team.length < playersPerTeamConfig;
+              const isLeftoverTeam = team.length < playersPerTeamConfig && team.length > 0;
               const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
               
+              if(team.length === 0) return null;
+
               return (
                 <Card key={index}>
                   <CardHeader>
@@ -370,5 +399,7 @@ export default function SorterPage() {
     </div>
   );
 }
+
+    
 
     
