@@ -178,6 +178,19 @@ export default function SorterPage() {
     setTeams([]);
 
     try {
+      // Fetch the latest rating for each confirmed player
+      const playerPromises = confirmedPlayers.map(async (player) => {
+        const userDocRef = doc(firestore, 'users', player.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          return { ...player, ...userDocSnap.data() } as User;
+        }
+        // If for some reason the user doc doesn't exist, return the original player data
+        return player;
+      });
+
+      const updatedPlayers = await Promise.all(playerPromises);
+
       const groupDocRef = doc(firestore, "groups", user.groupId);
       const groupDocSnap = await getDoc(groupDocRef);
 
@@ -187,15 +200,15 @@ export default function SorterPage() {
       
       const playersPerTeam = groupDocSnap.data()?.playersPerTeam || 5;
       
-      const numberOfTeams = Math.floor(confirmedPlayers.length / playersPerTeam);
+      const numberOfTeams = Math.floor(updatedPlayers.length / playersPerTeam);
 
       if (numberOfTeams < 1) {
-         setTeams([confirmedPlayers]);
+         setTeams([updatedPlayers]);
          setIsSorting(false);
          return;
       }
       
-      const playersToDistribute = [...confirmedPlayers];
+      const playersToDistribute = [...updatedPlayers];
       const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeam);
       const leftoverPlayers = playersToDistribute;
 

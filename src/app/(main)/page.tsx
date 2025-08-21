@@ -391,7 +391,6 @@ export default function HomePage() {
             confirmedAt: new Date().toISOString(),
             displayName: user.displayName,
             photoURL: user.photoURL,
-            rating: user.rating,
             uid: user.uid,
         }, { merge: true });
         toast({
@@ -740,5 +739,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
