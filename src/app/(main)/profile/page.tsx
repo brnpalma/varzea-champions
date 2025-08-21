@@ -30,7 +30,6 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import packageJson from '../../../../package.json';
-import { RatingSelect } from "@/components/rating-select";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -96,9 +95,7 @@ export default function ProfilePage() {
   // Profile Editing State
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
-  const [rating, setRating] = useState<number>(1);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -129,9 +126,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
-      setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 1);
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
@@ -194,9 +189,7 @@ export default function ProfilePage() {
     setIsEditing(!isEditing);
      if (wasEditing && user) {
       setDisplayName(user.displayName || "");
-      setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 1);
       setPhotoFile(null);
       setPhotoPreview(user.photoURL || null);
     }
@@ -226,9 +219,7 @@ export default function ProfilePage() {
         const batch = writeBatch(firestore);
         batch.set(userDocRef, {
             displayName: displayName,
-            userType: userType,
             playerSubscriptionType: playerSubscriptionType,
-            rating: rating,
             photoURL: newPhotoURL,
         }, { merge: true });
 
@@ -499,42 +490,19 @@ export default function ProfilePage() {
                       placeholder="Seu nome ou apelido"
                     />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="userType" className="block text-sm font-medium text-muted-foreground mb-1">Tipo de Usuário</Label>
-                      <Select value={userType} onValueChange={(value) => setUserType(value as UserType)}>
-                        <SelectTrigger id="userType">
-                          <SelectValue placeholder="Selecione o tipo de usuário" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(UserType).map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</Label>
-                      <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
-                        <SelectTrigger id="playerSubscriptionType">
-                          <SelectValue placeholder="Selecione seu plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(PlayerSubscriptionType).map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                  </div>
+                <div>
+                  <Label htmlFor="playerSubscriptionType" className="block text-sm font-medium text-muted-foreground mb-1">Compromisso</Label>
+                    <Select value={playerSubscriptionType} onValueChange={(value) => setPlayerSubscriptionType(value as PlayerSubscriptionType)}>
+                      <SelectTrigger id="playerSubscriptionType">
+                        <SelectValue placeholder="Selecione seu plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(PlayerSubscriptionType).map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                 </div>
-                 <div>
-                    <Label htmlFor="rating" className="block text-sm font-medium text-muted-foreground mb-1">Classificação (Estrelas)</Label>
-                    <RatingSelect
-                      id="rating"
-                      value={rating}
-                      onValueChange={setRating}
-                    />
-                 </div>
               </div>
             ) : (
               <div className="space-y-4 text-sm">
@@ -804,5 +772,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

@@ -97,6 +97,7 @@ export default function SorterPage() {
   const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
+  const [playersPerTeamConfig, setPlayersPerTeamConfig] = useState<number>(5);
 
   const fetchGameSettingsAndDate = useCallback(async () => {
     if (!user?.groupId) return null;
@@ -105,6 +106,9 @@ export default function SorterPage() {
       const docSnap = await getDoc(groupDocRef);
       if (docSnap.exists()) {
         const groupData = docSnap.data();
+        if (groupData.playersPerTeam) {
+            setPlayersPerTeamConfig(groupData.playersPerTeam);
+        }
         if (groupData.gameDays) {
           const gameDate = getNextGameDate(groupData.gameDays);
           setNextGameDate(gameDate);
@@ -186,17 +190,15 @@ export default function SorterPage() {
       const numberOfTeams = Math.floor(confirmedPlayers.length / playersPerTeam);
 
       if (numberOfTeams < 1) {
-        toast({
-          variant: 'destructive',
-          title: 'Jogadores Insuficientes',
-          description: `São necessários pelo menos ${playersPerTeam} jogadores confirmados para formar um time.`
-        });
-        setIsSorting(false);
-        return;
+         setTeams([confirmedPlayers]);
+         setIsSorting(false);
+         return;
       }
       
-      const playersToSort = confirmedPlayers.slice(0, numberOfTeams * playersPerTeam);
-      
+      const playersToDistribute = [...confirmedPlayers];
+      const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeam);
+      const leftoverPlayers = playersToDistribute;
+
       const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [] };
       playersToSort.forEach(p => {
         const rating = (p.rating || 1).toString();
@@ -222,6 +224,10 @@ export default function SorterPage() {
         }
       }
 
+      if (leftoverPlayers.length > 0) {
+        finalTeams.push(leftoverPlayers);
+      }
+      
       setTeams(finalTeams);
 
     } catch (error) {
@@ -308,16 +314,21 @@ export default function SorterPage() {
 
         {teams.length > 0 && !isSorting && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
-            {teams.map((team, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <CardTitle>Time {String.fromCharCode(65 + index)} ({team.length} jogadores)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {renderPlayerList(team)}
-                </CardContent>
-              </Card>
-            ))}
+            {teams.map((team, index) => {
+              const isLeftoverTeam = team.length < playersPerTeamConfig;
+              const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
+              
+              return (
+                <Card key={index}>
+                  <CardHeader>
+                    <CardTitle>{title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {renderPlayerList(team)}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 

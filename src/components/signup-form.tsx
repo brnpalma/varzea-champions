@@ -43,7 +43,7 @@ const formSchema = z
     confirmPassword: z.string().optional(),
     userType: z.nativeEnum(UserType, { required_error: "Por favor, selecione um tipo de usuário." }),
     playerSubscriptionType: z.nativeEnum(PlayerSubscriptionType, { required_error: "Por favor, selecione uma opção." }),
-    rating: z.number().min(1).max(5),
+    rating: z.number().min(1).max(5).optional(),
     photo: z.instanceof(File).optional(),
   })
   .refine((data) => {
@@ -127,7 +127,7 @@ function SignupFormComponent() {
       confirmPassword: "",
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
       playerSubscriptionType: undefined,
-      rating: 3,
+      rating: 1,
       photo: undefined,
     },
   });
@@ -136,7 +136,7 @@ function SignupFormComponent() {
     if (authUser) {
       form.setValue('displayName', authUser.displayName || "");
       form.setValue('email', authUser.email || "");
-      form.setValue('rating', authUser.rating || 3);
+      form.setValue('rating', authUser.rating || 1);
       setPhotoPreview(authUser.photoURL || null);
     } else {
       // If user logs out (e.g., deletes profile), clear the form
@@ -147,7 +147,7 @@ function SignupFormComponent() {
         confirmPassword: "",
         userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
         playerSubscriptionType: undefined,
-        rating: 3,
+        rating: 1,
         photo: undefined,
       });
       setPhotoPreview(null);
@@ -240,7 +240,7 @@ function SignupFormComponent() {
         photoURL: photoURL,
         userType: values.userType,
         playerSubscriptionType: values.playerSubscriptionType,
-        rating: values.rating,
+        rating: values.rating || 1,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
         totalGoals: 0,
@@ -397,23 +397,6 @@ function SignupFormComponent() {
                 <FormMessage />
               </FormItem>
             )}
-          />
-           <FormField
-              control={form.control}
-              name="rating"
-              render={({ field }) => (
-              <FormItem>
-                  <Label>Classificação (Estrelas)</Label>
-                  <FormControl>
-                    <RatingSelect 
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-              </FormItem>
-              )}
           />
           {!authUser && (
             <div className="grid grid-cols-2 gap-4">
