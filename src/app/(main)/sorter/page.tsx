@@ -186,57 +186,38 @@ export default function SorterPage() {
         if (userDocSnap.exists()) {
           return { ...player, ...userDocSnap.data() } as User;
         }
-        // If for some reason the user doc doesn't exist, return the original player data
         return player;
       });
 
       const updatedPlayers = await Promise.all(playerPromises);
       
-      const numberOfTeams = Math.floor(updatedPlayers.length / playersPerTeamConfig);
+      const shuffledPlayers = shuffleArray([...updatedPlayers]);
+      
+      const numberOfTeams = Math.floor(shuffledPlayers.length / playersPerTeamConfig);
 
       if (numberOfTeams < 1) {
-         setTeams([updatedPlayers]);
+         setTeams([shuffledPlayers]);
          setIsSorting(false);
          return;
       }
       
-      const playersToDistribute = [...updatedPlayers];
-      const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeamConfig);
-      const leftoverPlayers = playersToDistribute;
-
-      const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [] };
-      playersToSort.forEach(p => {
-        const rating = (p.rating || 1).toString();
-        if (playersByRating[rating]) {
-          playersByRating[rating].push(p);
-        } else {
-          playersByRating['1'].push(p) 
-        }
-      });
-      
-      Object.keys(playersByRating).forEach(rating => {
-        shuffleArray(playersByRating[rating]);
-      });
-
       const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
-      let teamIndex = 0;
+      const playersToDistribute = [...shuffledPlayers];
+      const playersPerFullTeam = numberOfTeams * playersPerTeamConfig;
 
-      for (let rating = 5; rating >= 1; rating--) {
-        const players = playersByRating[rating.toString()];
-        for (const player of players) {
-          finalTeams[teamIndex].push(player);
-          teamIndex = (teamIndex + 1) % numberOfTeams;
-        }
+      for (let i = 0; i < playersPerFullTeam; i++) {
+          const player = playersToDistribute.shift();
+          if (player) {
+              finalTeams[i % numberOfTeams].push(player);
+          }
       }
 
-      if (leftoverPlayers.length > 0) {
-        finalTeams.push(leftoverPlayers);
+      // Add leftover players to their own group
+      if (playersToDistribute.length > 0) {
+        finalTeams.push(playersToDistribute);
       }
       
-      // Shuffle each team internally for random display order
-      const shuffledTeams = finalTeams.map(team => shuffleArray([...team]));
-
-      setTeams(shuffledTeams);
+      setTeams(finalTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
