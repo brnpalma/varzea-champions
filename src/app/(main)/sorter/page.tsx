@@ -205,15 +205,20 @@ export default function SorterPage() {
       const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
       
       // 3. Distribute players in a "snake draft" style
+      // Iterate through the number of slots per team
       for (let i = 0; i < playersPerTeamConfig; i++) {
-        const ratingLevel = 5 - (i % 5); // Cycles through 5, 4, 3, 2, 1, 5, 4...
+        // Determine rating level for this slot, cycling from 5 down to 1
+        const ratingLevel = 5 - (i % 5);
+        
+        // Iterate through each team to assign a player for this slot
         for (let teamIndex = 0; teamIndex < numberOfTeams; teamIndex++) {
-          if (playersByRating[ratingLevel] && playersByRating[ratingLevel].length > 0) {
-            const player = playersByRating[ratingLevel].pop();
-            if (player) {
-              finalTeams[teamIndex].push(player);
+            // Check if there are players at the current rating level
+            if (playersByRating[ratingLevel] && playersByRating[ratingLevel].length > 0) {
+                const player = playersByRating[ratingLevel].pop();
+                if (player) {
+                    finalTeams[teamIndex].push(player);
+                }
             }
-          }
         }
       }
 
@@ -224,21 +229,23 @@ export default function SorterPage() {
       });
       allRemainingPlayers = shuffleArray(allRemainingPlayers);
 
+      let currentTeamIndex = 0;
+      while(allRemainingPlayers.length > 0) {
+          if (finalTeams[currentTeamIndex].length < playersPerTeamConfig) {
+              const player = allRemainingPlayers.shift();
+              if(player) finalTeams[currentTeamIndex].push(player);
+          }
+          currentTeamIndex = (currentTeamIndex + 1) % numberOfTeams;
+
+          // Break condition to prevent infinite loops if no team has space
+          if (finalTeams.every(team => team.length >= playersPerTeamConfig)) {
+              break;
+          }
+      }
+
+      // If after trying to fill teams, players still remain, group them as leftovers
       if (allRemainingPlayers.length > 0) {
-        // Add leftover players to their own group, or distribute them if needed
-        const leftoversTeamIndex = finalTeams.findIndex(team => team.length < playersPerTeamConfig);
-        if (leftoversTeamIndex !== -1) {
-            let currentTeamIndex = leftoversTeamIndex;
-            while(allRemainingPlayers.length > 0) {
-                if(finalTeams[currentTeamIndex].length < playersPerTeamConfig) {
-                    const player = allRemainingPlayers.shift();
-                    if(player) finalTeams[currentTeamIndex].push(player);
-                }
-                currentTeamIndex = (currentTeamIndex + 1) % numberOfTeams;
-            }
-        } else if (allRemainingPlayers.length > 0) {
-            finalTeams.push(allRemainingPlayers);
-        }
+          finalTeams.push(allRemainingPlayers);
       }
       
       // Shuffle each team internally for random display order
@@ -399,7 +406,3 @@ export default function SorterPage() {
     </div>
   );
 }
-
-    
-
-    
