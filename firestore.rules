@@ -2,52 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Regra para obter dados do grupo
-    match /groups/{groupId} {
-      allow read: if request.auth != null;
-    }
-
-    // Regras de acesso para documentos de usuários
+    // Permite que um usuário autenticado crie, leia, atualize e delete seu próprio documento.
     match /users/{userId} {
-      // Qualquer usuário autenticado pode ler os dados de outro usuário.
-      allow read: if request.auth != null;
-
-      // Um usuário pode criar seu próprio perfil.
-      allow create: if request.auth.uid == userId;
-
-      // Um usuário pode atualizar seu próprio perfil.
-      allow update: if request.auth.uid == userId;
-
-      // Um gestor de grupo pode remover um jogador do seu grupo (atualizando o groupId).
-      allow update: if 
-          // O campo que está sendo atualizado é APENAS o 'groupId'.
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupId']) &&
-          // O gestor está autenticado.
-          request.auth != null &&
-          // O documento do gestor existe.
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          // O gestor é do tipo 'Gestor do Grupo'.
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' &&
-          // O jogador que está sendo removido pertence ao mesmo grupo do gestor.
-          resource.data.groupId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Regras para jogos e participantes
-    match /groups/{groupId}/games/{gameId}/{document=**} {
-      allow read, write: if request.auth != null;
+    // Permite que gestores de grupo leiam e escrevam nos seus próprios grupos.
+    match /groups/{groupId} {
+       allow read, write: if request.auth != null && request.auth.uid == groupId;
     }
     
-    // Regras para pagamentos
+    // Permite que usuários autenticados no grupo possam ler/escrever nos documentos de jogos (presença, gols).
+    match /groups/{groupId}/games/{gameId}/{document=**} {
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+    }
+
+    // Permite que gestores de grupo gerenciem os pagamentos dentro de seus grupos.
     match /groups/{groupId}/payments/{paymentId} {
-        allow read, write: if 
-            // O usuário deve estar autenticado.
-            request.auth != null &&
-            // O documento do usuário que está fazendo a requisição deve existir.
-            exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-            // O usuário deve ser um gestor do grupo ao qual o pagamento pertence.
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'Gestor do Grupo' &&
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
     }
   }
 }
