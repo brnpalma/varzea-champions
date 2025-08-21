@@ -98,7 +98,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [userType, setUserType] = useState<UserType>(UserType.JOGADOR);
   const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
-  const [rating, setRating] = useState<number>(1);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -131,7 +130,6 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 1);
       setPhotoPreview(user.photoURL || null);
     }
   }, [user]);
@@ -196,7 +194,6 @@ export default function ProfilePage() {
       setDisplayName(user.displayName || "");
       setUserType(user.userType || UserType.JOGADOR);
       setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
-      setRating(user.rating || 1);
       setPhotoFile(null);
       setPhotoPreview(user.photoURL || null);
     }
@@ -228,7 +225,6 @@ export default function ProfilePage() {
             displayName: displayName,
             userType: userType,
             playerSubscriptionType: playerSubscriptionType,
-            rating: rating,
             photoURL: newPhotoURL,
         }, { merge: true });
 
@@ -527,14 +523,6 @@ export default function ProfilePage() {
                       </Select>
                   </div>
                 </div>
-                 <div>
-                    <Label htmlFor="rating" className="block text-sm font-medium text-muted-foreground mb-1">Classificação (Estrelas)</Label>
-                    <RatingSelect
-                      id="rating"
-                      value={rating}
-                      onValueChange={setRating}
-                    />
-                 </div>
               </div>
             ) : (
               <div className="space-y-4 text-sm">
