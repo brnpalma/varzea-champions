@@ -94,7 +94,7 @@ export default function SorterPage() {
   
   const [isSorting, setIsSorting] = useState(false);
   const [teams, setTeams] = useState<User[][]>([]);
-  const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
+  const [confirmedPlayersCount, setConfirmedPlayersCount] = useState(0);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [playersPerTeamConfig, setPlayersPerTeamConfig] = useState<number>(5);
@@ -130,7 +130,7 @@ export default function SorterPage() {
     setIsFetchingPlayers(true);
     fetchGameSettingsAndDate().then(gameDate => {
         if (!gameDate || !user?.groupId) {
-            setConfirmedPlayers([]);
+            setConfirmedPlayersCount(0);
             setIsFetchingPlayers(false);
             return;
         }
@@ -142,12 +142,11 @@ export default function SorterPage() {
         );
         
         const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
-            const playersData = snapshot.docs.map(doc => doc.data() as User);
-            setConfirmedPlayers(playersData);
+            setConfirmedPlayersCount(snapshot.size);
             setIsFetchingPlayers(false);
         }, (error) => {
              // Don't show toast, just update state
-             setConfirmedPlayers([]);
+             setConfirmedPlayersCount(0);
              setIsFetchingPlayers(false);
         });
 
@@ -157,7 +156,7 @@ export default function SorterPage() {
   }, [user?.groupId, authLoading, fetchGameSettingsAndDate]);
 
 
-  const handleSort = async () => {
+  const handleSort = async (finalPlayerList: User[]) => {
     if (!user?.groupId) {
       toast({
         variant: 'destructive',
@@ -167,7 +166,7 @@ export default function SorterPage() {
       return;
     }
     
-    if (confirmedPlayers.length === 0) {
+    if (finalPlayerList.length === 0) {
        toast({
         variant: 'destructive',
         title: 'Nenhum jogador confirmado',
@@ -181,7 +180,7 @@ export default function SorterPage() {
 
     try {
       // Fetch the latest rating for each confirmed player
-      const playerPromises = confirmedPlayers.map(async (player) => {
+      const playerPromises = finalPlayerList.map(async (player) => {
         const userDocRef = doc(firestore, 'users', player.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
@@ -269,14 +268,22 @@ export default function SorterPage() {
   );
 
   const handleOpenConfirmationDialog = () => {
-     if (isSorting || !user?.groupId || confirmedPlayers.length === 0) {
+     if (isSorting || !user?.groupId) {
       toast({
         variant: 'destructive',
-        title: 'Nenhum jogador confirmado',
-        description: 'Não há jogadores confirmados para o próximo jogo.'
+        title: 'Ação não permitida',
+        description: 'Aguarde o carregamento ou verifique se você está em um grupo.'
       });
       return;
     }
+     if (!nextGameDate) {
+       toast({
+        variant: 'destructive',
+        title: 'Nenhuma partida agendada',
+        description: 'Não há um próximo jogo agendado para confirmar a presença dos jogadores.'
+      });
+       return;
+     }
     setIsConfirmationDialogOpen(true);
   }
 
@@ -305,11 +312,11 @@ export default function SorterPage() {
                  {isFetchingPlayers ? (
                     <span>Carregando...</span>
                  ) : (
-                    <span>{confirmedPlayers.length} Jogadores Confirmados</span>
+                    <span>{confirmedPlayersCount} Jogadores Confirmados</span>
                  )}
               </div>
             </div>
-             {!isFetchingPlayers && confirmedPlayers.length === 0 && (
+             {!isFetchingPlayers && confirmedPlayersCount === 0 && (
                 <div className="flex items-center text-sm text-muted-foreground mt-4 text-center">
                     <Info className="h-4 w-4 mr-2 shrink-0" />
                     <span>Nenhuma partida agendada ou nenhum jogador confirmado.</span>
@@ -330,7 +337,7 @@ export default function SorterPage() {
                 setIsOpen={setIsConfirmationDialogOpen}
                 onConfirm={handleSort}
                 groupId={user.groupId}
-                confirmedPlayerIds={confirmedPlayers.map(p => p.uid)}
+                nextGameDate={nextGameDate}
             />
         )}
 
@@ -379,4 +386,3 @@ export default function SorterPage() {
     </div>
   );
 }
-

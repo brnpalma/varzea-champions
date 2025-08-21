@@ -14,23 +14,36 @@ import {
 } from "@/components/ui/dialog";
 import { User } from "@/hooks/use-auth";
 import { firestore } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, writeBatch } from "firebase/firestore";
 import { FootballSpinner } from "./ui/football-spinner";
 import { UserAvatar } from "./user-avatar";
 import { ScrollArea } from "./ui/scroll-area";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { Switch } from "./ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 interface SorterConfirmationDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (finalPlayerList: User[]) => void;
   groupId: string;
-  confirmedPlayerIds: string[];
+  nextGameDate: Date | null;
 }
 
-export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId, confirmedPlayerIds }: SorterConfirmationDialogProps) {
+const formatDateToId = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = (`0${d.getMonth() + 1}`).slice(-2);
+    const day = (`0${d.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
+}
+
+export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId, nextGameDate }: SorterConfirmationDialogProps) {
   const [allPlayers, setAllPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [playerStatus, setPlayerStatus] = useState<Record<string, boolean>>({});
+  const [isUpdating, setIsUpdating] = useState<string | null>(null); // Track UID of player being updated
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isOpen || !groupId) return;
@@ -42,43 +55,105 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
     );
 
     const unsubscribe = onSnapshot(playersQuery, (snapshot) => {
-      const playersData = snapshot.docs.map(doc => doc.data() as User);
-      setAllPlayers(playersData.sort((a, b) => a.displayName!.localeCompare(b.displayName!)));
-      setIsLoading(false);
+      const playersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id }) as User);
+      setAllPlayers(playersData.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')));
+      
+      if (nextGameDate) {
+        const gameId = formatDateToId(nextGameDate);
+        const attendeesQuery = query(
+          collection(firestore, `groups/${groupId}/games/${gameId}/attendees`),
+          where("status", "==", "confirmed")
+        );
+        
+        const unsubAttendees = onSnapshot(attendeesQuery, (attendeesSnapshot) => {
+            const confirmedIds = new Set(attendeesSnapshot.docs.map(doc => doc.id));
+            const initialStatus: Record<string, boolean> = {};
+            playersData.forEach(p => {
+                initialStatus[p.uid] = confirmedIds.has(p.uid);
+            });
+            setPlayerStatus(initialStatus);
+            setIsLoading(false);
+        }, (error) => {
+             console.error("Error fetching attendees:", error);
+             setIsLoading(false);
+        });
+        return () => unsubAttendees();
+      } else {
+        setIsLoading(false);
+      }
     }, (error) => {
       console.error("Error fetching all players:", error);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isOpen, groupId]);
+  }, [isOpen, groupId, nextGameDate]);
 
   const { confirmed, notConfirmed } = useMemo(() => {
-    const confirmedSet = new Set(confirmedPlayerIds);
     const confirmed: User[] = [];
     const notConfirmed: User[] = [];
-
     allPlayers.forEach(player => {
-      if (confirmedSet.has(player.uid)) {
+      if (playerStatus[player.uid]) {
         confirmed.push(player);
       } else {
         notConfirmed.push(player);
       }
     });
     return { confirmed, notConfirmed };
-  }, [allPlayers, confirmedPlayerIds]);
+  }, [allPlayers, playerStatus]);
+
+  const handleStatusChange = async (player: User, newStatus: boolean) => {
+    if (!nextGameDate) {
+        toast({ variant: "destructive", title: "Erro", description: "Data do jogo não encontrada."});
+        return;
+    }
+
+    setIsUpdating(player.uid);
+    // Optimistic update
+    setPlayerStatus(prev => ({ ...prev, [player.uid]: newStatus }));
+
+    const gameId = formatDateToId(nextGameDate);
+    const attendeeDocRef = doc(firestore, `groups/${groupId}/games/${gameId}/attendees`, player.uid);
+
+    try {
+        await setDoc(attendeeDocRef, {
+            status: newStatus ? 'confirmed' : 'declined',
+            confirmedAt: new Date().toISOString(),
+            displayName: player.displayName,
+            photoURL: player.photoURL,
+            uid: player.uid,
+        }, { merge: true });
+    } catch (error) {
+        console.error("Error updating presence:", error);
+        toast({ variant: "destructive", title: "Erro ao atualizar", description: `Não foi possível alterar a presença de ${player.displayName}.`});
+        // Revert on error
+        setPlayerStatus(prev => ({ ...prev, [player.uid]: !newStatus }));
+    } finally {
+        setIsUpdating(null);
+    }
+  };
+
 
   const handleConfirm = () => {
-    onConfirm();
+    const finalPlayerList = allPlayers.filter(p => playerStatus[p.uid]);
+    onConfirm(finalPlayerList);
     setIsOpen(false);
   };
 
   const renderPlayerList = (players: User[]) => (
     <ul className="space-y-2 pt-2">
       {players.map(player => (
-        <li key={player.uid} className="flex items-center gap-3 p-2 rounded-md bg-secondary/30">
-          <UserAvatar src={player.photoURL} size={32} />
-          <span className="font-medium text-sm text-secondary-foreground">{player.displayName}</span>
+        <li key={player.uid} className="flex items-center justify-between gap-3 p-2 rounded-md bg-secondary/30">
+          <div className="flex items-center gap-3">
+            <UserAvatar src={player.photoURL} size={32} />
+            <span className="font-medium text-sm text-secondary-foreground">{player.displayName}</span>
+          </div>
+          <Switch
+            checked={playerStatus[player.uid]}
+            onCheckedChange={(checked) => handleStatusChange(player, checked)}
+            disabled={isUpdating === player.uid}
+            aria-label={`Presença de ${player.displayName}`}
+          />
         </li>
       ))}
     </ul>
@@ -89,8 +164,8 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Confirmar Sorteio</DialogTitle>
-          <DialogDescription>
-            Confira a lista de jogadores antes de sortear os times.
+           <DialogDescription>
+            Ajuste a lista de presença final. Ative ou desative os jogadores que realmente participarão da partida de hoje.
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
@@ -122,7 +197,7 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isLoading || confirmed.length === 0}>
-            Sortear Agora
+            Sortear Agora ({confirmed.length})
           </Button>
         </DialogFooter>
       </DialogContent>
