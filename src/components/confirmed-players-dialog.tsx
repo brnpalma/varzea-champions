@@ -26,7 +26,7 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
         <Button 
           variant="outline" 
           size="lg" 
-          disabled={isFetchingPlayers || confirmedPlayers.length === 0}
+          disabled={isFetchingPlayers}
         >
           <Users className="mr-2 h-5 w-5" />
           {isFetchingPlayers ? (

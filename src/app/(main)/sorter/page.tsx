@@ -5,14 +5,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, User } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star, Info, LogIn } from "lucide-react";
+import { Dices, Shuffle, Star, Info, LogIn, Users } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import Link from "next/link";
+import { SorterConfirmationDialog } from "@/components/sorter-confirmation-dialog";
 
 // Duplicated from home page, consider moving to a shared utility file
 interface GameDaySetting {
@@ -98,6 +98,8 @@ export default function SorterPage() {
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [playersPerTeamConfig, setPlayersPerTeamConfig] = useState<number>(5);
+  const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
+
 
   const fetchGameSettingsAndDate = useCallback(async () => {
     if (!user?.groupId) return null;
@@ -190,17 +192,8 @@ export default function SorterPage() {
       });
 
       const updatedPlayers = await Promise.all(playerPromises);
-
-      const groupDocRef = doc(firestore, "groups", user.groupId);
-      const groupDocSnap = await getDoc(groupDocRef);
-
-      if (!groupDocSnap.exists()) {
-        throw new Error("Documento do grupo não encontrado.");
-      }
       
-      const playersPerTeam = groupDocSnap.data()?.playersPerTeam || 5;
-      
-      const numberOfTeams = Math.floor(updatedPlayers.length / playersPerTeam);
+      const numberOfTeams = Math.floor(updatedPlayers.length / playersPerTeamConfig);
 
       if (numberOfTeams < 1) {
          setTeams([updatedPlayers]);
@@ -209,7 +202,7 @@ export default function SorterPage() {
       }
       
       const playersToDistribute = [...updatedPlayers];
-      const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeam);
+      const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeamConfig);
       const leftoverPlayers = playersToDistribute;
 
       const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [] };
@@ -275,6 +268,17 @@ export default function SorterPage() {
     </ul>
   );
 
+  const handleOpenConfirmationDialog = () => {
+     if (isSorting || !user?.groupId || confirmedPlayers.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Nenhum jogador confirmado',
+        description: 'Não há jogadores confirmados para o próximo jogo.'
+      });
+      return;
+    }
+    setIsConfirmationDialogOpen(true);
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -291,29 +295,24 @@ export default function SorterPage() {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
-              <Button size="lg" onClick={handleSort} disabled={isSorting || !user?.groupId || confirmedPlayers.length === 0} className="w-full sm:w-auto">
-                {isSorting ? (
-                  <>
-                    <FootballSpinner className="h-6 w-6 mr-2 animate-spin" />
-                    Sorteando...
-                  </>
-                ) : (
-                  <>
-                    <Shuffle className="mr-2 h-5 w-5" />
-                    Sortear Times
-                  </>
-                )}
+              <Button size="lg" onClick={handleOpenConfirmationDialog} disabled={isSorting || !user?.groupId} className="w-full sm:w-auto">
+                <Shuffle className="mr-2 h-5 w-5" />
+                Sortear Times
               </Button>
 
-              <ConfirmedPlayersDialog 
-                confirmedPlayers={confirmedPlayers}
-                isFetchingPlayers={isFetchingPlayers}
-              />
+              <div className="flex items-center justify-center text-muted-foreground font-medium p-2 rounded-md bg-secondary/50">
+                 <Users className="mr-2 h-5 w-5" />
+                 {isFetchingPlayers ? (
+                    <span>Carregando...</span>
+                 ) : (
+                    <span>{confirmedPlayers.length} Jogadores Confirmados</span>
+                 )}
+              </div>
             </div>
              {!isFetchingPlayers && confirmedPlayers.length === 0 && (
                 <div className="flex items-center text-sm text-muted-foreground mt-4 text-center">
                     <Info className="h-4 w-4 mr-2 shrink-0" />
-                    <span>Nenhum jogador confirmado para a próxima partida.</span>
+                    <span>Nenhuma partida agendada ou nenhum jogador confirmado.</span>
                 </div>
             )}
           </CardContent>
@@ -324,6 +323,17 @@ export default function SorterPage() {
               <FootballSpinner />
             </div>
         )}
+        
+        {user && user.groupId && (
+            <SorterConfirmationDialog 
+                isOpen={isConfirmationDialogOpen}
+                setIsOpen={setIsConfirmationDialogOpen}
+                onConfirm={handleSort}
+                groupId={user.groupId}
+                confirmedPlayerIds={confirmedPlayers.map(p => p.uid)}
+            />
+        )}
+
 
         {teams.length > 0 && !isSorting && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
@@ -369,3 +379,4 @@ export default function SorterPage() {
     </div>
   );
 }
+
