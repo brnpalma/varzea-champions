@@ -117,6 +117,7 @@ export default function ProfilePage() {
   const [valorAvulso, setValorAvulso] = useState<number | ''>('');
   const [chavePix, setChavePix] = useState("");
   const [allowConfirmationWithDebt, setAllowConfirmationWithDebt] = useState(false);
+  const [enableEquipmentManager, setEnableEquipmentManager] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -142,8 +143,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if(groupSettings === null) {
-      setIsSettingsLoading(true);
+    if(groupSettings === null && !loading) {
+      setIsSettingsLoading(false);
       return;
     }
 
@@ -162,10 +163,11 @@ export default function ProfilePage() {
       setValorAvulso(groupSettings.valorAvulso || '');
       setChavePix(groupSettings.chavePix || "");
       setAllowConfirmationWithDebt(groupSettings.allowConfirmationWithDebt ?? false);
+      setEnableEquipmentManager(groupSettings.enableEquipmentManager ?? false);
+      setIsSettingsLoading(false);
     }
-    setIsSettingsLoading(false);
     
-  }, [isManager, groupId, groupSettings]);
+  }, [isManager, groupId, groupSettings, loading]);
 
 
   const handleLogout = async () => {
@@ -369,6 +371,7 @@ export default function ProfilePage() {
           valorAvulso: Number(valorAvulso) || null,
           chavePix: chavePix.trim() || null,
           allowConfirmationWithDebt: allowConfirmationWithDebt,
+          enableEquipmentManager: enableEquipmentManager,
       };
 
       if (isGroupManager) {
@@ -715,6 +718,24 @@ export default function ProfilePage() {
                             <div className="ml-2 text-sm">
                                 <Label htmlFor="allow-debt" className="text-xs text-muted-foreground cursor-pointer">
                                     Permitir confirmação de presença com pendência financeira
+                                </Label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-base">Controle de Equipamentos</Label>
+                        <div className="flex items-start">
+                            <div className="flex items-center h-5">
+                                <Checkbox
+                                    id="enable-equipment-manager"
+                                    checked={enableEquipmentManager}
+                                    onCheckedChange={(checked) => setEnableEquipmentManager(Boolean(checked))}
+                                />
+                            </div>
+                            <div className="ml-2 text-sm">
+                                <Label htmlFor="enable-equipment-manager" className="text-xs text-muted-foreground cursor-pointer">
+                                    Ativar controle do responsável da semana pela limpeza dos coletes (ou equipamento coletivo em geral)
                                 </Label>
                             </div>
                         </div>

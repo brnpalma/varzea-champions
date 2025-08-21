@@ -28,15 +28,10 @@ export interface UserProfile {
   groupId: string | null;
   rating: number | null;
   totalGoals?: number;
+  lavouColete?: boolean;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
-
-export interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  groupSettings: GroupSettings | null;
-}
 
 export interface GroupSettings {
     name?: string;
@@ -46,6 +41,8 @@ export interface GroupSettings {
     valorAvulso?: number;
     chavePix?: string;
     allowConfirmationWithDebt?: boolean;
+    enableEquipmentManager?: boolean;
+    createdAt?: string;
 }
 
 
@@ -53,6 +50,12 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 interface AuthProviderProps {
   children: ReactNode;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  groupSettings: GroupSettings | null;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -107,20 +110,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
             groupId: userProfileData?.groupId || null,
             rating: userProfileData?.rating || 1,
             totalGoals: userProfileData?.totalGoals || 0,
+            lavouColete: userProfileData?.lavouColete || false,
             groupName: null,
           } as User;
-
-          setUser(currentUser);
           
           if (currentUser.groupId) {
             const groupDocRef = doc(firestore, "groups", currentUser.groupId);
             groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
               const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
+              setUser({ ...currentUser, groupName: groupData?.name || null });
               setGroupSettings(groupData);
-              setUser(prevUser => prevUser ? { ...prevUser, groupName: groupData?.name || null } : null);
               setLoading(false);
-            }, () => setLoading(false));
+            }, (error) => {
+              console.error('Error fetching group document for user:', currentUser.uid, 'groupId:', currentUser.groupId, error);
+              // If there's an error fetching the group, proceed without group data
+              setUser(currentUser);
+              setGroupSettings(null);
+              setLoading(false)
+            });
           } else {
+            setUser(currentUser);
             setGroupSettings(null);
             setLoading(false);
           }
@@ -141,8 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       authUnsubscribe();
       cleanupListeners();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pathname, router]);
 
 
   if (loading) {
@@ -160,5 +168,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
-
-    

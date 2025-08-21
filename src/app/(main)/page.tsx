@@ -5,15 +5,16 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs, writeBatch } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import { GoalsDialog } from "@/components/goals-dialog";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface GameDaySetting {
   selected: boolean;
@@ -109,7 +110,10 @@ export default function HomePage() {
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
   const [isGameFinished, setIsGameFinished] = useState(false);
+  const [equipmentManager, setEquipmentManager] = useState<{next: User | null}>({ next: null });
+  const [isLoadingManager, setIsLoadingManager] = useState(false);
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
+  const previousGameDateRef = useRef<string | null>(null);
 
 
   const fetchGameSettings = useCallback(async () => {
@@ -160,6 +164,125 @@ export default function HomePage() {
     fetchGameSettings();
   }, [user, loading, fetchGameSettings]);
   
+  const fetchEquipmentManager = useCallback(async () => {
+      if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
+          setEquipmentManager({ next: null });
+          return;
+      }
+  
+      setIsLoadingManager(true);
+      try {
+          const playersQuery = query(
+              collection(firestore, 'users'),
+              where('groupId', '==', user.groupId)
+          );
+          const querySnapshot = await getDocs(playersQuery);
+          let allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
+          
+          if (allPlayers.length > 0) {
+              allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+              
+              let nextManager = allPlayers.find(p => !p.lavouColete);
+
+              if (!nextManager) {
+                  nextManager = allPlayers[0];
+              }
+               
+              setEquipmentManager({ next: nextManager });
+          } else {
+              setEquipmentManager({ next: null });
+          }
+      } catch (error) {
+          console.error("Error fetching players for equipment manager:", error);
+          setEquipmentManager({ next: null });
+      } finally {
+          setIsLoadingManager(false);
+      }
+  }, [groupSettings, user?.groupId]);
+
+
+  const updateEquipmentManagerRotation = useCallback(async () => {
+    if (!user?.groupId || !groupSettings?.enableEquipmentManager) return;
+    try {
+        const playersQuery = query(
+            collection(firestore, 'users'),
+            where('groupId', '==', user.groupId)
+        );
+        const querySnapshot = await getDocs(playersQuery);
+        let allPlayers = querySnapshot.docs.map(doc => doc.data() as User);
+
+        if (allPlayers.length === 0) return;
+
+        allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+
+        // Find the current responsible player (the one for the game that just passed)
+        let currentManager = allPlayers.find(p => !p.lavouColete);
+        if (!currentManager) {
+            // If everyone has washed, it means the cycle just reset. The responsible was the last in alphabetical order.
+            currentManager = allPlayers[allPlayers.length - 1];
+        }
+
+        if (!currentManager) return; // Should not happen if there are players
+
+        const batch = writeBatch(firestore);
+        
+        // Mark the current manager as done
+        const currentManagerRef = doc(firestore, 'users', currentManager.uid);
+        batch.update(currentManagerRef, { lavouColete: true });
+
+        // Check if this was the last person in the cycle
+        const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
+
+        if (remainingPlayers.length === 0) {
+            // Reset for all other players (the current one is already being set to true)
+            allPlayers.forEach(player => {
+                if (player.uid !== currentManager.uid) {
+                  const playerRef = doc(firestore, 'users', player.uid);
+                  batch.update(playerRef, { lavouColete: false });
+                }
+            });
+            toast({
+              title: "Rodízio de Coletes Reiniciado!",
+              description: "Todos os jogadores cumpriram sua vez. O ciclo foi reiniciado.",
+              variant: "success"
+            });
+        }
+
+        await batch.commit();
+        // After commit, refetch to show the new "next" person
+        fetchEquipmentManager();
+    } catch (error) {
+        console.error("Error updating equipment manager rotation:", error);
+        toast({
+            title: "Erro ao atualizar rodízio",
+            description: "Não foi possível atualizar o responsável pelos coletes.",
+            variant: "destructive"
+        });
+    }
+  }, [user?.groupId, groupSettings?.enableEquipmentManager, toast, fetchEquipmentManager]);
+
+
+  useEffect(() => {
+    fetchEquipmentManager();
+  }, [fetchEquipmentManager]);
+
+  useEffect(() => {
+      const currentGameId = nextGameDate ? formatDateToId(nextGameDate) : null;
+      
+      // Check if the game date has changed from a past date to a new future date
+      if (previousGameDateRef.current && currentGameId && previousGameDateRef.current !== currentGameId) {
+          const previousDate = new Date(previousGameDateRef.current);
+          const now = new Date();
+          // If the previous game is in the past and the new one is in the future, it's a rollover.
+          if (previousDate < now && nextGameDate! > now) {
+            updateEquipmentManagerRotation();
+          }
+      }
+      // Update the ref to the current game date ID for the next render
+      previousGameDateRef.current = currentGameId;
+  }, [nextGameDate, updateEquipmentManagerRotation]);
+
+
   useEffect(() => {
     if (!nextGameDate || !user?.groupId) {
         setConfirmedPlayers([]);
@@ -400,6 +523,7 @@ export default function HomePage() {
 
   const formattedDate = formatNextGameDate(nextGameDate);
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
+  const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -530,6 +654,32 @@ export default function HomePage() {
               />
             </CardContent>
           </Card>
+        )}
+        
+         {showEquipmentCard && (
+            <Card className="shadow-lg h-fit text-center">
+                <CardHeader className="text-center">
+                    <CardTitle className="flex items-center justify-center gap-3">
+                         <Shirt className="h-5 w-5 text-primary" />
+                        <span>Próximo responsável</span>
+                    </CardTitle>
+                     <CardDescription className="text-xs text-muted-foreground">
+                        Pela limpeza do equipamento coletivo
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
+                    {isLoadingManager ? (
+                        <FootballSpinner />
+                    ) : equipmentManager.next ? (
+                        <>
+                            <UserAvatar src={equipmentManager.next.photoURL} size={64} />
+                            <p className="text-lg font-bold text-foreground">{equipmentManager.next.displayName}</p>
+                        </>
+                    ) : (
+                        <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
+                    )}
+                </CardContent>
+            </Card>
         )}
 
         <Card className="shadow-lg h-fit text-center">
