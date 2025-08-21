@@ -31,8 +31,9 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if isUserAuthenticated();
       
-      allow write: if isUserAuthenticated() 
-                    && (isManager(groupId) || request.resource.data.managerId == request.auth.uid);
+      allow create: if isUserAuthenticated() && (isManager(groupId) || request.resource.data.managerId == request.auth.uid);
+      allow update: if isUserAuthenticated() && (isManager(groupId) || resource.data.managerId == request.auth.uid);
+      allow delete: if isUserAuthenticated() && (isManager(groupId) || resource.data.managerId == request.auth.uid);
                       
       match /games/{gameId} {
         allow read: if isUserAuthenticated() && (isManager(groupId) || isGuestGroup(groupId));

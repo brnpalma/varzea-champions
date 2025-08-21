@@ -11,7 +11,7 @@ import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, 
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { doc, writeBatch, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, writeBatch, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { UserAvatar } from "@/components/user-avatar";
 import Link from "next/link";
 import {
@@ -266,23 +266,32 @@ export default function ProfilePage() {
       toast({ variant: "destructive", title: "Erro", description: "Usuário não autenticado." });
       return;
     }
-
+  
     setIsDeleting(true);
+    
     try {
-      // Step 1: Delete Firestore data FIRST, because auth is needed for rules.
-      const batch = writeBatch(firestore);
-      
-      const userDocRef = doc(firestore, "users", user.uid);
-      batch.delete(userDocRef);
+      const isManagerType = user.userType === UserType.GESTOR_GRUPO || user.userType === UserType.GESTOR_QUADRA;
 
-      if (user.userType === UserType.GESTOR_GRUPO && user.groupId) {
-        const groupDocRef = doc(firestore, "groups", user.groupId);
-        batch.delete(groupDocRef);
+      // Step 1: Handle Firestore data (soft delete for managers, hard delete for players)
+      const batch = writeBatch(firestore);
+      const userDocRef = doc(firestore, "users", user.uid);
+  
+      if (isManagerType) {
+        // Soft delete for managers
+        batch.update(userDocRef, { deletado: true });
+        if (user.groupId) {
+          const groupDocRef = doc(firestore, "groups", user.groupId);
+          batch.update(groupDocRef, { deletado: true });
+        }
+      } else {
+        // Hard delete for players
+        batch.delete(userDocRef);
       }
       
       await batch.commit();
-      
-      // Step 2: If Firestore deletion succeeds, delete the user from Firebase Auth.
+  
+      // Step 2: If Firestore operation is successful, proceed to delete the Auth user.
+      // This is the irreversible step.
       await deleteUser(currentUser);
       
       toast({
@@ -290,15 +299,19 @@ export default function ProfilePage() {
         title: "Perfil Deletado",
         description: "Sua conta e todos os dados associados foram removidos.",
       });
-
+  
       router.push('/');
-
+  
     } catch (error: any) {
       console.error("Failed to delete profile:", error);
       let description = "Ocorreu um erro ao deletar seu perfil.";
+  
       if (error.code === 'auth/requires-recent-login') {
-          description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
+        description = "Esta operação é sensível e requer login recente. Por favor, saia e entre novamente antes de tentar deletar seu perfil.";
+      } else if (error.code === 'auth/network-request-failed') {
+        description = "Falha na rede. Verifique sua conexão com a internet e tente novamente.";
       }
+  
       toast({
         variant: "destructive",
         title: "Falha ao Deletar",
@@ -307,7 +320,7 @@ export default function ProfilePage() {
     } finally {
       setIsDeleting(false);
     }
-  }
+  };
   
   // Group Settings Handlers
   const handleDayChange = (dayId: string) => {
@@ -791,3 +804,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
