@@ -185,7 +185,14 @@ export default function SorterPage() {
       
       const numberOfTeams = Math.floor(confirmedPlayers.length / playersPerTeam);
 
-      if (numberOfTeams < 1) {
+      if (numberOfTeams < 1 && confirmedPlayers.length > 0) {
+         // Case where there are players but not enough for one full team.
+         // Put them all in one team.
+         setTeams([confirmedPlayers]);
+         setIsSorting(false);
+         return;
+      }
+       if (numberOfTeams < 1) {
         toast({
           variant: 'destructive',
           title: 'Jogadores Insuficientes',
@@ -195,8 +202,10 @@ export default function SorterPage() {
         return;
       }
       
-      const playersToSort = confirmedPlayers.slice(0, numberOfTeams * playersPerTeam);
-      
+      const playersToDistribute = [...confirmedPlayers];
+      const playersToSort = playersToDistribute.splice(0, numberOfTeams * playersPerTeam);
+      const leftoverPlayers = playersToDistribute;
+
       const playersByRating: Record<string, User[]> = { '5': [], '4': [], '3': [], '2': [], '1': [] };
       playersToSort.forEach(p => {
         const rating = (p.rating || 1).toString();
@@ -222,6 +231,10 @@ export default function SorterPage() {
         }
       }
 
+      if (leftoverPlayers.length > 0) {
+        finalTeams.push(leftoverPlayers);
+      }
+      
       setTeams(finalTeams);
 
     } catch (error) {
