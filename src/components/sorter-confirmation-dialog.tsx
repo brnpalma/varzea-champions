@@ -176,17 +176,23 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
           <ScrollArea className="max-h-[60vh] rounded-md border p-4">
               <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-sm flex items-center gap-2 text-green-600">
-                        <CheckCircle2 className="h-5 w-5" />
-                        Confirmados ({confirmed.length})
-                    </h3>
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-green-600">
+                            <CheckCircle2 className="h-5 w-5" />
+                            Confirmados ({confirmed.length})
+                        </h3>
+                        <span className="text-xs font-semibold text-muted-foreground">Incluir</span>
+                    </div>
                     {confirmed.length > 0 ? renderPlayerList(confirmed) : <p className="text-xs text-muted-foreground pt-2">Nenhum jogador confirmado.</p>}
                   </div>
                    <div>
-                    <h3 className="font-semibold text-sm flex items-center gap-2 text-red-600">
-                        <XCircle className="h-5 w-5" />
-                        Não Confirmados ({notConfirmed.length})
-                    </h3>
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-red-600">
+                            <XCircle className="h-5 w-5" />
+                            Não Confirmados ({notConfirmed.length})
+                        </h3>
+                        <span className="text-xs font-semibold text-muted-foreground">Incluir</span>
+                    </div>
                      {notConfirmed.length > 0 ? renderPlayerList(notConfirmed) : <p className="text-xs text-muted-foreground pt-2">Todos os jogadores confirmaram.</p>}
                   </div>
               </div>
