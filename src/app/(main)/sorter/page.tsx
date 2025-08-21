@@ -316,7 +316,7 @@ export default function SorterPage() {
           <div className="mt-8 grid md:grid-cols-2 gap-6">
             {teams.map((team, index) => {
               const isLeftoverTeam = team.length < playersPerTeamConfig;
-              const title = isLeftoverTeam ? "Proximos" : `Time ${String.fromCharCode(65 + index)}`;
+              const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
               
               return (
                 <Card key={index}>
