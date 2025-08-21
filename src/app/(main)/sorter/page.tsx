@@ -307,7 +307,7 @@ export default function SorterPage() {
                 Sortear Times
               </Button>
 
-              <div className="flex items-center justify-center text-muted-foreground font-medium p-2 rounded-md bg-secondary/50">
+              <div className="flex items-center justify-center text-muted-foreground font-medium">
                  <Users className="mr-2 h-5 w-5" />
                  {isFetchingPlayers ? (
                     <span>Carregando...</span>
@@ -386,3 +386,5 @@ export default function SorterPage() {
     </div>
   );
 }
+
+    
