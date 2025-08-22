@@ -189,8 +189,6 @@ export default function SorterPage() {
         });
         const updatedPlayers = await Promise.all(playerPromises);
 
-        let finalTeams: User[][];
-
         // B. Balanced Sort (Snake Draft + Fine Tuning)
         const numTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
         let teamsDraft: User[][] = Array.from({ length: numTeams }, () => []);
@@ -227,7 +225,6 @@ export default function SorterPage() {
         // Phase 2: Fine-Tuning Swaps
         const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
         
-        // Perform a few passes of optimization
         for (let pass = 0; pass < 5; pass++) {
             for (let i = 0; i < teamsDraft.length; i++) {
                 for (let j = i + 1; j < teamsDraft.length; j++) {
@@ -262,7 +259,22 @@ export default function SorterPage() {
                 }
             }
         }
-        finalTeams = teamsDraft;
+        
+        const finalTeams: User[][] = [];
+        const leftovers: User[] = [];
+
+        teamsDraft.forEach(team => {
+            const mainTeam = team.slice(0, playersPerTeamConfig);
+            const teamLeftovers = team.slice(playersPerTeamConfig);
+            if (mainTeam.length > 0) {
+                 finalTeams.push(mainTeam);
+            }
+            leftovers.push(...teamLeftovers);
+        });
+
+        if (leftovers.length > 0) {
+            finalTeams.push(leftovers);
+        }
 
         const shuffledTeams = finalTeams.map(team => shuffleArray(team));
         setTeams(shuffledTeams);
@@ -380,16 +392,20 @@ export default function SorterPage() {
               if(team.length === 0) return null;
               
               const teamSum = team.reduce((sum, p) => sum + (p.rating || 1), 0);
-              const isLeftoverTeam = team.length < playersPerTeamConfig && teams.length > 1;
+              const totalTeams = Math.floor(confirmedPlayersCount / playersPerTeamConfig);
+              const isLeftoverTeam = index >= totalTeams && teams.length > totalTeams;
+
               const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
 
               return (
                 <Card key={index}>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{title}</CardTitle>
-                    <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
-                      {teamSum} <Star className="h-4 w-4 fill-current"/>
-                    </div>
+                     {!isLeftoverTeam && (
+                        <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
+                           {teamSum} <Star className="h-4 w-4 fill-current"/>
+                        </div>
+                     )}
                   </CardHeader>
                   <CardContent>
                     {renderPlayerList(team)}
@@ -424,3 +440,4 @@ export default function SorterPage() {
     </div>
   );
 }
+
