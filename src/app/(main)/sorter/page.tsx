@@ -13,6 +13,9 @@ import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { SorterConfirmationDialog } from "@/components/sorter-confirmation-dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
 
 // Duplicated from home page, consider moving to a shared utility file
 interface GameDaySetting {
@@ -99,7 +102,7 @@ export default function SorterPage() {
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [playersPerTeamConfig, setPlayersPerTeamConfig] = useState<number>(5);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
-
+  const [isBalancedMode, setIsBalancedMode] = useState(true);
 
   const fetchGameSettingsAndDate = useCallback(async () => {
     if (!user?.groupId) return null;
@@ -178,80 +181,108 @@ export default function SorterPage() {
     setIsSorting(true);
     setTeams([]);
 
+    // Give UI time to update before blocking the thread with sorting logic
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     try {
-      const playerPromises = finalPlayerList.map(async (player) => {
-        const userDocRef = doc(firestore, 'users', player.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        return userDocSnap.exists() ? { ...player, ...userDocSnap.data() } as User : player;
-      });
-      
-      const updatedPlayers = await Promise.all(playerPromises);
+        const playerPromises = finalPlayerList.map(async (player) => {
+            const userDocRef = doc(firestore, 'users', player.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            return userDocSnap.exists() ? { ...player, ...userDocSnap.data() } as User : player;
+        });
+        const updatedPlayers = await Promise.all(playerPromises);
 
-      // 1. Group players by rating
-      const playersByRating: Record<number, User[]> = { 5: [], 4: [], 3: [], 2: [], 1: [] };
-      updatedPlayers.forEach(player => {
-        const rating = player.rating || 1;
-        if (playersByRating[rating]) {
-          playersByRating[rating].push(player);
-        }
-      });
+        let finalTeams: User[][];
 
-      // 2. Shuffle each rating group
-      Object.keys(playersByRating).forEach(rating => {
-        playersByRating[Number(rating)] = shuffleArray(playersByRating[Number(rating)]);
-      });
-      
-      const numberOfTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
-      const finalTeams: User[][] = Array.from({ length: numberOfTeams }, () => []);
-      
-      // 3. Distribute players in a "snake draft" style
-      // Iterate through the number of slots per team
-      for (let i = 0; i < playersPerTeamConfig; i++) {
-        // Determine rating level for this slot, cycling from 5 down to 1
-        const ratingLevel = 5 - (i % 5);
-        
-        // Iterate through each team to assign a player for this slot
-        for (let teamIndex = 0; teamIndex < numberOfTeams; teamIndex++) {
-            // Check if there are players at the current rating level
-            if (playersByRating[ratingLevel] && playersByRating[ratingLevel].length > 0) {
-                const player = playersByRating[ratingLevel].pop();
-                if (player) {
-                    finalTeams[teamIndex].push(player);
+        if (!isBalancedMode) {
+            // A. Totally Random Sort
+            const shuffledPlayers = shuffleArray([...updatedPlayers]);
+            const numTeams = Math.floor(shuffledPlayers.length / playersPerTeamConfig);
+            if (numTeams === 0) {
+                finalTeams = [shuffledPlayers];
+            } else {
+                finalTeams = Array.from({ length: numTeams }, () => []);
+                shuffledPlayers.forEach((player, index) => {
+                    finalTeams[index % numTeams].push(player);
+                });
+            }
+        } else {
+            // B. Balanced Sort (Snake Draft + Fine Tuning)
+            const numTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
+            let teamsDraft: User[][] = Array.from({ length: numTeams }, () => []);
+            
+            // Phase 1: Snake Draft
+            const playersByRating: Record<number, User[]> = {};
+            updatedPlayers.forEach(p => {
+                const rating = p.rating || 1;
+                if (!playersByRating[rating]) playersByRating[rating] = [];
+                playersByRating[rating].push(p);
+            });
+            
+            Object.values(playersByRating).forEach(tier => shuffleArray(tier));
+
+            let allPlayersTiered = Object.entries(playersByRating)
+                .sort((a, b) => Number(b[0]) - Number(a[0])) // Sort tiers from 5 down to 1
+                .flatMap(([, players]) => players);
+
+            let playerIndex = 0;
+            let forward = true;
+            while(playerIndex < allPlayersTiered.length) {
+                if(forward) {
+                    for(let i = 0; i < numTeams && playerIndex < allPlayersTiered.length; i++) {
+                        teamsDraft[i].push(allPlayersTiered[playerIndex++]);
+                    }
+                } else {
+                    for(let i = numTeams - 1; i >= 0 && playerIndex < allPlayersTiered.length; i--) {
+                       teamsDraft[i].push(allPlayersTiered[playerIndex++]);
+                    }
+                }
+                forward = !forward;
+            }
+
+            // Phase 2: Fine-Tuning Swaps
+            const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
+            
+            // Perform a few passes of optimization
+            for (let pass = 0; pass < 5; pass++) {
+                for (let i = 0; i < teamsDraft.length; i++) {
+                    for (let j = i + 1; j < teamsDraft.length; j++) {
+                        const teamA = teamsDraft[i];
+                        const teamB = teamsDraft[j];
+                        const sumA = getTeamSum(teamA);
+                        const sumB = getTeamSum(teamB);
+                        const initialDiff = Math.abs(sumA - sumB);
+
+                        let bestSwap: { pA_idx: number, pB_idx: number, newDiff: number } | null = null;
+                        
+                        for (let pA_idx = 0; pA_idx < teamA.length; pA_idx++) {
+                            for (let pB_idx = 0; pB_idx < teamB.length; pB_idx++) {
+                                const playerA = teamA[pA_idx];
+                                const playerB = teamB[pB_idx];
+
+                                const newSumA = sumA - (playerA.rating || 1) + (playerB.rating || 1);
+                                const newSumB = sumB - (playerB.rating || 1) + (playerA.rating || 1);
+                                const newDiff = Math.abs(newSumA - newSumB);
+
+                                if (newDiff < (bestSwap?.newDiff ?? initialDiff)) {
+                                    bestSwap = { pA_idx, pB_idx, newDiff };
+                                }
+                            }
+                        }
+                        
+                        if (bestSwap) {
+                            const temp = teamA[bestSwap.pA_idx];
+                            teamA[bestSwap.pA_idx] = teamB[bestSwap.pB_idx];
+                            teamB[bestSwap.pB_idx] = temp;
+                        }
+                    }
                 }
             }
+            finalTeams = teamsDraft;
         }
-      }
 
-      // 4. Distribute any remaining players
-      let allRemainingPlayers: User[] = [];
-      Object.values(playersByRating).forEach(group => {
-          allRemainingPlayers.push(...group);
-      });
-      allRemainingPlayers = shuffleArray(allRemainingPlayers);
-
-      let currentTeamIndex = 0;
-      while(allRemainingPlayers.length > 0) {
-          if (finalTeams[currentTeamIndex].length < playersPerTeamConfig) {
-              const player = allRemainingPlayers.shift();
-              if(player) finalTeams[currentTeamIndex].push(player);
-          }
-          currentTeamIndex = (currentTeamIndex + 1) % numberOfTeams;
-
-          // Break condition to prevent infinite loops if no team has space
-          if (finalTeams.every(team => team.length >= playersPerTeamConfig)) {
-              break;
-          }
-      }
-
-      // If after trying to fill teams, players still remain, group them as leftovers
-      if (allRemainingPlayers.length > 0) {
-          finalTeams.push(allRemainingPlayers);
-      }
-      
-      // Shuffle each team internally for random display order
-      const shuffledTeams = finalTeams.map(team => shuffleArray(team));
-
-      setTeams(shuffledTeams);
+        const shuffledTeams = finalTeams.map(team => shuffleArray(team));
+        setTeams(shuffledTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
@@ -315,10 +346,22 @@ export default function SorterPage() {
               <span>Sorteador de Times</span>
             </CardTitle>
             <CardDescription>
-              Clique no botão para gerar times equilibrados com base na classificação dos jogadores confirmados.
+              Escolha o modo de sorteio e clique no botão para gerar os times.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
+            <div className="flex items-center space-x-2">
+                <Switch 
+                    id="balance-mode" 
+                    checked={isBalancedMode} 
+                    onCheckedChange={setIsBalancedMode}
+                    aria-label="Modo de Sorteio"
+                />
+                <Label htmlFor="balance-mode" className="cursor-pointer">
+                    {isBalancedMode ? "Modo Equilibrado" : "Modo Aleatório"}
+                </Label>
+            </div>
+
              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
               <Button size="lg" onClick={handleOpenConfirmationDialog} disabled={isSorting || !user?.groupId} className="w-full sm:w-auto">
                 <Shuffle className="mr-2 h-5 w-5" />
@@ -363,15 +406,21 @@ export default function SorterPage() {
         {teams.length > 0 && !isSorting && (
           <div className="mt-8 grid md:grid-cols-2 gap-6">
             {teams.map((team, index) => {
-              const isLeftoverTeam = team.length < playersPerTeamConfig && team.length > 0;
-              const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
-              
               if(team.length === 0) return null;
+              
+              const teamSum = team.reduce((sum, p) => sum + (p.rating || 1), 0);
+              const isLeftoverTeam = team.length < playersPerTeamConfig && teams.length > 1;
+              const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
 
               return (
                 <Card key={index}>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{title}</CardTitle>
+                    {isBalancedMode && (
+                      <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
+                        {teamSum} <Star className="h-4 w-4 fill-current"/>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {renderPlayerList(team)}
