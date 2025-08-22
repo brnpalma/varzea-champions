@@ -64,12 +64,13 @@ function getActiveOrNextGameDate(gameDays: Record<string, GameDaySetting>): Date
     const nextFutureGame = futureGames.length > 0 ? futureGames[0] : null;
 
     if (mostRecentPastGame) {
-        let gracePeriodHours = 10;
-        // Check if the next game is too close
+        let gracePeriodHours = 24; // Default grace period
+        
+        // Check if the next game is very close
         if (nextFutureGame) {
             const hoursUntilNextGame = (nextFutureGame.getTime() - mostRecentPastGame.getTime()) / (1000 * 60 * 60);
-            if (hoursUntilNextGame < 10) {
-                gracePeriodHours = 5;
+            if (hoursUntilNextGame < 24) { // If next game is less than 24h away
+                gracePeriodHours = 12; // Shorten the grace period
             }
         }
         
@@ -134,13 +135,10 @@ export default function HomePage() {
             setIsConfirmationLocked(gameHasPassed);
 
             // Logic for Goals Card
-            const tenHoursAfterGame = new Date(gameDate.getTime() + 10 * 60 * 60 * 1000);
-            const isWithinTenHoursAfterStart = now > gameDate && now < tenHoursAfterGame;
-            const isToday = now.getFullYear() === gameDate.getFullYear() &&
-                          now.getMonth() === gameDate.getMonth() &&
-                          now.getDate() === gameDate.getDate();
+            const twentyFourHoursAfterGame = new Date(gameDate.getTime() + 24 * 60 * 60 * 1000);
+            const isWithin24HoursAfterStart = now > gameDate && now < twentyFourHoursAfterGame;
 
-            const cardVisible = (isToday || isWithinTenHoursAfterStart) && !goalsSubmitted;
+            const cardVisible = isWithin24HoursAfterStart && !goalsSubmitted;
             const cardEnabled = gameHasPassed;
             
             setGoalsCardState({ visible: cardVisible, enabled: cardEnabled });
