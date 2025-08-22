@@ -13,8 +13,6 @@ import { UserAvatar } from "@/components/user-avatar";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { SorterConfirmationDialog } from "@/components/sorter-confirmation-dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 
 // Duplicated from home page, consider moving to a shared utility file
@@ -102,7 +100,6 @@ export default function SorterPage() {
   const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [playersPerTeamConfig, setPlayersPerTeamConfig] = useState<number>(5);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
-  const [isBalancedMode, setIsBalancedMode] = useState(true);
 
   const fetchGameSettingsAndDate = useCallback(async () => {
     if (!user?.groupId) return null;
@@ -194,92 +191,78 @@ export default function SorterPage() {
 
         let finalTeams: User[][];
 
-        if (!isBalancedMode) {
-            // A. Totally Random Sort
-            const shuffledPlayers = shuffleArray([...updatedPlayers]);
-            const numTeams = Math.floor(shuffledPlayers.length / playersPerTeamConfig);
-            if (numTeams === 0) {
-                finalTeams = [shuffledPlayers];
-            } else {
-                finalTeams = Array.from({ length: numTeams }, () => []);
-                shuffledPlayers.forEach((player, index) => {
-                    finalTeams[index % numTeams].push(player);
-                });
-            }
-        } else {
-            // B. Balanced Sort (Snake Draft + Fine Tuning)
-            const numTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
-            let teamsDraft: User[][] = Array.from({ length: numTeams }, () => []);
-            
-            // Phase 1: Snake Draft
-            const playersByRating: Record<number, User[]> = {};
-            updatedPlayers.forEach(p => {
-                const rating = p.rating || 1;
-                if (!playersByRating[rating]) playersByRating[rating] = [];
-                playersByRating[rating].push(p);
-            });
-            
-            Object.values(playersByRating).forEach(tier => shuffleArray(tier));
+        // B. Balanced Sort (Snake Draft + Fine Tuning)
+        const numTeams = Math.max(1, Math.floor(updatedPlayers.length / playersPerTeamConfig));
+        let teamsDraft: User[][] = Array.from({ length: numTeams }, () => []);
+        
+        // Phase 1: Snake Draft
+        const playersByRating: Record<number, User[]> = {};
+        updatedPlayers.forEach(p => {
+            const rating = p.rating || 1;
+            if (!playersByRating[rating]) playersByRating[rating] = [];
+            playersByRating[rating].push(p);
+        });
+        
+        Object.values(playersByRating).forEach(tier => shuffleArray(tier));
 
-            let allPlayersTiered = Object.entries(playersByRating)
-                .sort((a, b) => Number(b[0]) - Number(a[0])) // Sort tiers from 5 down to 1
-                .flatMap(([, players]) => players);
+        let allPlayersTiered = Object.entries(playersByRating)
+            .sort((a, b) => Number(b[0]) - Number(a[0])) // Sort tiers from 5 down to 1
+            .flatMap(([, players]) => players);
 
-            let playerIndex = 0;
-            let forward = true;
-            while(playerIndex < allPlayersTiered.length) {
-                if(forward) {
-                    for(let i = 0; i < numTeams && playerIndex < allPlayersTiered.length; i++) {
-                        teamsDraft[i].push(allPlayersTiered[playerIndex++]);
-                    }
-                } else {
-                    for(let i = numTeams - 1; i >= 0 && playerIndex < allPlayersTiered.length; i--) {
-                       teamsDraft[i].push(allPlayersTiered[playerIndex++]);
-                    }
+        let playerIndex = 0;
+        let forward = true;
+        while(playerIndex < allPlayersTiered.length) {
+            if(forward) {
+                for(let i = 0; i < numTeams && playerIndex < allPlayersTiered.length; i++) {
+                    teamsDraft[i].push(allPlayersTiered[playerIndex++]);
                 }
-                forward = !forward;
+            } else {
+                for(let i = numTeams - 1; i >= 0 && playerIndex < allPlayersTiered.length; i--) {
+                    teamsDraft[i].push(allPlayersTiered[playerIndex++]);
+                }
             }
+            forward = !forward;
+        }
 
-            // Phase 2: Fine-Tuning Swaps
-            const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
-            
-            // Perform a few passes of optimization
-            for (let pass = 0; pass < 5; pass++) {
-                for (let i = 0; i < teamsDraft.length; i++) {
-                    for (let j = i + 1; j < teamsDraft.length; j++) {
-                        const teamA = teamsDraft[i];
-                        const teamB = teamsDraft[j];
-                        const sumA = getTeamSum(teamA);
-                        const sumB = getTeamSum(teamB);
-                        const initialDiff = Math.abs(sumA - sumB);
+        // Phase 2: Fine-Tuning Swaps
+        const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
+        
+        // Perform a few passes of optimization
+        for (let pass = 0; pass < 5; pass++) {
+            for (let i = 0; i < teamsDraft.length; i++) {
+                for (let j = i + 1; j < teamsDraft.length; j++) {
+                    const teamA = teamsDraft[i];
+                    const teamB = teamsDraft[j];
+                    const sumA = getTeamSum(teamA);
+                    const sumB = getTeamSum(teamB);
+                    const initialDiff = Math.abs(sumA - sumB);
 
-                        let bestSwap: { pA_idx: number, pB_idx: number, newDiff: number } | null = null;
-                        
-                        for (let pA_idx = 0; pA_idx < teamA.length; pA_idx++) {
-                            for (let pB_idx = 0; pB_idx < teamB.length; pB_idx++) {
-                                const playerA = teamA[pA_idx];
-                                const playerB = teamB[pB_idx];
+                    let bestSwap: { pA_idx: number, pB_idx: number, newDiff: number } | null = null;
+                    
+                    for (let pA_idx = 0; pA_idx < teamA.length; pA_idx++) {
+                        for (let pB_idx = 0; pB_idx < teamB.length; pB_idx++) {
+                            const playerA = teamA[pA_idx];
+                            const playerB = teamB[pB_idx];
 
-                                const newSumA = sumA - (playerA.rating || 1) + (playerB.rating || 1);
-                                const newSumB = sumB - (playerB.rating || 1) + (playerA.rating || 1);
-                                const newDiff = Math.abs(newSumA - newSumB);
+                            const newSumA = sumA - (playerA.rating || 1) + (playerB.rating || 1);
+                            const newSumB = sumB - (playerB.rating || 1) + (playerA.rating || 1);
+                            const newDiff = Math.abs(newSumA - newSumB);
 
-                                if (newDiff < (bestSwap?.newDiff ?? initialDiff)) {
-                                    bestSwap = { pA_idx, pB_idx, newDiff };
-                                }
+                            if (newDiff < (bestSwap?.newDiff ?? initialDiff)) {
+                                bestSwap = { pA_idx, pB_idx, newDiff };
                             }
                         }
-                        
-                        if (bestSwap) {
-                            const temp = teamA[bestSwap.pA_idx];
-                            teamA[bestSwap.pA_idx] = teamB[bestSwap.pB_idx];
-                            teamB[bestSwap.pB_idx] = temp;
-                        }
+                    }
+                    
+                    if (bestSwap) {
+                        const temp = teamA[bestSwap.pA_idx];
+                        teamA[bestSwap.pA_idx] = teamB[bestSwap.pB_idx];
+                        teamB[bestSwap.pB_idx] = temp;
                     }
                 }
             }
-            finalTeams = teamsDraft;
         }
+        finalTeams = teamsDraft;
 
         const shuffledTeams = finalTeams.map(team => shuffleArray(team));
         setTeams(shuffledTeams);
@@ -346,22 +329,10 @@ export default function SorterPage() {
               <span>Sorteador de Times</span>
             </CardTitle>
             <CardDescription>
-              Escolha o modo de sorteio e clique no botão para gerar os times.
+              Clique no botão para gerar os times de forma equilibrada.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-            <div className="flex items-center space-x-2">
-                <Switch 
-                    id="balance-mode" 
-                    checked={isBalancedMode} 
-                    onCheckedChange={setIsBalancedMode}
-                    aria-label="Modo de Sorteio"
-                />
-                <Label htmlFor="balance-mode" className="cursor-pointer">
-                    {isBalancedMode ? "Modo Equilibrado" : "Modo Aleatório"}
-                </Label>
-            </div>
-
              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
               <Button size="lg" onClick={handleOpenConfirmationDialog} disabled={isSorting || !user?.groupId} className="w-full sm:w-auto">
                 <Shuffle className="mr-2 h-5 w-5" />
@@ -416,11 +387,9 @@ export default function SorterPage() {
                 <Card key={index}>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{title}</CardTitle>
-                    {isBalancedMode && (
-                      <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
-                        {teamSum} <Star className="h-4 w-4 fill-current"/>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
+                      {teamSum} <Star className="h-4 w-4 fill-current"/>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {renderPlayerList(team)}
