@@ -91,28 +91,26 @@ export default function RankingPage() {
     }
 
     let lastScore = -1;
-    let rank = 0;
+    let rankDisplayCounter = 0;
 
     return (
       <ul className="space-y-3">
-        {players.map((player) => {
+        {players.map((player, index) => {
           const currentScore = type === 'rating' ? (player.rating || 0) : (player.totalGoals || 0);
           
-          if (currentScore !== lastScore) {
-            rank++;
-            lastScore = currentScore;
+          if (index === 0 || currentScore !== lastScore) {
+            rankDisplayCounter++;
           }
+          lastScore = currentScore;
           
-          // Only show rank number for the first player in a tied group
-          const showRank = rank === 1 || (players.findIndex(p => (type === 'rating' ? (p.rating || 0) : (p.totalGoals || 0)) === currentScore) === players.indexOf(player));
+          const showRankNumber = index === 0 || currentScore !== (type === 'rating' ? (players[index - 1].rating || 0) : (players[index - 1].totalGoals || 0));
 
           return (
             <li key={player.uid} className="flex items-center gap-2 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
               <div className="flex items-center gap-2 w-10 shrink-0">
-                <span className={`font-bold text-lg w-5 text-center ${rank <= 3 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {showRank ? rank : ''}
+                <span className={`font-bold text-lg w-8 text-center ${rankDisplayCounter <= 3 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {showRankNumber ? rankDisplayCounter : ''}
                 </span>
-                {showRank && rank <= 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(rank)}`} />}
               </div>
               
               <UserAvatar src={player.photoURL} size={40} className="shrink-0" />
