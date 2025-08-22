@@ -90,33 +90,50 @@ export default function RankingPage() {
       );
     }
 
+    let lastScore = -1;
+    let rank = 0;
+
     return (
       <ul className="space-y-3">
-        {players.map((player, index) => (
-          <li key={player.uid} className="flex items-center gap-2 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
-            <div className="flex items-center gap-2 w-10 shrink-0">
-              <span className={`font-bold text-lg w-5 text-center ${index < 3 ? 'text-foreground' : 'text-muted-foreground'}`}>{index + 1}</span>
-              {index < 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(index + 1)}`} />}
-            </div>
-            
-            <UserAvatar src={player.photoURL} size={40} className="shrink-0" />
-            
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{player.displayName}</p>
-            </div>
-            
-            {type === 'goals' ? (
-              <div className="flex items-center justify-end w-12 text-right shrink-0">
-                  <span className="text-xl font-bold text-primary">{player.totalGoals || 0}</span>
+        {players.map((player) => {
+          const currentScore = type === 'rating' ? (player.rating || 0) : (player.totalGoals || 0);
+          
+          if (currentScore !== lastScore) {
+            rank++;
+            lastScore = currentScore;
+          }
+          
+          // Only show rank number for the first player in a tied group
+          const showRank = rank === 1 || (players.findIndex(p => (type === 'rating' ? (p.rating || 0) : (p.totalGoals || 0)) === currentScore) === players.indexOf(player));
+
+          return (
+            <li key={player.uid} className="flex items-center gap-2 sm:gap-4 p-3 rounded-lg transition-colors hover:bg-secondary/50">
+              <div className="flex items-center gap-2 w-10 shrink-0">
+                <span className={`font-bold text-lg w-5 text-center ${rank <= 3 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {showRank ? rank : ''}
+                </span>
+                {showRank && rank <= 3 && <Trophy className={`h-5 w-5 ${getTrophyColor(rank)}`} />}
               </div>
-            ) : (
-              <Badge variant="secondary" className="flex items-center gap-1 text-sm shrink-0">
-                 <Star className="h-4 w-4 text-amber-500 fill-current" />
-                 {player.rating || 1}
-              </Badge>
-            )}
-          </li>
-        ))}
+              
+              <UserAvatar src={player.photoURL} size={40} className="shrink-0" />
+              
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">{player.displayName}</p>
+              </div>
+              
+              {type === 'goals' ? (
+                <div className="flex items-center justify-end w-12 text-right shrink-0">
+                    <span className="text-xl font-bold text-primary">{player.totalGoals || 0}</span>
+                </div>
+              ) : (
+                <Badge variant="secondary" className="flex items-center gap-1 text-sm shrink-0">
+                   <Star className="h-4 w-4 text-amber-500 fill-current" />
+                   {player.rating || 1}
+                </Badge>
+              )}
+            </li>
+          );
+        })}
       </ul>
     );
   };
