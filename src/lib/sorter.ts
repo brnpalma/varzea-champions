@@ -11,63 +11,95 @@ const shuffleArray = (array: any[]) => {
 
 const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
 
-const balanceFiveStarPlayers = (teams: User[][]) => {
-    // This function attempts to ensure no team has more than one 5-star player.
-    let overStarredTeams: { teamIndex: number; playerIndex: number }[] = [];
-    let underStarredTeams: { teamIndex: number; bestPlayerIndex: number; bestPlayerRating: number }[] = [];
+const balanceFiveStarPlayers = (teams: User[][], leftovers: User[]) => {
+    let needsSwap = true;
+    while (needsSwap) {
+        needsSwap = false;
+        let overStarredTeamIndex = -1;
+        let extraFiveStarPlayerIndex = -1;
 
-    teams.forEach((team, teamIndex) => {
-        const fiveStarPlayers = team.map((p, i) => ({ player: p, index: i })).filter(p => p.player.rating === 5);
-        
-        if (fiveStarPlayers.length > 1) {
-            // Store all but one 5-star player for potential swapping
-            for (let i = 1; i < fiveStarPlayers.length; i++) {
-                overStarredTeams.push({ teamIndex: teamIndex, playerIndex: fiveStarPlayers[i].index });
-            }
-        } else if (fiveStarPlayers.length === 0) {
-            let bestPlayerIndex = -1;
-            let bestPlayerRating = -1;
-            team.forEach((player, playerIndex) => {
-                if ((player.rating || 1) > bestPlayerRating) {
-                    bestPlayerRating = player.rating || 1;
-                    bestPlayerIndex = playerIndex;
-                }
-            });
-            if (bestPlayerIndex !== -1) {
-                underStarredTeams.push({ teamIndex, bestPlayerIndex, bestPlayerRating });
+        // Find a team with more than one 5-star player
+        for (let i = 0; i < teams.length; i++) {
+            const fiveStarPlayers = teams[i].filter(p => p.rating === 5);
+            if (fiveStarPlayers.length > 1) {
+                overStarredTeamIndex = i;
+                // Find the index of the second 5-star player to swap them out
+                extraFiveStarPlayerIndex = teams[i].findIndex(p => p.uid === fiveStarPlayers[1].uid);
+                break;
             }
         }
-    });
 
-    // Sort teams to swap with by descending best player rating
-    underStarredTeams.sort((a, b) => b.bestPlayerRating - a.bestPlayerRating);
+        if (overStarredTeamIndex === -1) {
+            break; // No teams with extra 5-star players, we are done.
+        }
 
-    while (overStarredTeams.length > 0 && underStarredTeams.length > 0) {
-        const source = overStarredTeams.pop()!;
-        const target = underStarredTeams.shift()!;
+        let bestSwapTarget: { type: 'team' | 'leftover', teamIndex?: number, playerIndex: number, playerRating: number } | null = null;
 
-        // Perform the swap
-        const sourceTeam = teams[source.teamIndex];
-        const targetTeam = teams[target.teamIndex];
+        // Priority 1: Find the best player in a team with NO 5-star players
+        for (let i = 0; i < teams.length; i++) {
+            if (i === overStarredTeamIndex) continue;
+            const hasFiveStar = teams[i].some(p => p.rating === 5);
+            if (!hasFiveStar) {
+                let bestPlayerIndex = -1;
+                let bestPlayerRating = -1;
+                teams[i].forEach((p, index) => {
+                    if ((p.rating || 1) > bestPlayerRating) {
+                        bestPlayerRating = p.rating || 1;
+                        bestPlayerIndex = index;
+                    }
+                });
+                if (bestPlayerIndex !== -1 && (!bestSwapTarget || bestPlayerRating > bestSwapTarget.playerRating)) {
+                    bestSwapTarget = { type: 'team', teamIndex: i, playerIndex: bestPlayerIndex, playerRating: bestPlayerRating };
+                }
+            }
+        }
         
-        const fiveStarPlayer = sourceTeam[source.playerIndex];
-        const bestPlayerFromTarget = targetTeam[target.bestPlayerIndex];
+        // Priority 2: If no suitable team is found, look in leftovers
+        if (!bestSwapTarget && leftovers.length > 0) {
+            let bestPlayerIndex = -1;
+            let bestPlayerRating = -1;
+            leftovers.forEach((p, index) => {
+                // Ensure we are not swapping a 5-star for a 5-star in leftovers
+                if ((p.rating || 1) < 5 && (p.rating || 1) > bestPlayerRating) {
+                    bestPlayerRating = p.rating || 1;
+                    bestPlayerIndex = index;
+                }
+            });
+             if (bestPlayerIndex !== -1) {
+                bestSwapTarget = { type: 'leftover', playerIndex: bestPlayerIndex, playerRating: bestPlayerRating };
+            }
+        }
 
-        sourceTeam[source.playerIndex] = bestPlayerFromTarget;
-        targetTeam[target.bestPlayerIndex] = fiveStarPlayer;
+        if (bestSwapTarget) {
+            const sourceTeam = teams[overStarredTeamIndex];
+            const playerToMove = sourceTeam[extraFiveStarPlayerIndex];
+
+            if (bestSwapTarget.type === 'team' && bestSwapTarget.teamIndex !== undefined) {
+                const targetTeam = teams[bestSwapTarget.teamIndex];
+                const playerToReceive = targetTeam[bestSwapTarget.playerIndex];
+                // Swap
+                sourceTeam[extraFiveStarPlayerIndex] = playerToReceive;
+                targetTeam[bestSwapTarget.playerIndex] = playerToMove;
+            } else { // It's a leftover
+                const playerToReceive = leftovers[bestSwapTarget.playerIndex];
+                // Swap
+                sourceTeam[extraFiveStarPlayerIndex] = playerToReceive;
+                leftovers[bestSwapTarget.playerIndex] = playerToMove;
+            }
+            needsSwap = true; // Mark that a swap happened and we should re-run the check
+        }
     }
 };
 
 
 export const performBalancedSort = (players: User[], playersPerTeam: number): { teams: User[][], leftovers: User[] } => {
-    if (players.length === 0) {
-        return { teams: [], leftovers: [] };
+    if (players.length === 0 || playersPerTeam <= 0) {
+        return { teams: [], leftovers: players };
     }
 
     const numTeams = Math.max(1, Math.floor(players.length / playersPerTeam));
     let teams: User[][] = Array.from({ length: numTeams }, () => []);
     
-    // 1. Group players by rating (tier)
     const playersByRating: Record<number, User[]> = {};
     players.forEach(p => {
         const rating = p.rating || 1;
@@ -75,15 +107,13 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
         playersByRating[rating].push(p);
     });
     
-    // 2. Shuffle each tier
     Object.values(playersByRating).forEach(tier => shuffleArray(tier));
 
-    // 3. Create a single list sorted by tier (desc) for the snake draft
     let allPlayersTiered = Object.entries(playersByRating)
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .flatMap(([, playersInTier]) => playersInTier);
-
-    // 4. Perform Snake Draft
+    
+    // Snake Draft
     let playerIndex = 0;
     let forward = true;
     while(playerIndex < allPlayersTiered.length) {
@@ -99,7 +129,7 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
         forward = !forward;
     }
 
-    // 5. Fine-Tuning Swaps for star sum balance
+    // Fine-Tuning Swaps for star sum balance
     for (let pass = 0; pass < 5; pass++) {
         for (let i = 0; i < teams.length; i++) {
             for (let j = i + 1; j < teams.length; j++) {
@@ -135,24 +165,24 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
         }
     }
     
-    // 6. Hard rule: Balance 5-star players
-    balanceFiveStarPlayers(teams);
-
-    // 7. Separate leftovers and shuffle final teams for presentation
     const finalTeams: User[][] = [];
-    const leftovers: User[] = [];
+    let leftovers: User[] = [];
 
     teams.forEach(team => {
-        // Sort team by rating desc to easily find leftovers
-        team.sort((a, b) => (b.rating || 1) - (a.rating || 1));
         const mainTeam = team.slice(0, playersPerTeam);
         const teamLeftovers = team.slice(playersPerTeam);
         
         if (mainTeam.length > 0) {
-            finalTeams.push(shuffleArray(mainTeam)); // Shuffle for presentation
+            finalTeams.push(mainTeam);
         }
         leftovers.push(...teamLeftovers);
     });
+    
+    // Hard rule: Balance 5-star players, now considering leftovers
+    balanceFiveStarPlayers(finalTeams, leftovers);
+
+    // Final shuffle for presentation
+    finalTeams.forEach(team => shuffleArray(team));
 
     return { teams: finalTeams, leftovers: shuffleArray(leftovers) };
 };
