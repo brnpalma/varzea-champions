@@ -68,9 +68,13 @@ function getActiveOrNextGameDate(gameDays: Record<string, GameDaySetting>): Date
         
         // Check if the next game is very close
         if (nextFutureGame) {
-            const hoursUntilNextGame = (nextFutureGame.getTime() - mostRecentPastGame.getTime()) / (1000 * 60 * 60);
-            if (hoursUntilNextGame < 24) { // If next game is less than 24h away
-                gracePeriodHours = 12; // Shorten the grace period
+            // Check hours between the end of the last game and start of the next one
+            const lastGameEndTime = new Date(mostRecentPastGame.getTime() + 2 * 60 * 60 * 1000); // Assuming 2h duration
+            const hoursUntilNextGame = (nextFutureGame.getTime() - lastGameEndTime.getTime()) / (1000 * 60 * 60);
+            
+            // If the time between games is less than our grace period, we shorten it to avoid overlap.
+            if (hoursUntilNextGame < gracePeriodHours) {
+              gracePeriodHours = Math.max(0, hoursUntilNextGame - 1); // Shorten grace period, ensure it's not negative
             }
         }
         
@@ -82,7 +86,7 @@ function getActiveOrNextGameDate(gameDays: Record<string, GameDaySetting>): Date
         }
     }
 
-    // Otherwise, show the next upcoming game.
+    // Otherwise, show the next upcoming game. This will have an empty confirmation list by default.
     return nextFutureGame;
 }
 
