@@ -15,7 +15,6 @@ import { EventCard } from "@/components/dashboard/event-card";
 import { InviteCard } from "@/components/dashboard/invite-card";
 import { PostGameCard } from "@/components/dashboard/post-game-card";
 import { EquipmentCard } from "@/components/dashboard/equipment-card";
-import { RankingCard } from "@/components/dashboard/ranking-card";
 import { FinancialCard } from "@/components/dashboard/financial-card";
 
 
@@ -514,8 +513,6 @@ export default function HomePage() {
           />
         )}
         
-        <RankingCard />
-        
         {showPaymentCard && groupSettings && (
            <FinancialCard groupSettings={groupSettings} />
         )}
@@ -523,5 +520,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
