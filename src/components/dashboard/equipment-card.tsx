@@ -1,4 +1,3 @@
-
 "use client";
 
 import { User } from "@/hooks/use-auth";
@@ -18,10 +17,10 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
             <CardHeader className="text-center">
                 <CardTitle className="flex flex-col sm:flex-row items-center justify-center gap-3">
                      <Shirt className="h-5 w-5 text-primary" />
-                    <span>Limpeza Equipamento</span>
+                    <span>Equipamento</span>
                 </CardTitle>
                  <CardDescription className="text-xs text-muted-foreground">
-                    Próximo responsável pela limpeza do equipamento coletivo
+                    Próximo responsável pela limpeza
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
@@ -29,8 +28,8 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
                     <FootballSpinner />
                 ) : equipmentManager.next ? (
                     <>
+                        <p className="text-lg font-bold text-foreground mb-2">{equipmentManager.next.displayName}</p>
                         <UserAvatar src={equipmentManager.next.photoURL} size={64} />
-                        <p className="text-lg font-bold text-foreground">{equipmentManager.next.displayName}</p>
                     </>
                 ) : (
                     <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
@@ -39,5 +38,3 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
         </Card>
     );
 }
-
-    
