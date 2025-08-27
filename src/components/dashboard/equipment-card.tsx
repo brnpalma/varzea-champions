@@ -27,7 +27,7 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
                     Próximo responsável pela limpeza
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
+            <CardContent className="flex flex-col items-center justify-center gap-1 pt-0">
                 {isLoadingManager ? (
                     <FootballSpinner />
                 ) : equipmentManager.next ? (
