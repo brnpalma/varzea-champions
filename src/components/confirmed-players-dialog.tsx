@@ -27,7 +27,6 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
           variant="outline" 
           size="lg" 
           disabled={isFetchingPlayers}
-          className="w-full"
         >
           <Users className="mr-2 h-5 w-5" />
           {isFetchingPlayers ? (

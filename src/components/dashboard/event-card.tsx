@@ -116,7 +116,7 @@ export function EventCard({
                         isFetchingPlayers={isFetchingPlayers}
                     />
                     {isManager && (
-                        <InviteButton user={user} size="lg" className="w-full" />
+                        <InviteButton user={user} size="lg" />
                     )}
                 </div>
                  {isGameFinished && (
