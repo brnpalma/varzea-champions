@@ -54,8 +54,8 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home },
     { href: "/sorter", label: "Sorteador", icon: Dices },
-    { href: "/players", label: "Jogadores", icon: Users },
     { href: "/ranking", label: "Ranking", icon: Trophy, activeColor: "text-amber-500" },
+    { href: "/players", label: "Jogadores", icon: Users },
   ];
 
   const visibleNavItems = navItems.filter(item => {
