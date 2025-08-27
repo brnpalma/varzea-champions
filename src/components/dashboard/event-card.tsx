@@ -110,7 +110,7 @@ export function EventCard({
                  )}
             </CardHeader>
             <CardContent className="p-4 pt-0">
-                <div className="flex flex-col items-center justify-center gap-4 pt-2 max-w-xs mx-auto">
+                <div className="flex flex-col items-center justify-center gap-4 pt-2">
                     <ConfirmedPlayersDialog 
                         confirmedPlayers={confirmedPlayers}
                         isFetchingPlayers={isFetchingPlayers}
