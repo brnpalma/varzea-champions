@@ -43,9 +43,6 @@ export function InviteCard({ user, isManager }: InviteCardProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4">
-              <p className="text-muted-foreground">
-                Compartilhe o link para que novos jogadores entrem no seu grupo.
-              </p>
               <Button onClick={handleShareLink}>
                 <Share2 className="mr-2 h-4 w-4" />
                 Copiar Link de Convite
