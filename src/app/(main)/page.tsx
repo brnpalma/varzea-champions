@@ -529,7 +529,9 @@ export default function HomePage() {
         )}
         
         {showPaymentCard && groupSettings && (
-           <FinancialCard groupSettings={groupSettings} />
+           <div className="md:col-span-2">
+            <FinancialCard groupSettings={groupSettings} />
+          </div>
         )}
       </div>
     </div>
