@@ -457,6 +457,13 @@ export default function HomePage() {
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
         </h1>
+
+        {isManager && (
+            <div className="flex justify-center">
+                <InviteButton user={user} />
+            </div>
+        )}
+
         {!loading && !user && (
           <Card className="max-w-4xl mx-auto shadow-lg text-center">
             <CardHeader>
@@ -499,12 +506,6 @@ export default function HomePage() {
                     isLoadingManager={isLoadingManager}
                     equipmentManager={equipmentManager}
                 />
-            </div>
-        )}
-
-        {isManager && (
-            <div className="md:col-span-2 flex justify-center">
-                <InviteButton user={user} />
             </div>
         )}
 
