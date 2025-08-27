@@ -18,10 +18,10 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
             <CardHeader className="text-center">
                 <CardTitle className="flex items-center justify-center gap-3">
                      <Shirt className="h-5 w-5 text-primary" />
-                    <span>Próximo responsável</span>
+                    <span>Limpeza Equipamento</span>
                 </CardTitle>
                  <CardDescription className="text-xs text-muted-foreground">
-                    Pela limpeza do equipamento coletivo
+                    Próximo responsável pela limpeza do equipamento coletivo
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
