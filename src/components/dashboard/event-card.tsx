@@ -8,7 +8,6 @@ import { Calendar, Check, X, CheckCircle } from "lucide-react";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import { InviteButton } from "../invite-button";
-import { Separator } from "../ui/separator";
 
 interface EventCardProps {
     user: User | null;
@@ -117,10 +116,7 @@ export function EventCard({
                         isFetchingPlayers={isFetchingPlayers}
                     />
                     {isManager && (
-                      <>
-                        <Separator className="w-3/4" />
                         <InviteButton user={user} />
-                      </>
                     )}
                 </div>
                  {isGameFinished && (
