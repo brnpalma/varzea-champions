@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Check, X, CheckCircle } from "lucide-react";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
+import { InviteButton } from "../invite-button";
+import { Separator } from "../ui/separator";
 
 interface EventCardProps {
     user: User | null;
@@ -19,6 +21,7 @@ interface EventCardProps {
     onPresenceClick: (status: 'confirmed' | 'declined') => void;
     confirmedPlayers: User[];
     isFetchingPlayers: boolean;
+    isManager: boolean | undefined;
 }
 
 export function EventCard({
@@ -31,7 +34,8 @@ export function EventCard({
     isConfirmationLocked,
     onPresenceClick,
     confirmedPlayers,
-    isFetchingPlayers
+    isFetchingPlayers,
+    isManager
 }: EventCardProps) {
     const formatNextGameDate = (date: Date | null) => {
         if (!date) {
@@ -107,11 +111,17 @@ export function EventCard({
                  )}
             </CardHeader>
             <CardContent className="p-4 pt-0">
-                <div className="flex items-center justify-center pt-2">
+                <div className="flex flex-col items-center justify-center gap-4 pt-2">
                     <ConfirmedPlayersDialog 
                         confirmedPlayers={confirmedPlayers}
                         isFetchingPlayers={isFetchingPlayers}
                     />
+                    {isManager && (
+                      <>
+                        <Separator className="w-3/4" />
+                        <InviteButton user={user} />
+                      </>
+                    )}
                 </div>
                  {isGameFinished && (
                      <p className="text-sm text-center text-muted-foreground pt-4">
@@ -127,5 +137,3 @@ export function EventCard({
         </Card>
     );
 }
-
-    

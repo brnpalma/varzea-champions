@@ -458,12 +458,6 @@ export default function HomePage() {
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
         </h1>
 
-        {isManager && (
-            <div className="flex justify-center">
-                <InviteButton user={user} />
-            </div>
-        )}
-
         {!loading && !user && (
           <Card className="max-w-4xl mx-auto shadow-lg text-center">
             <CardHeader>
@@ -497,6 +491,7 @@ export default function HomePage() {
                 onPresenceClick={handlePresenceClick}
                 confirmedPlayers={confirmedPlayers}
                 isFetchingPlayers={isFetchingPlayers}
+                isManager={isManager}
             />
         </div>
         
