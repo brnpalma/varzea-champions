@@ -494,6 +494,15 @@ export default function HomePage() {
             />
         </div>
         
+        {showEquipmentCard && (
+            <div className="md:col-span-2">
+                <EquipmentCard
+                    isLoadingManager={isLoadingManager}
+                    equipmentManager={equipmentManager}
+                />
+            </div>
+        )}
+
         {isManager && (
           <InviteCard user={user} isManager={isManager} />
         )}
@@ -505,13 +514,6 @@ export default function HomePage() {
           />
         )}
         
-        {showEquipmentCard && (
-            <EquipmentCard
-                isLoadingManager={isLoadingManager}
-                equipmentManager={equipmentManager}
-            />
-        )}
-
         <RankingCard />
         
         {showPaymentCard && groupSettings && (
