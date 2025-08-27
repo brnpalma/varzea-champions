@@ -55,7 +55,7 @@ export function BottomNav() {
     { href: "/", label: "Início", icon: Home },
     { href: "/sorter", label: "Sorteador", icon: Dices },
     { href: "/players", label: "Jogadores", icon: Users },
-    { href: "/ranking", label: "Ranking", icon: Trophy },
+    { href: "/ranking", label: "Ranking", icon: Trophy, activeColor: "text-amber-500" },
   ];
 
   const visibleNavItems = navItems.filter(item => {
@@ -76,19 +76,23 @@ export function BottomNav() {
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t p-2 z-50">
         <div className="flex justify-around items-center">
-          {visibleNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary",
-                pathname === item.href && "text-primary bg-secondary"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </Link>
-          ))}
+          {visibleNavItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary",
+                  isActive && "text-primary bg-secondary",
+                  isActive && item.activeColor && `hover:${item.activeColor} ${item.activeColor}`
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
           <Link
               key={profileItem.href}
               href={profileItem.href}
@@ -116,19 +120,23 @@ export function BottomNav() {
           </Link>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
-          {visibleNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-secondary",
-                pathname === item.href && "bg-secondary text-primary font-semibold"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </Link>
-          ))}
+          {visibleNavItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-secondary",
+                  isActive && "bg-secondary text-primary font-semibold",
+                  isActive && item.activeColor && `hover:${item.activeColor} ${item.activeColor}`
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
           Versão {appVersion}
