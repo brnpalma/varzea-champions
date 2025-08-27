@@ -65,7 +65,7 @@ export function EventCard({
     return (
         <Card className="shadow-lg">
             <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
-                 <div className="flex items-center gap-3">
+                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <Calendar className="h-6 w-6 text-primary shrink-0" />
                     {isGameDateLoading ? (
                     <div className="w-full flex justify-center items-center py-4">

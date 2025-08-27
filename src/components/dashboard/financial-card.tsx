@@ -26,7 +26,7 @@ export function FinancialCard({ groupSettings }: FinancialCardProps) {
     return (
         <Card className="shadow-lg h-fit text-center">
             <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-3">
+              <CardTitle className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Wallet className="h-6 w-6 text-primary" />
                 <span>Financeiro</span>
               </CardTitle>

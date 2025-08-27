@@ -16,7 +16,7 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
     return (
         <Card className="shadow-lg h-fit text-center">
             <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-3">
+                <CardTitle className="flex flex-col sm:flex-row items-center justify-center gap-3">
                      <Shirt className="h-5 w-5 text-primary" />
                     <span>Limpeza Equipamento</span>
                 </CardTitle>
