@@ -32,8 +32,8 @@ export function EquipmentCard({ isLoadingManager, equipmentManager }: EquipmentC
                     <FootballSpinner />
                 ) : equipmentManager.next ? (
                     <>
-                        <p className="text-lg font-bold text-foreground mb-2">{equipmentManager.next.displayName}</p>
                         <UserAvatar src={equipmentManager.next.photoURL} size={64} />
+                        <p className="text-lg font-bold text-foreground mt-2">{equipmentManager.next.displayName}</p>
                     </>
                 ) : (
                     <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
