@@ -7,6 +7,8 @@ import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
 import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
 import { FootballSpinner } from "./ui/football-spinner";
+import defaultGroupSettings from '@/config/group-settings.json';
+
 
 export enum UserType {
   JOGADOR = "Jogador",
@@ -115,10 +117,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           } as User;
           
           if (currentUser.groupId) {
+            // Load default settings from JSON instantly for better UX
+            setGroupSettings(defaultGroupSettings);
+            
             const groupDocRef = doc(firestore, "groups", currentUser.groupId);
             groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
               const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
               setUser({ ...currentUser, groupName: groupData?.name || null });
+              // Overwrite with fresh data from Firestore
               setGroupSettings(groupData);
               setLoading(false);
             }, (error) => {

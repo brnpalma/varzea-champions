@@ -1,0 +1,20 @@
+
+{
+  "name": "Meu Grupo",
+  "playersPerTeam": 5,
+  "gameDays": {
+    "segunda": { "selected": false, "time": "" },
+    "terca": { "selected": false, "time": "" },
+    "quarta": { "selected": false, "time": "" },
+    "quinta": { "selected": false, "time": "" },
+    "sexta": { "selected": false, "time": "" },
+    "sabado": { "selected": false, "time": "" },
+    "domingo": { "selected": false, "time": "" }
+  },
+  "valorMensalidade": null,
+  "valorAvulso": null,
+  "chavePix": null,
+  "allowConfirmationWithDebt": false,
+  "enableEquipmentManager": false,
+  "createdAt": ""
+}
