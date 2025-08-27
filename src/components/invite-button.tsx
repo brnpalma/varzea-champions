@@ -1,17 +1,16 @@
 
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, ButtonProps } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, UserType } from "@/hooks/use-auth";
 import { Copy } from "lucide-react";
 
-interface InviteButtonProps {
+interface InviteButtonProps extends ButtonProps {
   user: User | null;
-  className?: string;
 }
 
-export function InviteButton({ user, className }: InviteButtonProps) {
+export function InviteButton({ user, className, ...props }: InviteButtonProps) {
   const { toast } = useToast();
 
   const handleShareLink = () => {
@@ -45,7 +44,7 @@ export function InviteButton({ user, className }: InviteButtonProps) {
   }
 
   return (
-    <Button onClick={handleShareLink} className={className}>
+    <Button onClick={handleShareLink} className={className} {...props}>
       <Copy className="mr-2 h-4 w-4" />
       Copiar link para novos jogadores
     </Button>
