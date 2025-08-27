@@ -5,16 +5,19 @@ import { useAuth, User, PlayerSubscriptionType, UserType } from "@/hooks/use-aut
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Calendar, Check, X, Trophy, Wallet, Goal, CheckCircle, Share2, LogIn, Shirt } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot, runTransaction, getDocs, writeBatch } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { FootballSpinner } from "@/components/ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
-import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
-import { GoalsDialog } from "@/components/goals-dialog";
-import { UserAvatar } from "@/components/user-avatar";
+
+import { EventCard } from "@/components/dashboard/event-card";
+import { InviteCard } from "@/components/dashboard/invite-card";
+import { PostGameCard } from "@/components/dashboard/post-game-card";
+import { EquipmentCard } from "@/components/dashboard/equipment-card";
+import { RankingCard } from "@/components/dashboard/ranking-card";
+import { FinancialCard } from "@/components/dashboard/financial-card";
+
 
 interface GameDaySetting {
   selected: boolean;
@@ -66,27 +69,22 @@ function getActiveOrNextGameDate(gameDays: Record<string, GameDaySetting>): Date
     if (mostRecentPastGame) {
         let gracePeriodHours = 24; // Default grace period
         
-        // Check if the next game is very close
         if (nextFutureGame) {
-            // Check hours between the end of the last game and start of the next one
             const lastGameEndTime = new Date(mostRecentPastGame.getTime() + 2 * 60 * 60 * 1000); // Assuming 2h duration
             const hoursUntilNextGame = (nextFutureGame.getTime() - lastGameEndTime.getTime()) / (1000 * 60 * 60);
             
-            // If the time between games is less than our grace period, we shorten it to avoid overlap.
             if (hoursUntilNextGame < gracePeriodHours) {
-              gracePeriodHours = Math.max(0, hoursUntilNextGame - 1); // Shorten grace period, ensure it's not negative
+              gracePeriodHours = Math.max(0, hoursUntilNextGame - 1);
             }
         }
         
         const gracePeriodEndDate = new Date(mostRecentPastGame.getTime() + gracePeriodHours * 60 * 60 * 1000);
 
-        // If we are within the grace period of the last game, show it.
         if (now < gracePeriodEndDate) {
             return mostRecentPastGame;
         }
     }
 
-    // Otherwise, show the next upcoming game. This will have an empty confirmation list by default.
     return nextFutureGame;
 }
 
@@ -102,7 +100,6 @@ const formatDateToId = (date: Date): string => {
 
 export default function HomePage() {
   const { user, groupSettings, loading } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   
   const [confirmedStatus, setConfirmedStatus] = useState<'confirmed' | 'declined' | null>(null);
@@ -138,7 +135,6 @@ export default function HomePage() {
             setIsGameFinished(gameHasPassed);
             setIsConfirmationLocked(gameHasPassed);
 
-            // Logic for Goals Card
             const twentyFourHoursAfterGame = new Date(gameDate.getTime() + 24 * 60 * 60 * 1000);
             const isWithin24HoursAfterStart = now > gameDate && now < twentyFourHoursAfterGame;
 
@@ -217,26 +213,21 @@ export default function HomePage() {
 
         allPlayers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
 
-        // Find the current responsible player (the one for the game that just passed)
         let currentManager = allPlayers.find(p => !p.lavouColete);
         if (!currentManager) {
-            // If everyone has washed, it means the cycle just reset. The responsible was the last in alphabetical order.
             currentManager = allPlayers[allPlayers.length - 1];
         }
 
-        if (!currentManager) return; // Should not happen if there are players
+        if (!currentManager) return;
 
         const batch = writeBatch(firestore);
         
-        // Mark the current manager as done
         const currentManagerRef = doc(firestore, 'users', currentManager.uid);
         batch.update(currentManagerRef, { lavouColete: true });
 
-        // Check if this was the last person in the cycle
         const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
 
         if (remainingPlayers.length === 0) {
-            // Reset for all other players (the current one is already being set to true)
             allPlayers.forEach(player => {
                 if (player.uid !== currentManager.uid) {
                   const playerRef = doc(firestore, 'users', player.uid);
@@ -251,7 +242,6 @@ export default function HomePage() {
         }
 
         await batch.commit();
-        // After commit, refetch to show the new "next" person
         fetchEquipmentManager();
     } catch (error) {
         console.error("Error updating equipment manager rotation:", error);
@@ -271,16 +261,13 @@ export default function HomePage() {
   useEffect(() => {
       const currentGameId = nextGameDate ? formatDateToId(nextGameDate) : null;
       
-      // Check if the game date has changed from a past date to a new future date
       if (previousGameDateRef.current && currentGameId && previousGameDateRef.current !== currentGameId) {
           const previousDate = new Date(previousGameDateRef.current);
           const now = new Date();
-          // If the previous game is in the past and the new one is in the future, it's a rollover.
           if (previousDate < now && nextGameDate! > now) {
             updateEquipmentManagerRotation();
           }
       }
-      // Update the ref to the current game date ID for the next render
       previousGameDateRef.current = currentGameId;
   }, [nextGameDate, updateEquipmentManagerRotation]);
 
@@ -304,8 +291,6 @@ export default function HomePage() {
         setConfirmedPlayers(playersData);
         setIsFetchingPlayers(false);
     }, (error) => {
-      // It's ok if this fails, e.g. permission denied or no game doc yet.
-      // Silently fail and show 0.
       setConfirmedPlayers([]);
       setIsFetchingPlayers(false);
     });
@@ -329,7 +314,6 @@ export default function HomePage() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             setConfirmedStatus(data.status);
-            // If goals field exists and is not null/undefined, consider it submitted
             if (data.goals !== null && data.goals !== undefined) {
               setGoalsSubmitted(true);
             } else {
@@ -340,8 +324,6 @@ export default function HomePage() {
             setGoalsSubmitted(false);
         }
     }, (error) => {
-      // It's ok if this fails, e.g. permission denied.
-      // Silently fail and show no status.
       setConfirmedStatus(null);
       setGoalsSubmitted(false);
     });
@@ -447,10 +429,7 @@ export default function HomePage() {
         const currentTotalGoals = userDoc.data()?.totalGoals || 0;
         const newTotalGoals = currentTotalGoals + goalsDifference;
         
-        // Update attendee document with the new goal count for the specific game
         transaction.set(attendeeDocRef, { goals: newGoals }, { merge: true });
-
-        // Update user document with the new total goals count
         transaction.update(userDocRef, { totalGoals: newTotalGoals });
       });
 
@@ -459,7 +438,7 @@ export default function HomePage() {
         title: "Gols Salvos!",
         description: `Você registrou ${newGoals} gols com sucesso.`,
       });
-      setGoalsSubmitted(true); // Hide the card after saving
+      setGoalsSubmitted(true);
     } catch (error) {
       console.error("Error saving goals:", error);
       toast({
@@ -469,60 +448,7 @@ export default function HomePage() {
       });
     }
   };
-  
-  const formatNextGameDate = (date: Date | null) => {
-    if (!date) {
-      return {
-        line1: "Nenhuma partida agendada.",
-        line2: null,
-      };
-    }
 
-    const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date);
-    
-    const dateTime = new Intl.DateTimeFormat('pt-BR', {
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date).replace(', ', ' as ');
-    
-    return {
-      line1: weekday.charAt(0).toUpperCase() + weekday.slice(1).replace(',', ''),
-      line2: dateTime
-    }
-  };
-
-  const handleCopyPix = () => {
-    if (!groupSettings?.chavePix) return;
-    navigator.clipboard.writeText(groupSettings.chavePix);
-    toast({
-        variant: "success",
-        title: "Chave PIX Copiada!",
-    });
-  };
-
-   const handleShareLink = () => {
-    if (!user || !isManager) return;
-    const inviteLink = `${window.location.origin}/login?group_id=${user?.groupId}`;
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      toast({
-        variant: 'success',
-        title: 'Link Copiado!',
-        description: 'O link de convite foi copiado para a sua área de transferência.',
-      });
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-      toast({
-        variant: 'destructive',
-        title: 'Falha ao Copiar',
-        description: 'Não foi possível copiar o link.',
-      });
-    });
-  };
-
-  const formattedDate = formatNextGameDate(nextGameDate);
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
   const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
 
@@ -554,187 +480,46 @@ export default function HomePage() {
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
-            <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-center relative text-center pb-2">
-                   <div className="flex items-center gap-3">
-                     <Calendar className="h-6 w-6 text-primary" />
-                     {isGameDateLoading ? (
-                        <div className="w-full flex justify-center items-center py-4">
-                          <FootballSpinner />
-                        </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <span className="text-2xl font-bold">{formattedDate.line1}</span>
-                          {formattedDate.line2 && <span className="text-lg font-medium text-muted-foreground">{formattedDate.line2}</span>}
-                        </div>
-                      )}
-                   </div>
-                   {isGameFinished && (
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-6 w-6" />
-                        <span className="text-sm font-semibold hidden sm:inline">Realizado</span>
-                      </div>
-                    )}
-                </CardHeader>
-              <CardContent className="space-y-2">
-                 <p className="text-muted-foreground text-center text-sm">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
-                 {!isGameFinished && user && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button 
-                        size="lg" 
-                        onClick={() => handlePresenceClick('confirmed')} 
-                        className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
-                        disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
-                      >
-                        <Check className="mr-2 h-5 w-5" /> Sim
-                      </Button>
-                      <Button 
-                        size="lg" 
-                        onClick={() => handlePresenceClick('declined')} 
-                        variant="destructive"
-                        className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
-                        disabled={!user || isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
-                      >
-                        <X className="mr-2 h-5 w-5" /> Não
-                      </Button>
-                    </div>
-                     <div className="flex items-center justify-center pt-2">
-                        <ConfirmedPlayersDialog 
-                            confirmedPlayers={confirmedPlayers}
-                            isFetchingPlayers={isFetchingPlayers}
-                        />
-                    </div>
-                  </>
-                )}
-                 {!isGameFinished && !user && (
-                    <p className="text-sm text-center text-muted-foreground pt-4">
-                      Você precisa fazer login para confirmar sua presença.
-                    </p>
-                )}
-              </CardContent>
-            </Card>
+            <EventCard 
+                user={user}
+                nextGameDate={nextGameDate}
+                isGameDateLoading={isGameDateLoading}
+                isGameFinished={isGameFinished}
+                confirmedStatus={confirmedStatus}
+                isSubmitting={isSubmitting}
+                isConfirmationLocked={isConfirmationLocked}
+                onPresenceClick={handlePresenceClick}
+                confirmedPlayers={confirmedPlayers}
+                isFetchingPlayers={isFetchingPlayers}
+            />
         </div>
         
         {isManager && (
-          <Card className="shadow-lg h-fit text-center">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-3">
-                <Share2 className="h-6 w-6 text-primary" />
-                <span>Convidar Jogadores</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4">
-              <p className="text-muted-foreground">
-                Compartilhe o link para que novos jogadores entrem no seu grupo.
-              </p>
-              <Button onClick={handleShareLink}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Copiar Link de Convite
-              </Button>
-            </CardContent>
-          </Card>
+          <InviteCard user={user} isManager={isManager} />
         )}
 
         {goalsCardState.visible && (
-          <Card className="shadow-lg h-fit text-center">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-3">
-                <Goal className="h-6 w-6 text-primary" />
-                <span>Pós-Jogo</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4">
-              <p className="text-muted-foreground">Quantos gols você marcou hoje?</p>
-              <GoalsDialog
-                onSave={handleSaveGoals}
-                isDisabled={!goalsCardState.enabled}
-              />
-            </CardContent>
-          </Card>
+          <PostGameCard 
+            onSaveGoals={handleSaveGoals}
+            goalsCardState={goalsCardState}
+          />
         )}
         
-         {showEquipmentCard && (
-            <Card className="shadow-lg h-fit text-center">
-                <CardHeader className="text-center">
-                    <CardTitle className="flex items-center justify-center gap-3">
-                         <Shirt className="h-5 w-5 text-primary" />
-                        <span>Próximo responsável</span>
-                    </CardTitle>
-                     <CardDescription className="text-xs text-muted-foreground">
-                        Pela limpeza do equipamento coletivo
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-2 pt-0">
-                    {isLoadingManager ? (
-                        <FootballSpinner />
-                    ) : equipmentManager.next ? (
-                        <>
-                            <UserAvatar src={equipmentManager.next.photoURL} size={64} />
-                            <p className="text-lg font-bold text-foreground">{equipmentManager.next.displayName}</p>
-                        </>
-                    ) : (
-                        <p className="text-muted-foreground">Nenhum jogador no grupo para definir um responsável.</p>
-                    )}
-                </CardContent>
-            </Card>
+        {showEquipmentCard && (
+            <EquipmentCard
+                isLoadingManager={isLoadingManager}
+                equipmentManager={equipmentManager}
+            />
         )}
 
-        <Card className="shadow-lg h-fit text-center">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-3">
-              <Trophy className="h-6 w-6 text-amber-500" />
-              <span>Ranking</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center gap-4">
-            <p className="text-muted-foreground">
-              Veja a classificação de estrelas e artilheiros
-            </p>
-            <Button asChild>
-              <Link href="/ranking">
-                Acessar Ranking <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <RankingCard />
         
-        {showPaymentCard && (
-           <Card className="shadow-lg h-fit text-center">
-             <CardHeader className="text-center">
-               <CardTitle className="flex items-center justify-center gap-3">
-                 <Wallet className="h-6 w-6 text-primary" />
-                 <span>Financeiro</span>
-               </CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-                {groupSettings.chavePix && (
-                 <div className="pb-2">
-                    <p className="text-sm text-muted-foreground mb-1">Chave PIX:</p>
-                    <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary">
-                        <code className="flex-1 break-all text-left">{groupSettings.chavePix}</code>
-                        <Button variant="ghost" size="sm" onClick={handleCopyPix}>
-                            Copiar
-                        </Button>
-                    </div>
-                 </div>
-               )}
-                {groupSettings.valorMensalidade && (
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Mensalidade:</span>
-                        <span className="font-bold text-lg">R$ {groupSettings.valorMensalidade.toFixed(2)}</span>
-                    </div>
-                )}
-                 {groupSettings.valorAvulso && (
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Jogo Avulso:</span>
-                        <span className="font-bold text-lg">R$ {groupSettings.valorAvulso.toFixed(2)}</span>
-                    </div>
-                )}
-             </CardContent>
-           </Card>
+        {showPaymentCard && groupSettings && (
+           <FinancialCard groupSettings={groupSettings} />
         )}
       </div>
     </div>
   );
 }
+
+    
