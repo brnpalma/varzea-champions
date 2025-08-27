@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Share2, Trash2, LogIn, MoreVertical, DollarSign, Star } from 'lucide-react';
+import { Trash2, LogIn, MoreVertical, DollarSign, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
 import { EditRatingDialog } from '@/components/edit-rating-dialog';
+import { InviteButton } from '@/components/invite-button';
 
 export default function PlayersPage() {
   const { user, loading } = useAuth();
@@ -86,25 +87,6 @@ export default function PlayersPage() {
 
     return () => unsubscribe();
   }, [groupId, toast, loading, user]);
-
-  const handleShareLink = () => {
-    if (!user || !isManager) return;
-    const inviteLink = `${window.location.origin}/login?group_id=${user?.groupId}`;
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      toast({
-        variant: 'success',
-        title: 'Link Copiado!',
-        description: 'O link de convite foi copiado para a sua área de transferência.',
-      });
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-      toast({
-        variant: 'destructive',
-        title: 'Falha ao Copiar',
-        description: 'Não foi possível copiar o link.',
-      });
-    });
-  };
 
   const handleRemovePlayer = async (playerToRemove: User) => {
     if (!isManager || !playerToRemove) return;
@@ -184,10 +166,7 @@ export default function PlayersPage() {
             </CardTitle>
           </div>
           {isManager && (
-            <Button onClick={handleShareLink} className="w-full sm:w-auto">
-              <Share2 className="mr-2 h-4 w-4" />
-              Compartilhar link
-            </Button>
+            <InviteButton user={user} className="w-full sm:w-auto" />
           )}
         </CardHeader>
         <CardContent>

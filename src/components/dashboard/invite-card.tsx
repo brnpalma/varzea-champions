@@ -3,9 +3,8 @@
 
 import { User } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Share2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { InviteButton } from "../invite-button";
 
 interface InviteCardProps {
     user: User | null;
@@ -13,26 +12,10 @@ interface InviteCardProps {
 }
 
 export function InviteCard({ user, isManager }: InviteCardProps) {
-    const { toast } = useToast();
 
-    const handleShareLink = () => {
-        if (!user || !isManager) return;
-        const inviteLink = `${window.location.origin}/login?group_id=${user?.groupId}`;
-        navigator.clipboard.writeText(inviteLink).then(() => {
-          toast({
-            variant: 'success',
-            title: 'Link Copiado!',
-            description: 'O link de convite foi copiado para a sua área de transferência.',
-          });
-        }).catch(err => {
-          console.error('Failed to copy text: ', err);
-          toast({
-            variant: 'destructive',
-            title: 'Falha ao Copiar',
-            description: 'Não foi possível copiar o link.',
-          });
-        });
-    };
+    if (!isManager) {
+        return null;
+    }
 
     return (
         <Card className="shadow-lg h-fit text-center">
@@ -43,13 +26,8 @@ export function InviteCard({ user, isManager }: InviteCardProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4">
-              <Button onClick={handleShareLink}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Copiar Link de Convite
-              </Button>
+                <InviteButton user={user} />
             </CardContent>
         </Card>
     );
 }
-
-    
