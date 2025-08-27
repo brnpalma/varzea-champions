@@ -514,18 +514,18 @@ export default function HomePage() {
             />
         </div>
         
-        {showEquipmentCard && (
-            <EquipmentCard
-                isLoadingManager={isLoadingManager}
-                equipmentManager={equipmentManager}
-            />
-        )}
-
         {showPostGameCard && (
           <PostGameCard 
             onSaveGoals={handleSaveGoals}
             goalsCardState={goalsCardState}
           />
+        )}
+
+        {showEquipmentCard && (
+            <EquipmentCard
+                isLoadingManager={isLoadingManager}
+                equipmentManager={equipmentManager}
+            />
         )}
         
         {showPaymentCard && groupSettings && (
