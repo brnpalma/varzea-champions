@@ -109,7 +109,7 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
-  const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false });
+  const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false, message: "Aguarde o fim da partida para registrar seus gols." });
   const [isGameFinished, setIsGameFinished] = useState(false);
   const [equipmentManager, setEquipmentManager] = useState<{next: User | null}>({ next: null });
   const [isLoadingManager, setIsLoadingManager] = useState(false);
@@ -131,18 +131,39 @@ export default function HomePage() {
           if (gameDate) {
             const now = new Date();
             const gameHasPassed = now > gameDate;
+            const gracePeriodEnd = new Date(gameDate.getTime() + 24 * 60 * 60 * 1000);
+            const isWithinGracePeriod = now > gameDate && now < gracePeriodEnd;
+
             setIsGameFinished(gameHasPassed);
-            setIsConfirmationLocked(gameHasPassed);
+            setIsConfirmationLocked(gameHasPassed && !isWithinGracePeriod);
 
-            const twentyFourHoursAfterGame = new Date(gameDate.getTime() + 24 * 60 * 60 * 1000);
-            const isWithin24HoursAfterStart = now > gameDate && now < twentyFourHoursAfterGame;
+            let cardEnabled = false;
+            let cardVisible = false;
+            let message = "Aguarde o fim da partida para registrar seus gols.";
 
-            const cardVisible = isWithin24HoursAfterStart && !goalsSubmitted;
-            const cardEnabled = gameHasPassed;
+            if (gameHasPassed) {
+                if (isWithinGracePeriod) {
+                    cardVisible = true;
+                    if (goalsSubmitted) {
+                        cardEnabled = false;
+                        message = "Você já registrou seus gols para esta partida.";
+                    } else {
+                        cardEnabled = true;
+                        message = "A partida terminou! Registre seus gols.";
+                    }
+                } else {
+                    cardVisible = true; // Still visible, but disabled
+                    cardEnabled = false;
+                    message = "O período para registrar gols encerrou.";
+                }
+            } else {
+                 cardVisible = true; // Visible but disabled before game ends
+                 cardEnabled = false;
+            }
             
-            setGoalsCardState({ visible: cardVisible, enabled: cardEnabled });
+            setGoalsCardState({ visible: cardVisible, enabled: cardEnabled, message });
           } else {
-             setGoalsCardState({ visible: false, enabled: false });
+             setGoalsCardState({ visible: false, enabled: false, message: "Nenhuma partida agendada." });
           }
         } else {
           setNextGameDate(null);
@@ -450,6 +471,7 @@ export default function HomePage() {
 
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
   const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
+  const showPostGameCard = user && groupSettings?.gameDays && Object.values(groupSettings.gameDays).some(d => d.selected);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -504,7 +526,7 @@ export default function HomePage() {
             </div>
         )}
 
-        {goalsCardState.visible && (
+        {showPostGameCard && (
           <PostGameCard 
             onSaveGoals={handleSaveGoals}
             goalsCardState={goalsCardState}
