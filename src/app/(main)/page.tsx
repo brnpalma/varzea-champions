@@ -12,10 +12,10 @@ import { firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 import { EventCard } from "@/components/dashboard/event-card";
-import { InviteCard } from "@/components/dashboard/invite-card";
 import { PostGameCard } from "@/components/dashboard/post-game-card";
 import { EquipmentCard } from "@/components/dashboard/equipment-card";
 import { FinancialCard } from "@/components/dashboard/financial-card";
+import { InviteButton } from "@/components/invite-button";
 
 
 interface GameDaySetting {
@@ -503,7 +503,9 @@ export default function HomePage() {
         )}
 
         {isManager && (
-          <InviteCard user={user} isManager={isManager} />
+            <div className="md:col-span-2 flex justify-center">
+                <InviteButton user={user} />
+            </div>
         )}
 
         {goalsCardState.visible && (
