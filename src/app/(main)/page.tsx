@@ -528,13 +528,10 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="space-y-4 mb-8 text-center">
+      <div className="space-y-4 mb-6 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
         </h1>
-        <p className="text-muted-foreground text-lg">
-          {isGameFinished ? "Veja os detalhes do jogo que acabou." : "Confirme sua presença para o jogo da semana."}
-        </p>
         {!loading && !user && (
           <Card className="max-w-4xl mx-auto shadow-lg text-center mt-6">
             <CardHeader>
@@ -741,3 +738,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
