@@ -533,7 +533,7 @@ export default function HomePage() {
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
         </h1>
         {!loading && !user && (
-          <Card className="max-w-4xl mx-auto shadow-lg text-center mt-6">
+          <Card className="max-w-4xl mx-auto shadow-lg text-center">
             <CardHeader>
               <CardTitle>Bem-vindo ao Várzea Champions</CardTitle>
               <CardDescription>
@@ -555,7 +555,7 @@ export default function HomePage() {
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="md:col-span-2">
             <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-center relative text-center">
+              <CardHeader className="flex flex-row items-center justify-center relative text-center pb-2">
                    <div className="flex items-center gap-3">
                      <Calendar className="h-6 w-6 text-primary" />
                      {isGameDateLoading ? (
@@ -576,8 +576,8 @@ export default function HomePage() {
                       </div>
                     )}
                 </CardHeader>
-              <CardContent className="space-y-4">
-                 <p className="text-muted-foreground text-center">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
+              <CardContent className="space-y-2">
+                 <p className="text-muted-foreground text-center text-sm">{isGameFinished ? "A confirmação para este jogo está encerrada." : "Você vai participar?"}</p>
                  {!isGameFinished && user && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
@@ -599,7 +599,7 @@ export default function HomePage() {
                         <X className="mr-2 h-5 w-5" /> Não
                       </Button>
                     </div>
-                     <div className="flex items-center justify-center pt-4">
+                     <div className="flex items-center justify-center pt-2">
                         <ConfirmedPlayersDialog 
                             confirmedPlayers={confirmedPlayers}
                             isFetchingPlayers={isFetchingPlayers}
@@ -738,5 +738,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
