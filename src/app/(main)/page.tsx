@@ -138,12 +138,11 @@ export default function HomePage() {
             setIsConfirmationLocked(gameHasPassed && !isWithinGracePeriod);
 
             let cardEnabled = false;
-            let cardVisible = false;
+            let cardVisible = true; // Card is always visible now
             let message = "Aguarde o fim da partida para registrar seus gols.";
 
             if (gameHasPassed) {
                 if (isWithinGracePeriod) {
-                    cardVisible = true;
                     if (goalsSubmitted) {
                         cardEnabled = false;
                         message = "Você já registrou seus gols para esta partida.";
@@ -152,12 +151,10 @@ export default function HomePage() {
                         message = "A partida terminou! Registre seus gols.";
                     }
                 } else {
-                    cardVisible = true; // Still visible, but disabled
                     cardEnabled = false;
                     message = "O período para registrar gols encerrou.";
                 }
             } else {
-                 cardVisible = true; // Visible but disabled before game ends
                  cardEnabled = false;
             }
             
@@ -471,7 +468,7 @@ export default function HomePage() {
 
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
   const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
-  const showPostGameCard = user && groupSettings?.gameDays && Object.values(groupSettings.gameDays).some(d => d.selected);
+  const showPostGameCard = user && groupSettings?.gameDays && Object.values(groupSettings.gameDays).some(d => d.selected) && goalsCardState.visible;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -518,12 +515,10 @@ export default function HomePage() {
         </div>
         
         {showEquipmentCard && (
-            <div className="md:col-span-2">
-                <EquipmentCard
-                    isLoadingManager={isLoadingManager}
-                    equipmentManager={equipmentManager}
-                />
-            </div>
+            <EquipmentCard
+                isLoadingManager={isLoadingManager}
+                equipmentManager={equipmentManager}
+            />
         )}
 
         {showPostGameCard && (
