@@ -44,7 +44,12 @@ export function InviteButton({ user, className, ...props }: InviteButtonProps) {
   }
 
   return (
-    <Button onClick={handleShareLink} className={className} {...props}>
+    <Button 
+      onClick={handleShareLink} 
+      className={className} 
+      style={{ paddingLeft: '10px', paddingRight: '10px' }} 
+      {...props}
+    >
       <Copy className="mr-2 h-4 w-4" />
       Copiar link para novos jogadores
     </Button>
