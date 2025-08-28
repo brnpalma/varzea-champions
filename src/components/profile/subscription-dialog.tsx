@@ -36,7 +36,7 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-left pr-4">
+        <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2">
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
@@ -90,16 +90,10 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
           </Button>
         </div>
         
-        <DialogFooter className="sm:justify-between gap-2">
+        <DialogFooter className="sm:justify-end gap-2">
           <DialogClose asChild>
             <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
           </DialogClose>
-          <Button asChild disabled className="w-full sm:w-auto">
-            <Link href={selectedPlan ? paymentLinks[selectedPlan] : '#'} target="_blank">
-              Ir para o Pagamento
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
