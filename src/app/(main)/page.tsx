@@ -50,6 +50,12 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      {showSubscriptionButton && (
+        <div className="mb-6 text-center">
+          <SubscriptionButton />
+        </div>
+      )}
+
       <div className="space-y-4 mb-6 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
           {isGameFinished ? "Última Partida" : "Próxima Partida"}
@@ -113,11 +119,6 @@ export default function HomePage() {
         )}
       </div>
       
-      {showSubscriptionButton && (
-        <div className="mt-8 max-w-4xl mx-auto">
-          <SubscriptionButton />
-        </div>
-      )}
     </div>
   );
 }
