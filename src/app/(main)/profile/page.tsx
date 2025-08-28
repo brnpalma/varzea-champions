@@ -469,7 +469,18 @@ export default function ProfilePage() {
                             </div>
                         )}
                     </div>
-                  <CardDescription className="text-center sm:text-left">Veja e gerencie os detalhes do seu perfil.</CardDescription>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
+                        <CardDescription>
+                          {isEditing ? "Atualize suas informações" : "Veja e gerencie os detalhes do seu perfil."}
+                        </CardDescription>
+                         {!isEditing && (
+                           user.isSubscriber ? (
+                              <Badge variant="success">Assinante</Badge>
+                            ) : (
+                              <Badge variant="destructive">Não Assinante</Badge>
+                            )
+                         )}
+                    </div>
                 </div>
               </div>
               {isEditing && (
@@ -521,11 +532,6 @@ export default function ProfilePage() {
                           <span className="text-foreground">
                               Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
                           </span>
-                           {user.isSubscriber ? (
-                            <Badge variant="success">Assinante</Badge>
-                          ) : (
-                            <Badge variant="destructive">Não Assinante</Badge>
-                          )}
                       </div>
                   </div>
                   <div className="flex items-center">
@@ -544,8 +550,8 @@ export default function ProfilePage() {
             )}
             
              {!user.isSubscriber && !isEditing && (
-              <div className="pt-4 border-t">
-                <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+              <div className="pt-4">
+                <Button asChild className="w-full">
                   <Link href="https://google.com.br" target="_blank">
                     <BadgeCheck className="mr-2 h-4 w-4" />
                     Seja Assinante (R$ 30,00/ano)
@@ -554,7 +560,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-4">
               {isEditing ? (
                   <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="w-full sm:w-auto">
                     <Save className="mr-2 h-4 w-4" /> 
