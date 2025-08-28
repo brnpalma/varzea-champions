@@ -12,7 +12,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { User } from "@/hooks/use-auth";
 import { FootballSpinner } from "../ui/football-spinner";
@@ -28,13 +28,13 @@ interface SubscriptionDialogProps {
 }
 
 export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDialogProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'Anual' | 'Mensal' | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'Mensal' | 'Anual'>('Anual');
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setSelectedPlan(null); // Reset plan when closing
+      setSelectedPlan('Anual'); // Reset plan when closing
     }
     setIsOpen(open);
   };
@@ -85,92 +85,97 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
         });
       } finally {
         setIsProcessing(false);
-        setSelectedPlan(null);
+        setSelectedPlan('Anual');
       }
     }, 5000); // 5-second delay
   };
 
+  const plans = {
+    Mensal: { price: "15,00", period: "mês" },
+    Anual: { price: "30,00", period: "ano" },
+  }
+
+  const benefits = [
+    "Gestão Financeira Detalhada",
+    "Histórico e Estatísticas",
+    "Controle de Equipamentos Automático",
+    "Comunicação Simplificada com o Grupo",
+    "Cadastro Ilimitado de Jogadores",
+  ]
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BadgeCheck className="h-6 w-6 text-primary" />
-              Seja um Assinante
-            </DialogTitle>
-            <DialogDescription className="text-left">
-                Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="max-h-[50vh] pr-4">
-            <div className="space-y-4">
-              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                <li>
-                    <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
-                </li>
-                <li>
-                    <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
-                </li>
-                <li>
-                    <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
-                </li>
-                <li>
-                    <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
-                </li>
-                <li>
-                  <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
-                </li>
-              </ul>
-
-              <div className="grid grid-cols-2 gap-4">
+        <DialogContent className="sm:max-w-md p-0">
+          <ScrollArea className="max-h-[85vh]">
+            <div className="p-6">
+              <DialogHeader className="text-center items-center mb-6">
+                 <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
+                    <Crown className="h-8 w-8" />
+                 </div>
+                <DialogTitle className="text-2xl">
+                  Seja um Assinante
+                </DialogTitle>
+                <DialogDescription>
+                  Desbloqueie todos os recursos premium para uma gestão profissional.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
                   <div
-                    onClick={() => setSelectedPlan('Anual')}
                     className={cn(
-                        "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
-                        selectedPlan === 'Anual' ? 'border-primary ring-2 ring-primary' : 'border-border'
+                      "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
+                      selectedPlan === "Anual" && "translate-x-full"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlan("Mensal")}
+                    className={cn(
+                      "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                      selectedPlan === "Mensal" ? "text-primary-foreground" : "text-muted-foreground"
                     )}
                   >
-                      <div className="bg-blue-600 text-white p-2 text-center text-sm font-bold">
-                          Plano Anual
-                      </div>
-                      <div className="p-4 space-y-2 text-center">
-                          <p className="text-xs text-muted-foreground min-h-[5rem]">
-                              Com apenas 1 pagamento de R$ 30,00, tenha tudo liberado por 12 meses.
-                          </p>
-                          <p className="text-xl font-bold">R$ 30,00</p>
-                          <p className="text-xs font-semibold text-muted-foreground">por ano</p>
-                      </div>
-                  </div>
-                   <div
-                    onClick={() => setSelectedPlan('Mensal')}
+                    Mensal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlan("Anual")}
                     className={cn(
-                        "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
-                        selectedPlan === 'Mensal' ? 'border-primary ring-2 ring-primary' : 'border-border'
+                      "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                      selectedPlan === "Anual" ? "text-primary-foreground" : "text-muted-foreground"
                     )}
                   >
-                      <div className="bg-orange-500 text-white p-2 text-center text-sm font-bold">
-                          Plano Mensal
-                      </div>
-                       <div className="p-4 space-y-2 text-center">
-                          <p className="text-xs text-muted-foreground min-h-[5rem]">
-                              Acesso a todos os recursos com uma pequena taxa recorrente.
-                          </p>
-                          <p className="text-xl font-bold">R$ 15,00</p>
-                          <p className="text-xs font-semibold text-muted-foreground">por mês</p>
-                      </div>
-                  </div>
+                    Anual
+                  </button>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-4xl font-bold">
+                    R$ {plans[selectedPlan].price}
+                    <span className="text-base font-medium text-muted-foreground"> / {plans[selectedPlan].period}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-foreground">Recursos Premium:</p>
+                  <ul className="space-y-2">
+                    {benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <BadgeCheck className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-sm text-muted-foreground">{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </ScrollArea>
           
-          <DialogFooter className="sm:justify-end gap-2 pt-4">
-            <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
-            </DialogClose>
-            <Button onClick={handlePayment} disabled={!selectedPlan} className="w-full sm:w-auto">
-              Ir para Pagamento
+          <DialogFooter className="p-6 pt-0 mt-4 bg-background">
+            <Button onClick={handlePayment} size="lg" className="w-full">
+              Assinar Plano
             </Button>
           </DialogFooter>
         </DialogContent>
