@@ -176,8 +176,8 @@ export default function PlayersPage() {
             </div>
           ) : (
             <>
-              <div className="text-right mb-2 pr-2">
-                <p className="text-sm font-semibold text-muted-foreground">Total: {players.length}</p>
+              <div className="text-center mb-2">
+                <p className="text-sm font-semibold text-muted-foreground">Total de Jogadores: {players.length}</p>
               </div>
               <ul className="divide-y divide-border">
                 {players.map((player) => {
