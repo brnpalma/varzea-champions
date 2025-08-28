@@ -5,7 +5,7 @@ import { useState } from "react";
 import { User, UserType } from "@/hooks/use-auth";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
-import { Star, BadgeCheck } from "lucide-react";
+import { Star, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { SubscriptionDialog } from "./subscription-dialog";
@@ -53,7 +53,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                       onClick={() => setIsSubscriptionDialogOpen(true)} 
                       className="w-full max-w-xs bg-blue-600 text-white hover:bg-blue-700"
                     >
-                        <BadgeCheck className="mr-2 h-4 w-4" />
+                        <Crown className="mr-2 h-4 w-4" />
                         Seja Assinante
                     </Button>
                 </div>
