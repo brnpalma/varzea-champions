@@ -88,7 +88,7 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
           <DialogClose asChild>
             <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
           </DialogClose>
-          <Button asChild disabled={!selectedPlan} className="w-full sm:w-auto">
+          <Button asChild disabled className="w-full sm:w-auto">
             <Link href={selectedPlan ? paymentLinks[selectedPlan] : '#'} target="_blank">
               Ir para o Pagamento
               <ExternalLink className="ml-2 h-4 w-4" />
