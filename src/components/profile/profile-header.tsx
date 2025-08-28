@@ -51,7 +51,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                 <div className="pt-2 text-center">
                     <Button 
                       onClick={() => setIsSubscriptionDialogOpen(true)} 
-                      className="w-full max-w-xs"
+                      className="w-full max-w-xs bg-blue-600 text-white hover:bg-blue-700"
                     >
                         <BadgeCheck className="mr-2 h-4 w-4" />
                         Seja Assinante
