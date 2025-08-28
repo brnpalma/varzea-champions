@@ -1,13 +1,14 @@
 
 "use client";
 
+import { useState } from "react";
 import { User } from "@/hooks/use-auth";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { Star, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import Link from "next/link";
+import { SubscriptionDialog } from "./subscription-dialog";
 
 interface ProfileHeaderProps {
     user: User;
@@ -15,6 +16,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ user }: ProfileHeaderProps) {
     const currentUserRating = user.rating || 1;
+    const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
 
     return (
         <CardHeader>
@@ -44,14 +46,16 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
             </div>
             {!user.isSubscriber && (
                 <div className="pt-2 text-center">
-                    <Button asChild className="w-full max-w-xs">
-                        <Link href="https://google.com.br" target="_blank">
-                            <BadgeCheck className="mr-2 h-4 w-4" />
-                            Seja Assinante (R$ 30,00/ano)
-                        </Link>
+                    <Button onClick={() => setIsSubscriptionDialogOpen(true)} className="w-full max-w-xs">
+                        <BadgeCheck className="mr-2 h-4 w-4" />
+                        Seja Assinante
                     </Button>
                 </div>
             )}
+             <SubscriptionDialog
+                isOpen={isSubscriptionDialogOpen}
+                setIsOpen={setIsSubscriptionDialogOpen}
+            />
         </CardHeader>
     );
 }
