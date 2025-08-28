@@ -23,8 +23,8 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="text-center">
+          <DialogTitle className="flex items-center justify-center gap-2">
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
           </DialogTitle>
