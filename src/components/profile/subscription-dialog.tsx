@@ -58,7 +58,6 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
           plano: selectedPlan,
           dataInicio: serverTimestamp(),
           userId: user.uid,
-          email: user.email,
         }, { merge: true });
 
         toast({
