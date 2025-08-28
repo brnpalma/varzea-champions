@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { User } from "@/hooks/use-auth";
 import { FootballSpinner } from "../ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 
 interface SubscriptionDialogProps {
@@ -65,7 +65,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
 
         await setDoc(subscriptionRef, {
           plano: selectedPlan,
-          dataInicio: serverTimestamp(),
+          dataInicio: currentDate,
           dataVencimento: dataVencimento,
           userId: user.uid,
         }, { merge: true });

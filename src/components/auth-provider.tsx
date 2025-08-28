@@ -4,7 +4,7 @@
 import { createContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
-import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, Unsubscribe, Timestamp } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
 import { FootballSpinner } from "./ui/football-spinner";
 import defaultGroupSettings from '@/config/group-settings.json';
@@ -49,10 +49,10 @@ export interface GroupSettings {
 }
 
 export interface Subscription {
-  dataInicio: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  dataInicio: Timestamp;
+  dataVencimento: Timestamp;
+  plano: 'Mensal' | 'Anual';
+  userId: string;
 }
 
 
@@ -87,10 +87,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let profileUnsubscribe: Unsubscribe | undefined;
     let groupUnsubscribe: Unsubscribe | undefined;
+    let subscriptionUnsubscribe: Unsubscribe | undefined;
 
     const cleanupListeners = () => {
       if (profileUnsubscribe) profileUnsubscribe();
       if (groupUnsubscribe) groupUnsubscribe();
+      if (subscriptionUnsubscribe) subscriptionUnsubscribe();
     };
 
     const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -98,26 +100,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
 
       if (firebaseUser) {
-        // Fetch subscription status
-        let isSubscriber = false;
-        if (firebaseUser.email) {
-          const subscriptionDocRef = doc(firestore, "assinaturas", firebaseUser.email);
-          const subscriptionDoc = await getDoc(subscriptionDocRef);
-          if (subscriptionDoc.exists()) {
-            const subscriptionData = subscriptionDoc.data() as Subscription;
-            const startDate = new Date(subscriptionData.dataInicio.seconds * 1000);
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-            if (startDate > oneYearAgo) {
-              isSubscriber = true;
-            }
-          }
-        }
-
+        
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
         profileUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
           if (groupUnsubscribe) groupUnsubscribe();
+          if (subscriptionUnsubscribe) subscriptionUnsubscribe();
 
           const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
           
@@ -127,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
              return;
           }
 
-          const currentUser = {
+          const baseUser = {
             ...firebaseUser,
             displayName: userProfileData?.displayName || firebaseUser.displayName,
             photoURL: userProfileData?.photoURL || firebaseUser.photoURL,
@@ -138,31 +126,65 @@ export function AuthProvider({ children }: AuthProviderProps) {
             totalGoals: userProfileData?.totalGoals || 0,
             lavouColete: userProfileData?.lavouColete || false,
             groupName: null,
-            isSubscriber: isSubscriber,
           } as User;
-          
-          if (currentUser.groupId) {
-            // Load default settings from JSON instantly for better UX
-            setGroupSettings(defaultGroupSettings);
-            
-            const groupDocRef = doc(firestore, "groups", currentUser.groupId);
-            groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
-              const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
-              setUser({ ...currentUser, groupName: groupData?.name || null });
-              // Overwrite with fresh data from Firestore
-              setGroupSettings(groupData);
-              setLoading(false);
-            }, (error) => {
-              console.error('Error fetching group document for user:', currentUser.uid, 'groupId:', currentUser.groupId, error);
-              // If there's an error fetching the group, proceed without group data
-              setUser(currentUser);
-              setGroupSettings(null);
-              setLoading(false)
+
+          // Real-time subscription listener
+          if (firebaseUser.email) {
+            const subscriptionDocRef = doc(firestore, "assinaturas", firebaseUser.email);
+            subscriptionUnsubscribe = onSnapshot(subscriptionDocRef, (subDoc) => {
+                let isSubscriber = false;
+                if (subDoc.exists()) {
+                    const subData = subDoc.data() as Subscription;
+                    const expirationDate = subData.dataVencimento.toDate();
+                    if (expirationDate > new Date()) {
+                        isSubscriber = true;
+                    }
+                }
+                const currentUser = { ...baseUser, isSubscriber: isSubscriber };
+
+                // Group logic remains inside user listener, but now reacts to subscription changes
+                if (currentUser.groupId) {
+                    setGroupSettings(defaultGroupSettings); // Load defaults
+                    const groupDocRef = doc(firestore, "groups", currentUser.groupId);
+                    groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
+                        const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
+                        setUser({ ...currentUser, groupName: groupData?.name || null });
+                        setGroupSettings(groupData);
+                        setLoading(false);
+                    }, (error) => {
+                        console.error('Error fetching group document:', error);
+                        setUser(currentUser);
+                        setGroupSettings(null);
+                        setLoading(false);
+                    });
+                } else {
+                    setUser(currentUser);
+                    setGroupSettings(null);
+                    setLoading(false);
+                }
             });
           } else {
-            setUser(currentUser);
-            setGroupSettings(null);
-            setLoading(false);
+             // If no email, can't be a subscriber
+             const currentUser = { ...baseUser, isSubscriber: false };
+              if (currentUser.groupId) {
+                    setGroupSettings(defaultGroupSettings);
+                    const groupDocRef = doc(firestore, "groups", currentUser.groupId);
+                    groupUnsubscribe = onSnapshot(groupDocRef, (groupDoc) => {
+                        const groupData = groupDoc.exists() ? groupDoc.data() as GroupSettings : null;
+                        setUser({ ...currentUser, groupName: groupData?.name || null });
+                        setGroupSettings(groupData);
+                        setLoading(false);
+                    }, (error) => {
+                        console.error('Error fetching group document:', error);
+                        setUser(currentUser);
+                        setGroupSettings(null);
+                        setLoading(false);
+                    });
+                } else {
+                    setUser(currentUser);
+                    setGroupSettings(null);
+                    setLoading(false);
+                }
           }
         }, (error) => {
           console.error("Error fetching user profile:", error);
