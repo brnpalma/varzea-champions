@@ -33,8 +33,16 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
     setSelectedPlan(plan);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedPlan(null); // Reset plan when closing
+    }
+    setIsOpen(open);
+  };
+
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md p-0">
         <DialogHeader className="text-left p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
