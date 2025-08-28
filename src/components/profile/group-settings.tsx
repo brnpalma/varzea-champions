@@ -266,11 +266,7 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
                                         </Label>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-base">Controle de Equipamentos</Label>
-                                <div className="flex items-start">
+                                 <div className="flex items-start pt-4">
                                     <div className="flex items-center h-5">
                                         <Checkbox
                                             id="enable-equipment-manager"
@@ -280,7 +276,7 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
                                     </div>
                                     <div className="ml-2 text-sm">
                                         <Label htmlFor="enable-equipment-manager" className="text-xs text-muted-foreground cursor-pointer">
-                                            Ativar controle do responsável da semana pela limpeza dos coletes (ou equipamento coletivo em geral)
+                                            Ativar controle de revezamento da limpeza do equipamento coletivo (coletes, uniforme, etc)
                                         </Label>
                                     </div>
                                 </div>
