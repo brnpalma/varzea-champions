@@ -14,7 +14,7 @@ import { FinancialCard } from "@/components/dashboard/financial-card";
 import { useGameData } from "@/hooks/use-game-data";
 import { usePostGame } from "@/hooks/use-post-game";
 import { useEquipmentManager } from "@/hooks/use-equipment-manager";
-import { SubscriptionButton } from "@/components/subscription-button";
+import { SubscriptionCard } from "@/components/dashboard/subscription-card";
 
 export default function HomePage() {
   const { user, groupSettings, loading } = useAuth();
@@ -42,7 +42,7 @@ export default function HomePage() {
   } = useEquipmentManager(user, groupSettings, nextGameDate);
 
   const isManager = user?.userType === UserType.GESTOR_GRUPO;
-  const showSubscriptionButton = isManager && user && !user.isSubscriber;
+  const showSubscriptionCard = isManager && user && !user.isSubscriber;
 
   const showPaymentCard = user && (groupSettings?.chavePix || groupSettings?.valorAvulso || groupSettings?.valorMensalidade);
   const showEquipmentCard = groupSettings?.enableEquipmentManager && user;
@@ -50,9 +50,9 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      {showSubscriptionButton && (
-        <div className="mb-6 text-center">
-          <SubscriptionButton />
+      {showSubscriptionCard && (
+        <div className="mb-6">
+           <SubscriptionCard />
         </div>
       )}
 
