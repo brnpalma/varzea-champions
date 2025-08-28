@@ -107,7 +107,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md p-0">
-          <ScrollArea className="max-h-[85vh]">
+          <ScrollArea className="max-h-[90vh]">
             <div className="p-6">
               <DialogHeader className="text-center items-center mb-6">
                  <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
@@ -116,8 +116,8 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
                 <DialogTitle className="text-2xl">
                   Seja um Assinante
                 </DialogTitle>
-                <DialogDescription>
-                  Desbloqueie todos os recursos premium para uma gestão profissional.
+                <DialogDescription className="text-left">
+                  Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
                 </DialogDescription>
               </DialogHeader>
               
