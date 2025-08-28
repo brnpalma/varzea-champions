@@ -36,29 +36,31 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2">
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
           </DialogTitle>
-          <DialogDescription className="text-left">
-            Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
-          </DialogDescription>
         </DialogHeader>
-        <ul className="list-disc pl-5 -mt-3 mb-2 space-y-1 text-xs text-muted-foreground text-left">
-          <li>
-            <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
-          </li>
-          <li>
-            <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
-          </li>
-          <li>
-            <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
-          </li>
+        <div className="max-h-48 overflow-y-auto pr-4 space-y-2">
+            <DialogDescription className="text-left">
+                Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
+            </DialogDescription>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground text-left">
             <li>
-            <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
-          </li>
-        </ul>
+                <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
+            </li>
+            <li>
+                <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
+            </li>
+            <li>
+                <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
+            </li>
+                <li>
+                <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+            </li>
+            </ul>
+        </div>
 
         <div className="grid gap-4 py-4">
           <Button
