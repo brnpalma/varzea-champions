@@ -35,37 +35,40 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-left">
+      <DialogContent className="sm:max-w-md p-0">
+        <DialogHeader className="text-left p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
           </DialogTitle>
         </DialogHeader>
-        <div className="max-h-48 overflow-y-auto space-y-2">
-            <DialogDescription className="text-left text-sm">
-                Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
-            </DialogDescription>
-            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground text-left">
-            <li>
-                <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
-            </li>
-            <li>
-                <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
-            </li>
-            <li>
-                <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
-            </li>
-            <li>
-                <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
-            </li>
-            <li>
-                <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
-            </li>
-            </ul>
+        <div className="px-6">
+            <div className="max-h-48 overflow-y-auto space-y-2">
+                <DialogDescription className="text-left text-sm">
+                    Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
+                </DialogDescription>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground text-left">
+                <li>
+                    <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
+                </li>
+                <li>
+                    <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
+                </li>
+                <li>
+                    <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
+                </li>
+                <li>
+                    <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+                </li>
+                <li>
+                    <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
+                </li>
+                </ul>
+            </div>
         </div>
 
-        <div className="grid gap-4 py-2">
+
+        <div className="grid gap-4 px-6 py-2">
           <Button
             size="lg"
             variant={selectedPlan === 'annual' ? 'default' : 'secondary'}
@@ -90,10 +93,13 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
           </Button>
         </div>
         
-        <DialogFooter className="sm:justify-end gap-2">
+        <DialogFooter className="sm:justify-end gap-2 p-6 bg-secondary/50 rounded-b-lg">
           <DialogClose asChild>
             <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
           </DialogClose>
+          <Button disabled={!selectedPlan} className="w-full sm:w-auto">
+            Ir para Pagamento
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
