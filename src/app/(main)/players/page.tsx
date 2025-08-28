@@ -161,7 +161,7 @@ export default function PlayersPage() {
         <CardHeader className="text-center">
           <div className="w-full text-center">
             <CardTitle className="text-2xl">
-              Jogadores do grupo ({players.length})
+              Jogadores do grupo
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
             </CardTitle>
           </div>
@@ -175,79 +175,84 @@ export default function PlayersPage() {
               <FootballSpinner />
             </div>
           ) : (
-            <ul className="divide-y divide-border">
-              {players.map((player) => {
-                const playerRating = player.rating || 1;
-                const isCurrentUser = user?.uid === player.uid;
+            <>
+              <div className="text-right mb-2 pr-2">
+                <p className="text-sm font-semibold text-muted-foreground">Total: {players.length}</p>
+              </div>
+              <ul className="divide-y divide-border">
+                {players.map((player) => {
+                  const playerRating = player.rating || 1;
+                  const isCurrentUser = user?.uid === player.uid;
 
-                return (
-                  <li key={player.uid} className="py-4">
-                    <div className="flex items-center justify-between w-full gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <UserAvatar src={player.photoURL} size={48} />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-foreground break-words">{player.displayName}</p>
-                          <div className="flex items-center text-amber-500">
-                            {[...Array(playerRating)].map((_, i) => <Star key={`filled-${i}`} className="h-4 w-4 fill-current" />)}
-                            {[...Array(5 - playerRating)].map((_, i) => <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground/30" />)}
+                  return (
+                    <li key={player.uid} className="py-4">
+                      <div className="flex items-center justify-between w-full gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <UserAvatar src={player.photoURL} size={48} />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground break-words">{player.displayName}</p>
+                            <div className="flex items-center text-amber-500">
+                              {[...Array(playerRating)].map((_, i) => <Star key={`filled-${i}`} className="h-4 w-4 fill-current" />)}
+                              {[...Array(5 - playerRating)].map((_, i) => <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground/30" />)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {isManager && (
-                        <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="shrink-0">
-                                <MoreVertical className="h-5 w-5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => handleEditRating(player)}>
-                                <Star className="mr-2 h-4 w-4" />
-                                <span>Editar Estrelas</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
-                                <DollarSign className="mr-2 h-4 w-4" />
-                                <span>Histórico Financeiro</span>
-                              </DropdownMenuItem>
-                              {!isCurrentUser && (
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    <span>Remover do Grupo</span>
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        
+                        {isManager && (
+                          <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="shrink-0">
+                                  <MoreVertical className="h-5 w-5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleEditRating(player)}>
+                                  <Star className="mr-2 h-4 w-4" />
+                                  <span>Editar Estrelas</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => openPaymentHistory(player)}>
+                                  <DollarSign className="mr-2 h-4 w-4" />
+                                  <span>Histórico Financeiro</span>
+                                </DropdownMenuItem>
+                                {!isCurrentUser && (
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      <span>Remover do Grupo</span>
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
 
-                          {!isCurrentUser && (
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemovePlayer(player)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remover
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          )}
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                            {!isCurrentUser && (
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação removerá {player.displayName} do grupo. Ele precisará de um novo convite para entrar novamente.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleRemovePlayer(player)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remover
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            )}
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </CardContent>
       </Card>
