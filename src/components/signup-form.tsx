@@ -127,7 +127,7 @@ function SignupFormComponent() {
       confirmPassword: "",
       userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
       playerSubscriptionType: undefined,
-      rating: 1,
+      rating: 2,
       photo: undefined,
     },
   });
@@ -136,7 +136,7 @@ function SignupFormComponent() {
     if (authUser) {
       form.setValue('displayName', authUser.displayName || "");
       form.setValue('email', authUser.email || "");
-      form.setValue('rating', authUser.rating || 1);
+      form.setValue('rating', authUser.rating || 2);
       setPhotoPreview(authUser.photoURL || null);
     } else {
       // If user logs out (e.g., deletes profile), clear the form
@@ -147,7 +147,7 @@ function SignupFormComponent() {
         confirmPassword: "",
         userType: groupIdFromUrl ? UserType.JOGADOR : undefined,
         playerSubscriptionType: undefined,
-        rating: 1,
+        rating: 2,
         photo: undefined,
       });
       setPhotoPreview(null);
@@ -240,7 +240,7 @@ function SignupFormComponent() {
         photoURL: photoURL,
         userType: values.userType,
         playerSubscriptionType: values.playerSubscriptionType,
-        rating: values.rating || 1,
+        rating: values.rating || 2,
         groupId: finalGroupId,
         createdAt: new Date().toISOString(),
         totalGoals: 0,
