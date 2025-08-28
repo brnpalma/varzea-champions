@@ -27,6 +27,7 @@ import { auth, firestore } from "@/lib/firebase";
 import { doc, writeBatch } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { User, PlayerSubscriptionType } from "@/hooks/use-auth";
+import { UserAvatar } from "../user-avatar";
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -78,6 +79,7 @@ export function EditProfileDialog({ user, isOpen, setIsOpen }: EditProfileDialog
     const [displayName, setDisplayName] = useState("");
     const [playerSubscriptionType, setPlayerSubscriptionType] = useState<PlayerSubscriptionType>(PlayerSubscriptionType.AVULSO);
     const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,6 +87,8 @@ export function EditProfileDialog({ user, isOpen, setIsOpen }: EditProfileDialog
         if (isOpen && user) {
             setDisplayName(user.displayName || "");
             setPlayerSubscriptionType(user.playerSubscriptionType || PlayerSubscriptionType.AVULSO);
+            setPhotoPreview(user.photoURL || null);
+            setPhotoFile(null);
         }
     }, [isOpen, user]);
 
@@ -92,6 +96,7 @@ export function EditProfileDialog({ user, isOpen, setIsOpen }: EditProfileDialog
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             setPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(file));
         }
     };
 
@@ -153,9 +158,9 @@ export function EditProfileDialog({ user, isOpen, setIsOpen }: EditProfileDialog
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                     <div>
-                        <Label htmlFor="photo" className="block text-sm font-medium text-muted-foreground mb-1">Foto</Label>
-                        <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                    <div className="flex flex-col items-center gap-4">
+                        <UserAvatar src={photoPreview} size={96} />
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full max-w-sm">
                             <Camera className="mr-2 h-4 w-4" />
                             {photoFile ? "Trocar Foto" : "Escolher Foto"}
                         </Button>
