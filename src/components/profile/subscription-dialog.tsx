@@ -36,14 +36,14 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-left">
+        <DialogHeader className="text-left pr-4">
           <DialogTitle className="flex items-center gap-2">
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
           </DialogTitle>
         </DialogHeader>
         <div className="max-h-48 overflow-y-auto space-y-2">
-            <DialogDescription className="text-left">
+            <DialogDescription className="text-left text-sm">
                 Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
             </DialogDescription>
             <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground text-left">
@@ -62,7 +62,7 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
             </ul>
         </div>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-2">
           <Button
             size="lg"
             variant={selectedPlan === 'annual' ? 'default' : 'secondary'}
