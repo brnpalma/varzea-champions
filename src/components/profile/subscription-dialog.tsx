@@ -19,6 +19,7 @@ import { FootballSpinner } from "../ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface SubscriptionDialogProps {
   user: User;
@@ -92,78 +93,79 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-2xl p-0">
-          <DialogHeader className="text-left p-6 pb-0">
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BadgeCheck className="h-6 w-6 text-primary" />
               Seja um Assinante
             </DialogTitle>
+            <DialogDescription>
+                Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
+            </DialogDescription>
           </DialogHeader>
-          <div className="px-6">
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                  <DialogDescription className="text-left text-sm">
-                      Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
-                  </DialogDescription>
-                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground text-left">
-                  <li>
-                      <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
-                  </li>
-                  <li>
-                      <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
-                  </li>
-                  <li>
-                      <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
-                  </li>
-                  <li>
-                      <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
-                  </li>
-                  <li>
-                    <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
-                  </li>
-                  </ul>
-              </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 px-6 py-2">
-              <div
-                onClick={() => setSelectedPlan('Anual')}
-                className={cn(
-                    "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
-                    selectedPlan === 'Anual' ? 'border-primary ring-2 ring-primary' : 'border-border'
-                )}
-              >
-                  <div className="bg-blue-600 text-white p-2 text-center font-bold">
-                      Plano Anual
-                  </div>
-                  <div className="p-4 space-y-2 text-center">
-                      <p className="text-xs text-muted-foreground h-16">
-                          Com apenas 1 pagamento de R$ 30,00, tenha tudo liberado por 12 meses.
-                      </p>
-                      <p className="text-2xl font-bold">R$ 30,00</p>
-                      <p className="text-xs font-semibold text-muted-foreground">por ano</p>
-                  </div>
-              </div>
-               <div
-                onClick={() => setSelectedPlan('Mensal')}
-                className={cn(
-                    "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
-                    selectedPlan === 'Mensal' ? 'border-primary ring-2 ring-primary' : 'border-border'
-                )}
-              >
-                  <div className="bg-orange-500 text-white p-2 text-center font-bold">
-                      Plano Mensal
-                  </div>
-                   <div className="p-4 space-y-2 text-center">
-                      <p className="text-xs text-muted-foreground h-16">
-                          Acesso a todos os recursos com uma pequena taxa recorrente.
-                      </p>
-                      <p className="text-2xl font-bold">R$ 15,00</p>
-                      <p className="text-xs font-semibold text-muted-foreground">por mês</p>
-                  </div>
-              </div>
-          </div>
           
-          <DialogFooter className="sm:justify-end gap-2 p-6 bg-secondary/50 rounded-b-lg">
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="space-y-4">
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                <li>
+                    <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
+                </li>
+                <li>
+                    <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
+                </li>
+                <li>
+                    <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
+                </li>
+                <li>
+                    <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+                </li>
+                <li>
+                  <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
+                </li>
+              </ul>
+
+              <div className="grid grid-cols-2 gap-4">
+                  <div
+                    onClick={() => setSelectedPlan('Anual')}
+                    className={cn(
+                        "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
+                        selectedPlan === 'Anual' ? 'border-primary ring-2 ring-primary' : 'border-border'
+                    )}
+                  >
+                      <div className="bg-blue-600 text-white p-2 text-center text-sm font-bold">
+                          Plano Anual
+                      </div>
+                      <div className="p-4 space-y-2 text-center">
+                          <p className="text-xs text-muted-foreground min-h-[5rem]">
+                              Com apenas 1 pagamento de R$ 30,00, tenha tudo liberado por 12 meses.
+                          </p>
+                          <p className="text-xl font-bold">R$ 30,00</p>
+                          <p className="text-xs font-semibold text-muted-foreground">por ano</p>
+                      </div>
+                  </div>
+                   <div
+                    onClick={() => setSelectedPlan('Mensal')}
+                    className={cn(
+                        "cursor-pointer rounded-lg border-2 bg-card text-card-foreground shadow-sm transition-all overflow-hidden",
+                        selectedPlan === 'Mensal' ? 'border-primary ring-2 ring-primary' : 'border-border'
+                    )}
+                  >
+                      <div className="bg-orange-500 text-white p-2 text-center text-sm font-bold">
+                          Plano Mensal
+                      </div>
+                       <div className="p-4 space-y-2 text-center">
+                          <p className="text-xs text-muted-foreground min-h-[5rem]">
+                              Acesso a todos os recursos com uma pequena taxa recorrente.
+                          </p>
+                          <p className="text-xl font-bold">R$ 15,00</p>
+                          <p className="text-xs font-semibold text-muted-foreground">por mês</p>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </ScrollArea>
+          
+          <DialogFooter className="sm:justify-end gap-2 pt-4">
             <DialogClose asChild>
               <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
             </DialogClose>
