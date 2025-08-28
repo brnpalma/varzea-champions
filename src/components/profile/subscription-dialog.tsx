@@ -188,7 +188,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
             </div>
           </ScrollArea>
           
-          <DialogFooter className="p-6 pt-0 mt-4 bg-background sticky bottom-0">
+          <DialogFooter className="p-6 pt-0 mt-4 bg-background sticky bottom-0 sm:justify-center">
             <Button onClick={handlePayment} size="lg" className="w-full">
               Assinar Plano
             </Button>
