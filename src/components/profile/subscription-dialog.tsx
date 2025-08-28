@@ -104,7 +104,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className="max-h-[50vh] pr-4">
             <div className="space-y-4">
               <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
                 <li>
