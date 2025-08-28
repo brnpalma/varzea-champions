@@ -54,9 +54,19 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     setTimeout(async () => {
       try {
         const subscriptionRef = doc(firestore, "assinaturas", user.email!);
+        
+        const currentDate = new Date();
+        const dataVencimento = new Date(currentDate);
+        if (selectedPlan === 'Anual') {
+          dataVencimento.setDate(currentDate.getDate() + 365);
+        } else {
+          dataVencimento.setDate(currentDate.getDate() + 30);
+        }
+
         await setDoc(subscriptionRef, {
           plano: selectedPlan,
           dataInicio: serverTimestamp(),
+          dataVencimento: dataVencimento,
           userId: user.uid,
         }, { merge: true });
 
