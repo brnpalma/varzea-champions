@@ -5,11 +5,9 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BadgeCheck, Crown } from "lucide-react";
@@ -19,7 +17,6 @@ import { FootballSpinner } from "../ui/football-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 
 interface SubscriptionDialogProps {
@@ -112,7 +109,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
-            <DialogHeader className="text-center items-center p-6 pb-4">
+            <DialogHeader className="text-center items-center p-6 pb-2">
                 <div className="p-3 rounded-full bg-primary/20 text-primary">
                   <Crown className="h-8 w-8" />
                 </div>
@@ -121,9 +118,9 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
                 </DialogTitle>
             </DialogHeader>
           
-          <ScrollArea className="flex-1 px-6">
+          <div className="flex-1 px-6 overflow-y-auto">
             <div className="space-y-4 pb-6">
-              <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
+               <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative mt-4">
                 <div
                   className={cn(
                     "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
@@ -184,9 +181,9 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
                 </ul>
               </div>
             </div>
-          </ScrollArea>
+          </div>
           
-          <DialogFooter className="p-6 mt-auto border-t">
+          <DialogFooter className="p-6 mt-auto">
             <Button onClick={handlePayment} size="lg" className="w-full">
               Assinar Plano
             </Button>
@@ -198,9 +195,6 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
         <DialogContent className="sm:max-w-sm" hideCloseButton>
             <DialogHeader>
                 <DialogTitle className="text-center">Processando Pagamento</DialogTitle>
-                <DialogDescription className="text-center pt-4">
-                    Aguarde um momento, estamos confirmando sua assinatura.
-                </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-center p-8">
                 <FootballSpinner />
