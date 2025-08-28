@@ -42,7 +42,7 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
             Seja um Assinante
           </DialogTitle>
         </DialogHeader>
-        <div className="max-h-48 overflow-y-auto pr-4 space-y-2">
+        <div className="max-h-48 overflow-y-auto space-y-2">
             <DialogDescription className="text-left">
                 Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
             </DialogDescription>
