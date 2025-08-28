@@ -56,8 +56,11 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
             <li>
                 <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
             </li>
-                <li>
+            <li>
                 <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+            </li>
+            <li>
+                <strong>Cadastro Ilimitado:</strong> Cadastre mais de 10 jogadores no seu grupo.
             </li>
             </ul>
         </div>
