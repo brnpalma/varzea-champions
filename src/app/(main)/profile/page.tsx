@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut, updateProfile, deleteUser } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2, Star } from "lucide-react";
+import { LogOut, Mail, Shield, User, Edit, Save, Camera, X, Users, WalletCards, LogIn, Trash2, Star, BadgeCheck } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import packageJson from '../../../../package.json';
+import { Badge } from "@/components/ui/badge";
 
 
 const resizeAndEncodeImage = (file: File, maxSize = 256): Promise<string> => {
@@ -514,6 +515,19 @@ export default function ProfilePage() {
                       <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium text-foreground">{user.email}</span>
                   </div>
+                   <div className="flex items-center">
+                      <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <div className="flex items-center gap-2">
+                          <span className="text-foreground">
+                              Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
+                          </span>
+                           {user.isSubscriber ? (
+                            <Badge variant="success">Assinante</Badge>
+                          ) : (
+                            <Badge variant="destructive">Não Assinante</Badge>
+                          )}
+                      </div>
+                  </div>
                   <div className="flex items-center">
                       <Users className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="text-foreground">
@@ -526,15 +540,20 @@ export default function ProfilePage() {
                           Compromisso: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
                       </span>
                   </div>
-                  <div className="flex items-center">
-                      <Shield className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="text-foreground">
-                          Tipo de Conta: <span className="font-medium capitalize text-primary">{user.userType}</span>
-                      </span>
-                  </div>
               </div>
             )}
             
+             {!user.isSubscriber && !isEditing && (
+              <div className="pt-4 border-t">
+                <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                  <Link href="https://google.com.br" target="_blank">
+                    <BadgeCheck className="mr-2 h-4 w-4" />
+                    Seja Assinante (R$ 30,00/ano)
+                  </Link>
+                </Button>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t gap-4">
               {isEditing ? (
                   <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="w-full sm:w-auto">

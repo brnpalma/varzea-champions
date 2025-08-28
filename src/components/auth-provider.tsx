@@ -31,6 +31,7 @@ export interface UserProfile {
   rating: number | null;
   totalGoals?: number;
   lavouColete?: boolean;
+  isSubscriber?: boolean;
 }
 
 export interface User extends FirebaseAuthUser, UserProfile {}
@@ -45,6 +46,13 @@ export interface GroupSettings {
     allowConfirmationWithDebt?: boolean;
     enableEquipmentManager?: boolean;
     createdAt?: string;
+}
+
+export interface Subscription {
+  dataInicio: {
+    seconds: number;
+    nanoseconds: number;
+  };
 }
 
 
@@ -85,11 +93,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (groupUnsubscribe) groupUnsubscribe();
     };
 
-    const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       cleanupListeners();
       setLoading(true);
 
       if (firebaseUser) {
+        // Fetch subscription status
+        let isSubscriber = false;
+        if (firebaseUser.email) {
+          const subscriptionDocRef = doc(firestore, "assinaturas", firebaseUser.email);
+          const subscriptionDoc = await getDoc(subscriptionDocRef);
+          if (subscriptionDoc.exists()) {
+            const subscriptionData = subscriptionDoc.data() as Subscription;
+            const startDate = new Date(subscriptionData.dataInicio.seconds * 1000);
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            if (startDate > oneYearAgo) {
+              isSubscriber = true;
+            }
+          }
+        }
+
         const userDocRef = doc(firestore, "users", firebaseUser.uid);
         
         profileUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
@@ -114,6 +138,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             totalGoals: userProfileData?.totalGoals || 0,
             lavouColete: userProfileData?.lavouColete || false,
             groupName: null,
+            isSubscriber: isSubscriber,
           } as User;
           
           if (currentUser.groupId) {
