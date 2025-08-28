@@ -7,7 +7,7 @@ import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Mail, Shield, User as UserIcon, Users, WalletCards, Edit, Save, Camera, X } from "lucide-react";
+import { Mail, Shield, Users, WalletCards, Edit, Save, Camera, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { ProfileActions } from "./profile-actions";
 import { useToast } from "@/hooks/use-toast";
@@ -144,7 +144,7 @@ export function ProfileDetails({ user }: ProfileDetailsProps) {
     };
 
     return (
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
             {isEditing ? (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -193,10 +193,6 @@ export function ProfileDetails({ user }: ProfileDetailsProps) {
             ) : (
                 <div className="space-y-4 text-sm">
                     <div className="flex items-center">
-                        <UserIcon className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium text-foreground">{user.displayName}</span>
-                    </div>
-                    <div className="flex items-center">
                         <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium text-foreground">{user.email}</span>
                     </div>
@@ -211,7 +207,7 @@ export function ProfileDetails({ user }: ProfileDetailsProps) {
                     <div className="flex items-center">
                         <Users className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="text-foreground">
-                            Nome do Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "Nenhum grupo"}</span>
+                            Grupo: <span className="font-medium capitalize text-primary">{user.groupName || "Nenhum grupo"}</span>
                         </span>
                     </div>
                     <div className="flex items-center">

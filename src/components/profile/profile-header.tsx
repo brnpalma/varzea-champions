@@ -2,7 +2,7 @@
 "use client";
 
 import { User } from "@/hooks/use-auth";
-import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { Star, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,14 +39,11 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                                 }
                             </div>
                         </div>
-                        <CardDescription className="mt-2">
-                            Veja e gerencie os detalhes do seu perfil.
-                        </CardDescription>
                     </div>
                 </div>
             </div>
             {!user.isSubscriber && (
-                <div className="pt-4 text-center">
+                <div className="pt-2 text-center">
                     <Button asChild className="w-full max-w-xs">
                         <Link href="https://google.com.br" target="_blank">
                             <BadgeCheck className="mr-2 h-4 w-4" />
