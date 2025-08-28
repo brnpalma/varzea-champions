@@ -113,16 +113,16 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
             <DialogHeader className="text-center items-center p-6 pb-4">
-                <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
-                <Crown className="h-8 w-8" />
+                <div className="p-3 rounded-full bg-primary/20 text-primary">
+                  <Crown className="h-8 w-8" />
                 </div>
-            <DialogTitle className="text-2xl">
-                Seja um Assinante
-            </DialogTitle>
+                <DialogTitle className="text-2xl">
+                    Seja um Assinante
+                </DialogTitle>
             </DialogHeader>
           
           <ScrollArea className="flex-1 px-6">
-            <div className="space-y-6 pb-6">
+            <div className="space-y-4 pb-6">
               <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
                 <div
                   className={cn(
@@ -170,7 +170,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground text-left">
                   Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
                 </p>
                 <p className="text-sm font-semibold text-foreground">Recursos Premium:</p>
