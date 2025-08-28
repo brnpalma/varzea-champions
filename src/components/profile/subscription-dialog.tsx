@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BadgeCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -20,6 +22,17 @@ interface SubscriptionDialogProps {
 }
 
 export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProps) {
+  const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly' | null>(null);
+
+  const paymentLinks = {
+    annual: "https://google.com.br", // Placeholder
+    monthly: "https://google.com.br", // Placeholder
+  };
+
+  const handleSelectPlan = (plan: 'annual' | 'monthly') => {
+    setSelectedPlan(plan);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
@@ -29,39 +42,45 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
             Seja um Assinante
           </DialogTitle>
           <DialogDescription>
-            Desbloqueie funcionalidades exclusivas, como gerenciamento financeiro avançado e sorteios de times ilimitados, e apoie a evolução contínua do nosso app.
+            Desbloqueie funcionalidades exclusivas e apoie a evolução do nosso app.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <Button asChild size="lg" className="h-auto py-3">
-            <Link href="https://google.com.br" target="_blank">
-              <div className="flex justify-between items-center w-full">
-                <div className="text-left">
-                  <p className="font-bold">Plano Anual</p>
-                  <p className="text-sm font-normal">R$ 30,00 por ano</p>
-                </div>
-                <ExternalLink className="h-5 w-5" />
-              </div>
-            </Link>
+          <Button
+            size="lg"
+            variant={selectedPlan === 'annual' ? 'default' : 'secondary'}
+            onClick={() => handleSelectPlan('annual')}
+            className="h-auto py-3 justify-between"
+          >
+            <div className="text-left">
+              <p className="font-bold">Plano Anual</p>
+              <p className="text-sm font-normal">R$ 30,00 por ano</p>
+            </div>
           </Button>
-          <Button asChild size="lg" className="h-auto py-3" variant="secondary">
-             <Link href="https://google.com.br" target="_blank">
-               <div className="flex justify-between items-center w-full">
-                <div className="text-left">
-                  <p className="font-bold">Plano Mensal</p>
-                  <p className="text-sm font-normal">R$ 15,00 por mês</p>
-                </div>
-                <ExternalLink className="h-5 w-5" />
-              </div>
-            </Link>
+          <Button
+            size="lg"
+            variant={selectedPlan === 'monthly' ? 'default' : 'secondary'}
+            onClick={() => handleSelectPlan('monthly')}
+            className="h-auto py-3 justify-between"
+          >
+            <div className="text-left">
+              <p className="font-bold">Plano Mensal</p>
+              <p className="text-sm font-normal">R$ 15,00 por mês</p>
+            </div>
           </Button>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between gap-2">
           <DialogClose asChild>
-            <Button variant="outline">Fechar</Button>
+            <Button variant="outline" className="w-full sm:w-auto">Fechar</Button>
           </DialogClose>
+          <Button asChild disabled={!selectedPlan} className="w-full sm:w-auto">
+            <Link href={selectedPlan ? paymentLinks[selectedPlan] : '#'} target="_blank">
+              Ir para o Pagamento
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
