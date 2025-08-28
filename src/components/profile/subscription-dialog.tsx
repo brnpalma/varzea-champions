@@ -99,7 +99,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
               <BadgeCheck className="h-6 w-6 text-primary" />
               Seja um Assinante
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-left">
                 Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
             </DialogDescription>
           </DialogHeader>
