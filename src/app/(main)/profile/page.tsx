@@ -459,8 +459,8 @@ export default function ProfilePage() {
                     accept="image/*"
                   />
                 </div>
-                <div className="mt-2 sm:mt-0 text-center sm:text-left">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
+                <div className="mt-2 sm:mt-0 text-center sm:text-left flex-1">
+                    <div className="flex flex-col items-center sm:items-start gap-2">
                         <CardTitle className="text-2xl">{isEditing ? "Editar Perfil" : user.displayName || "Perfil do Usuário"}</CardTitle>
                         {!isEditing && (
                             <div className="flex items-center text-amber-500">
@@ -469,18 +469,19 @@ export default function ProfilePage() {
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-                        <CardDescription>
-                          {isEditing ? "Atualize suas informações" : "Veja e gerencie os detalhes do seu perfil."}
-                        </CardDescription>
-                         {!isEditing && (
-                           user.isSubscriber ? (
+                     {!isEditing && (
+                        <div className="mt-2 flex justify-center sm:justify-start">
+                           {user.isSubscriber ? (
                               <Badge variant="success">Assinante</Badge>
                             ) : (
                               <Badge variant="destructive">Não Assinante</Badge>
                             )
-                         )}
-                    </div>
+                           }
+                        </div>
+                     )}
+                    <CardDescription className="mt-2">
+                      {isEditing ? "Atualize suas informações" : "Veja e gerencie os detalhes do seu perfil."}
+                    </CardDescription>
                 </div>
               </div>
               {isEditing && (
