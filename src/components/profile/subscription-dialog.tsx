@@ -112,78 +112,76 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
-            <DialogHeader className="text-center items-center p-6 pb-0">
+            <DialogHeader className="text-center items-center p-6 pb-4">
                 <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
                 <Crown className="h-8 w-8" />
                 </div>
             <DialogTitle className="text-2xl">
                 Seja um Assinante
             </DialogTitle>
-            <DialogDescription className="text-left">
-                Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
-            </DialogDescription>
             </DialogHeader>
           
-          <ScrollArea className="flex-1">
-            <div className="p-6 pt-4">
-              <div className="space-y-6">
-                <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
-                  <div
-                    className={cn(
-                      "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
-                      selectedPlan === "Anual" && "translate-x-full"
-                    )}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("Mensal")}
-                    className={cn(
-                      "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-                      selectedPlan === "Mensal" ? "text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    Mensal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("Anual")}
-                    className={cn(
-                      "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-                      selectedPlan === "Anual" ? "text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    Anual
-                  </button>
-                </div>
-
-                <div className="text-center space-y-2">
-                  {selectedPlan === 'Anual' && (
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm text-muted-foreground line-through">
-                        De R$ {totalMonthlyForYear.toFixed(2).replace('.', ',')}
-                      </span>
-                      <Badge className="bg-amber-500/20 text-amber-600 font-bold">
-                        Economize {savingsPercentage}%
-                      </Badge>
-                    </div>
+          <ScrollArea className="flex-1 px-6">
+            <div className="space-y-6 pb-6">
+              <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
+                <div
+                  className={cn(
+                    "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
+                    selectedPlan === "Anual" && "translate-x-full"
                   )}
-                  <p className="text-4xl font-bold">
-                    R$ {plans[selectedPlan].price.toFixed(2).replace('.', ',')}
-                    <span className="text-base font-medium text-muted-foreground"> / {plans[selectedPlan].period}</span>
-                  </p>
-                </div>
+                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan("Mensal")}
+                  className={cn(
+                    "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                    selectedPlan === "Mensal" ? "text-primary-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  Mensal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan("Anual")}
+                  className={cn(
+                    "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                    selectedPlan === "Anual" ? "text-primary-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  Anual
+                </button>
+              </div>
 
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Recursos Premium:</p>
-                  <ul className="space-y-2">
-                    {benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <BadgeCheck className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="text-center space-y-2">
+                {selectedPlan === 'Anual' && (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-muted-foreground line-through">
+                      De R$ {totalMonthlyForYear.toFixed(2).replace('.', ',')}
+                    </span>
+                    <Badge className="bg-amber-500/20 text-amber-600 font-bold">
+                      Economize {savingsPercentage}%
+                    </Badge>
+                  </div>
+                )}
+                <p className="text-4xl font-bold">
+                  R$ {plans[selectedPlan].price.toFixed(2).replace('.', ',')}
+                  <span className="text-base font-medium text-muted-foreground"> / {plans[selectedPlan].period}</span>
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
+                </p>
+                <p className="text-sm font-semibold text-foreground">Recursos Premium:</p>
+                <ul className="space-y-2">
+                  {benefits.map((benefit, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <BadgeCheck className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                      <span className="text-sm text-muted-foreground">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </ScrollArea>
