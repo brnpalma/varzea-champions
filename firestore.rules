@@ -4,58 +4,51 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // METODOS
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isUserSelf(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isManager(groupId) {
-      // Garante que o documento do usuário exista antes de tentar acessar seus dados
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return userDoc != null && 
-             userDoc.data.userType == "Gestor do Grupo" && 
-             userDoc.data.groupId == groupId;
-    }
-
-    function isGuestGroup(groupId) {
-      // Garante que o documento do usuário exista antes de tentar acessar seus dados
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return userDoc != null && userDoc.data.groupId == groupId;
-    }
-
-    //////////////////////////////////////////////////////////////
-
+    // Regra para a coleção 'users'
     match /users/{userId} {
-      // Um usuário pode ler/escrever seu próprio perfil.
-      // O gestor pode ler/escrever o perfil de um jogador do seu grupo.
-      // Um jogador pode ler o perfil de outro jogador do mesmo grupo.
-      allow read, write: if isUserAuthenticated() && (isUserSelf(userId) || isManager(get(/databases/$(database)/documents/users/$(userId)).data.groupId));
-      allow create: if isUserAuthenticated();
+      // Qualquer usuário autenticado pode criar seu próprio perfil
+      allow create: if request.auth != null;
+      // Apenas o próprio usuário pode ler ou atualizar seu perfil
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Impede a exclusão de perfis através do cliente para manter a integridade,
+      // a menos que você tenha uma lógica específica para isso.
+      allow delete: if false; 
     }
 
+    // Regra para a coleção 'groups'
     match /groups/{groupId} {
-      allow read: if isUserAuthenticated() && isGuestGroup(groupId);
-      
-      // Apenas o gestor pode criar, atualizar ou deletar o documento do grupo.
-      allow create, update, delete: if isUserAuthenticated() && isManager(groupId);
-                      
-      match /games/{gameId} {
-        allow read: if isUserAuthenticated() && isGuestGroup(groupId);
-        
-        match /attendees/{userId} {
-          allow read: if isUserAuthenticated() && isGuestGroup(groupId);
-          // Permite a escrita se o usuário for o gestor do grupo OU se for o próprio jogador.
-          allow write: if isUserAuthenticated() && (isManager(groupId) || isUserSelf(userId));
-        }
+      // Apenas gestores podem criar grupos
+      allow create: if request.auth != null && request.resource.data.managerId == request.auth.uid;
+      // Qualquer membro do grupo pode ler os dados do grupo
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
+      // Apenas o gestor do grupo pode atualizar as configurações
+      allow update: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+      // Impede a exclusão
+      allow delete: if false;
+
+      // Regras para subcoleções de 'groups'
+      match /games/{gameId}/attendees/{attendeeId} {
+        // O próprio usuário pode criar/atualizar seu status de presença
+        allow write: if request.auth != null && request.auth.uid == attendeeId;
+        // Qualquer membro do grupo pode ler a lista de presença
+        allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
       }
-      
+
       match /payments/{paymentId} {
-        allow read, create: if isUserAuthenticated() && isManager(groupId);
+        // Apenas o gestor do grupo pode criar pagamentos
+         allow create: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.managerId == request.auth.uid;
+        // Qualquer membro do grupo pode ler os pagamentos (se necessário)
+        allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == groupId;
       }
+    }
+
+    // Regra para a coleção 'assinaturas'
+    match /assinaturas/{email} {
+      // Um usuário autenticado pode criar ou atualizar seu próprio documento de assinatura
+      // A regra verifica se o email do documento corresponde ao email do usuário autenticado
+      allow write: if request.auth != null && request.auth.token.email == email;
+      // Apenas o próprio usuário pode ler seus dados de assinatura
+      allow read: if request.auth != null && request.auth.token.email == email;
     }
   }
 }
