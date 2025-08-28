@@ -41,8 +41,22 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
             <BadgeCheck className="h-6 w-6 text-primary" />
             Seja um Assinante
           </DialogTitle>
-          <DialogDescription>
-            Desbloqueie funcionalidades exclusivas e apoie a evolução do nosso app.
+          <DialogDescription className="text-left">
+            Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
+            <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-muted-foreground">
+              <li>
+                <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
+              </li>
+              <li>
+                <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
+              </li>
+              <li>
+                <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
+              </li>
+               <li>
+                <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+              </li>
+            </ul>
           </DialogDescription>
         </DialogHeader>
 
