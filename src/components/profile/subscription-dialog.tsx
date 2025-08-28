@@ -43,21 +43,21 @@ export function SubscriptionDialog({ isOpen, setIsOpen }: SubscriptionDialogProp
           </DialogTitle>
           <DialogDescription className="text-left">
             Ao se tornar assinante, você desbloqueia funcionalidades exclusivas para uma gestão completa e profissional do seu grupo:
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-muted-foreground">
-              <li>
-                <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
-              </li>
-              <li>
-                <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
-              </li>
-              <li>
-                <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
-              </li>
-               <li>
-                <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
-              </li>
-            </ul>
           </DialogDescription>
+          <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-muted-foreground text-left">
+            <li>
+              <strong>Gestão Financeira Detalhada:</strong> Acompanhe pagamentos, pendências e a saúde financeira do time.
+            </li>
+            <li>
+              <strong>Histórico e Estatísticas:</strong> Acesse o histórico de partidas e estatísticas avançadas de desempenho.
+            </li>
+            <li>
+              <strong>Controle de Equipamentos:</strong> Gerencie o rodízio de limpeza de coletes e uniformes de forma automática.
+            </li>
+              <li>
+              <strong>Comunicação Simplificada:</strong> Envie lembretes e comunicados importantes para os jogadores.
+            </li>
+          </ul>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
