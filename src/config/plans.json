@@ -19,7 +19,7 @@
         "annual": {
             "id": "annual",
             "name": "Anual",
-            "price": 30.00,
+            "price": 60.00,
             "period": "ano"
         }
     }
