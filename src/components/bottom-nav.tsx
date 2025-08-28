@@ -54,7 +54,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: "Início", icon: Home },
     { href: "/sorter", label: "Sorteador", icon: Dices },
-    { href: "/ranking", label: "Ranking", icon: Trophy, activeColor: "text-amber-500" },
+    { href: "/ranking", label: "Ranking", icon: Trophy, colorClass: "text-amber-500" },
     { href: "/players", label: "Jogadores", icon: Users },
   ];
 
@@ -85,7 +85,7 @@ export function BottomNav() {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 w-full p-2 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-secondary",
                   isActive && "text-primary bg-secondary",
-                  isActive && item.activeColor && `hover:${item.activeColor} ${item.activeColor}`
+                  item.colorClass
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -129,7 +129,7 @@ export function BottomNav() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary hover:bg-secondary",
                   isActive && "bg-secondary text-primary font-semibold",
-                  isActive && item.activeColor && `hover:${item.activeColor} ${item.activeColor}`
+                  item.colorClass
                 )}
               >
                 <item.icon className="h-5 w-5" />
