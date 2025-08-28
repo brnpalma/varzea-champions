@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { User } from "@/hooks/use-auth";
+import { User, UserType } from "@/hooks/use-auth";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { Star, BadgeCheck } from "lucide-react";
@@ -17,6 +17,7 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ user }: ProfileHeaderProps) {
     const currentUserRating = user.rating || 1;
     const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
+    const isManager = user.userType === UserType.GESTOR_GRUPO || user.userType === UserType.GESTOR_QUADRA;
 
     return (
         <CardHeader>
@@ -32,19 +33,21 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                                 {[...Array(currentUserRating)].map((_, i) => <Star key={`filled-${i}`} className="h-5 w-5 fill-current" />)}
                                 {[...Array(5 - currentUserRating)].map((_, i) => <Star key={`empty-${i}`} className="h-5 w-5 text-muted-foreground/30" />)}
                             </div>
-                            <div className="mt-2 flex justify-center sm:justify-start">
-                                {user.isSubscriber ? (
-                                    <Badge variant="success">Assinante</Badge>
-                                ) : (
-                                    <Badge variant="destructive">Não Assinante</Badge>
-                                )
-                                }
-                            </div>
+                            {isManager && (
+                                <div className="mt-2 flex justify-center sm:justify-start">
+                                    {user.isSubscriber ? (
+                                        <Badge variant="success">Assinante</Badge>
+                                    ) : (
+                                        <Badge variant="destructive">Não Assinante</Badge>
+                                    )
+                                    }
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-            {!user.isSubscriber && (
+            {isManager && !user.isSubscriber && (
                 <div className="pt-2 text-center">
                     <Button onClick={() => setIsSubscriptionDialogOpen(true)} className="w-full max-w-xs">
                         <BadgeCheck className="mr-2 h-4 w-4" />
