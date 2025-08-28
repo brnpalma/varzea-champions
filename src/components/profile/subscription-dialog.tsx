@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { Badge } from "../ui/badge";
+import plansConfig from '@/config/plans.json';
 
 interface SubscriptionDialogProps {
   user: User;
@@ -26,16 +27,20 @@ interface SubscriptionDialogProps {
 }
 
 export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDialogProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'Mensal' | 'Anual'>('Anual');
+  const [selectedPlanId, setSelectedPlanId] = useState<'monthly' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setSelectedPlan('Anual'); // Reset plan when closing
+      setSelectedPlanId('annual'); // Reset plan when closing
     }
     setIsOpen(open);
   };
+  
+  const monthlyPlan = plansConfig.plans.monthly;
+  const annualPlan = plansConfig.plans.annual;
+  const selectedPlan = selectedPlanId === 'annual' ? annualPlan : monthlyPlan;
 
   const handlePayment = async () => {
     if (!selectedPlan || !user?.email) {
@@ -56,14 +61,14 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
         
         const currentDate = new Date();
         const dataVencimento = new Date(currentDate);
-        if (selectedPlan === 'Anual') {
+        if (selectedPlan.id === 'annual') {
           dataVencimento.setDate(currentDate.getDate() + 365);
         } else {
           dataVencimento.setDate(currentDate.getDate() + 30);
         }
 
         await setDoc(subscriptionRef, {
-          plano: selectedPlan,
+          plano: selectedPlan.name,
           dataInicio: currentDate,
           dataVencimento: dataVencimento,
           userId: user.uid,
@@ -83,33 +88,20 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
         });
       } finally {
         setIsProcessing(false);
-        setSelectedPlan('Anual');
+        setSelectedPlanId('annual');
       }
     }, 5000); // 5-second delay
   };
 
-  const plans = {
-    Mensal: { price: 15.00, period: "mês" },
-    Anual: { price: 30.00, period: "ano" },
-  }
-
-  const benefits = [
-    "Gestão Financeira Detalhada",
-    "Histórico e Estatísticas",
-    "Controle de Equipamentos Automático",
-    "Comunicação Simplificada com o Grupo",
-    "Cadastro Ilimitado de Jogadores",
-  ]
-
-  const totalMonthlyForYear = plans.Mensal.price * 12;
-  const yearlySavings = totalMonthlyForYear - plans.Anual.price;
+  const totalMonthlyForYear = monthlyPlan.price * 12;
+  const yearlySavings = totalMonthlyForYear - annualPlan.price;
   const savingsPercentage = Math.round((yearlySavings / totalMonthlyForYear) * 100);
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
-            <DialogHeader className="text-center items-center p-6 pb-2">
+            <DialogHeader className="text-center items-center p-6 pb-0">
                 <div className="p-3 rounded-full bg-primary/20 text-primary">
                   <Crown className="h-8 w-8" />
                 </div>
@@ -118,70 +110,68 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
                 </DialogTitle>
             </DialogHeader>
           
-          <div className="flex-1 px-6 overflow-y-auto">
-            <div className="space-y-4 pb-6">
-               <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative mt-4">
-                <div
-                  className={cn(
-                    "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
-                    selectedPlan === "Anual" && "translate-x-full"
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan("Mensal")}
-                  className={cn(
-                    "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-                    selectedPlan === "Mensal" ? "text-primary-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  Mensal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan("Anual")}
-                  className={cn(
-                    "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
-                    selectedPlan === "Anual" ? "text-primary-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  Anual
-                </button>
-              </div>
+            <div className="flex-1 flex flex-col px-6 overflow-y-hidden">
+                <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative mt-4">
+                    <div
+                    className={cn(
+                        "absolute left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-in-out",
+                        selectedPlanId === "annual" && "translate-x-full"
+                    )}
+                    />
+                    <button
+                    type="button"
+                    onClick={() => setSelectedPlanId("monthly")}
+                    className={cn(
+                        "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                        selectedPlanId === "monthly" ? "text-primary-foreground" : "text-muted-foreground"
+                    )}
+                    >
+                    Mensal
+                    </button>
+                    <button
+                    type="button"
+                    onClick={() => setSelectedPlanId("annual")}
+                    className={cn(
+                        "w-1/2 z-10 py-2 rounded-full text-sm font-semibold transition-colors",
+                        selectedPlanId === "annual" ? "text-primary-foreground" : "text-muted-foreground"
+                    )}
+                    >
+                    Anual
+                    </button>
+                </div>
+                
+                <div className="text-center space-y-2 py-4">
+                    {selectedPlanId === 'annual' && (
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-sm text-muted-foreground line-through">
+                        De R$ {totalMonthlyForYear.toFixed(2).replace('.', ',')}
+                        </span>
+                        <Badge className="bg-amber-500/20 text-amber-600 font-bold">
+                        Economize {savingsPercentage}%
+                        </Badge>
+                    </div>
+                    )}
+                    <p className="text-4xl font-bold">
+                    R$ {selectedPlan.price.toFixed(2).replace('.', ',')}
+                    <span className="text-base font-medium text-muted-foreground"> / {selectedPlan.period}</span>
+                    </p>
+                </div>
 
-              <div className="text-center space-y-2">
-                {selectedPlan === 'Anual' && (
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-sm text-muted-foreground line-through">
-                      De R$ {totalMonthlyForYear.toFixed(2).replace('.', ',')}
-                    </span>
-                    <Badge className="bg-amber-500/20 text-amber-600 font-bold">
-                      Economize {savingsPercentage}%
-                    </Badge>
-                  </div>
-                )}
-                <p className="text-4xl font-bold">
-                  R$ {plans[selectedPlan].price.toFixed(2).replace('.', ',')}
-                  <span className="text-base font-medium text-muted-foreground"> / {plans[selectedPlan].period}</span>
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground text-left">
-                  Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
-                </p>
-                <p className="text-sm font-semibold text-foreground">Recursos Premium:</p>
-                <ul className="space-y-2">
-                  {benefits.map((benefit, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <BadgeCheck className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-sm text-muted-foreground">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+                    <p className="text-sm text-muted-foreground text-left">
+                        {plansConfig.description}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">{plansConfig.benefitsTitle}</p>
+                    <ul className="space-y-2">
+                    {plansConfig.benefits.map((benefit, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                        <BadgeCheck className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-sm text-muted-foreground">{benefit}</span>
+                        </li>
+                    ))}
+                    </ul>
+                </div>
             </div>
-          </div>
           
           <DialogFooter className="p-6 mt-auto">
             <Button onClick={handlePayment} size="lg" className="w-full">
@@ -204,3 +194,5 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     </>
   );
 }
+
+    

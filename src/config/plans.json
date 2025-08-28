@@ -1,0 +1,28 @@
+
+{
+    "description": "Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.",
+    "benefitsTitle": "Recursos Premium:",
+    "benefits": [
+        "Gestão Financeira Detalhada",
+        "Histórico e Estatísticas",
+        "Controle de Equipamentos Automático",
+        "Comunicação Simplificada com o Grupo",
+        "Cadastro Ilimitado de Jogadores"
+    ],
+    "plans": {
+        "monthly": {
+            "id": "monthly",
+            "name": "Mensal",
+            "price": 15.00,
+            "period": "mês"
+        },
+        "annual": {
+            "id": "annual",
+            "name": "Anual",
+            "price": 30.00,
+            "period": "ano"
+        }
+    }
+}
+
+    
