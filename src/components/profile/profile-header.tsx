@@ -46,7 +46,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
             </div>
             {isManager && !user.isSubscriber && (
                 <div className="pt-4 text-center">
-                    <SubscriptionButton />
+                    <SubscriptionButton user={user} />
                 </div>
             )}
         </CardHeader>

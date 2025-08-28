@@ -6,8 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
 import { SubscriptionDialog } from "@/components/profile/subscription-dialog";
+import { User } from "@/hooks/use-auth";
 
-export function SubscriptionCard() {
+interface SubscriptionCardProps {
+    user: User;
+}
+
+export function SubscriptionCard({ user }: SubscriptionCardProps) {
     const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
 
     return (
@@ -35,6 +40,7 @@ export function SubscriptionCard() {
                 </CardContent>
             </Card>
             <SubscriptionDialog
+                user={user}
                 isOpen={isSubscriptionDialogOpen}
                 setIsOpen={setIsSubscriptionDialogOpen}
             />

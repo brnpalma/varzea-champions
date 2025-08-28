@@ -52,7 +52,7 @@ export default function HomePage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       {showSubscriptionCard && (
         <div className="mb-6">
-           <SubscriptionCard />
+           <SubscriptionCard user={user} />
         </div>
       )}
 
