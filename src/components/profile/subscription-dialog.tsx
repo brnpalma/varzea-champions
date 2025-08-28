@@ -111,21 +111,21 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <ScrollArea className="max-h-[90vh]">
-            <div className="p-6">
-              <DialogHeader className="text-center items-center mb-6">
-                 <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
-                    <Crown className="h-8 w-8" />
-                 </div>
-                <DialogTitle className="text-2xl">
-                  Seja um Assinante
-                </DialogTitle>
-                <DialogDescription className="text-left">
-                  Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
-                </DialogDescription>
-              </DialogHeader>
-              
+        <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
+            <DialogHeader className="text-center items-center p-6 pb-0">
+                <div className="p-3 rounded-full bg-primary/20 text-primary mb-2">
+                <Crown className="h-8 w-8" />
+                </div>
+            <DialogTitle className="text-2xl">
+                Seja um Assinante
+            </DialogTitle>
+            <DialogDescription className="text-left">
+                Desbloqueie funcionalidades exclusivas para uma gestão completa e profissional do seu grupo.
+            </DialogDescription>
+            </DialogHeader>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-6 pt-4">
               <div className="space-y-6">
                 <div className="w-full bg-muted p-1 rounded-full flex items-center justify-center relative">
                   <div
@@ -188,7 +188,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
             </div>
           </ScrollArea>
           
-          <DialogFooter className="p-6 pt-0 mt-4 bg-background sticky bottom-0 sm:justify-center">
+          <DialogFooter className="p-6 mt-auto border-t">
             <Button onClick={handlePayment} size="lg" className="w-full">
               Assinar Plano
             </Button>
