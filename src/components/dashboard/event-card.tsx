@@ -8,6 +8,7 @@ import { Calendar, Check, X, CheckCircle } from "lucide-react";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import { InviteButton } from "../invite-button";
+import { cn } from "@/lib/utils";
 
 interface EventCardProps {
     user: User | null;
@@ -92,7 +93,10 @@ export function EventCard({
                         <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
                             <Button 
                                 onClick={() => onPresenceClick('confirmed')} 
-                                className={`bg-green-600 hover:bg-green-700 text-white ${confirmedStatus === 'confirmed' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                                className={cn(
+                                    "bg-green-600 hover:bg-green-700 text-white",
+                                    confirmedStatus === 'confirmed' && "bg-secondary text-secondary-foreground hover:bg-secondary"
+                                )}
                                 disabled={isSubmitting || !nextGameDate || confirmedStatus === 'confirmed' || isConfirmationLocked}
                             >
                                 <Check className="mr-2 h-4 w-4" /> Sim
@@ -100,7 +104,9 @@ export function EventCard({
                             <Button 
                                 onClick={() => onPresenceClick('declined')} 
                                 variant="destructive"
-                                className={`${confirmedStatus === 'declined' ? 'ring-2 ring-offset-2 ring-red-500' : ''}`}
+                                 className={cn(
+                                    confirmedStatus === 'declined' && "bg-secondary text-secondary-foreground hover:bg-secondary"
+                                )}
                                 disabled={isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
                             >
                                 <X className="mr-2 h-4 w-4" /> Não
