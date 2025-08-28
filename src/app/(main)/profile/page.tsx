@@ -468,17 +468,17 @@ export default function ProfilePage() {
                                 {[...Array(5 - currentUserRating)].map((_, i) => <Star key={`empty-${i}`} className="h-5 w-5 text-muted-foreground/30" />)}
                             </div>
                         )}
+                         {!isEditing && (
+                            <div className="mt-2 flex justify-center sm:justify-start">
+                              {user.isSubscriber ? (
+                                  <Badge variant="success">Assinante</Badge>
+                                ) : (
+                                  <Badge variant="destructive">Não Assinante</Badge>
+                                )
+                              }
+                            </div>
+                         )}
                     </div>
-                     {!isEditing && (
-                        <div className="mt-2 flex justify-center sm:justify-start">
-                           {user.isSubscriber ? (
-                              <Badge variant="success">Assinante</Badge>
-                            ) : (
-                              <Badge variant="destructive">Não Assinante</Badge>
-                            )
-                           }
-                        </div>
-                     )}
                     <CardDescription className="mt-2">
                       {isEditing ? "Atualize suas informações" : "Veja e gerencie os detalhes do seu perfil."}
                     </CardDescription>
@@ -490,6 +490,16 @@ export default function ProfilePage() {
                   </Button>
               )}
             </div>
+             {!user.isSubscriber && !isEditing && (
+              <div className="pt-4 text-center">
+                <Button asChild className="w-full max-w-xs">
+                  <Link href="https://google.com.br" target="_blank">
+                    <BadgeCheck className="mr-2 h-4 w-4" />
+                    Seja Assinante (R$ 30,00/ano)
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {isEditing ? (
@@ -547,17 +557,6 @@ export default function ProfilePage() {
                           Compromisso: <span className="font-medium capitalize text-primary">{user.playerSubscriptionType}</span>
                       </span>
                   </div>
-              </div>
-            )}
-            
-             {!user.isSubscriber && !isEditing && (
-              <div className="pt-4">
-                <Button asChild className="w-full">
-                  <Link href="https://google.com.br" target="_blank">
-                    <BadgeCheck className="mr-2 h-4 w-4" />
-                    Seja Assinante (R$ 30,00/ano)
-                  </Link>
-                </Button>
               </div>
             )}
 
