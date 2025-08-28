@@ -49,7 +49,10 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
             </div>
             {isManager && !user.isSubscriber && (
                 <div className="pt-2 text-center">
-                    <Button onClick={() => setIsSubscriptionDialogOpen(true)} className="w-full max-w-xs">
+                    <Button 
+                      onClick={() => setIsSubscriptionDialogOpen(true)} 
+                      className="w-full max-w-xs bg-amber-500 text-black hover:bg-amber-600"
+                    >
                         <BadgeCheck className="mr-2 h-4 w-4" />
                         Seja Assinante
                     </Button>
