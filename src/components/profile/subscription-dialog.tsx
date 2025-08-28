@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { ScrollArea } from "../ui/scroll-area";
+import { Badge } from "../ui/badge";
 
 interface SubscriptionDialogProps {
   user: User;
@@ -91,8 +92,8 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
   };
 
   const plans = {
-    Mensal: { price: "15,00", period: "mês" },
-    Anual: { price: "30,00", period: "ano" },
+    Mensal: { price: 15.00, period: "mês" },
+    Anual: { price: 30.00, period: "ano" },
   }
 
   const benefits = [
@@ -103,10 +104,14 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
     "Cadastro Ilimitado de Jogadores",
   ]
 
+  const totalMonthlyForYear = plans.Mensal.price * 12;
+  const yearlySavings = totalMonthlyForYear - plans.Anual.price;
+  const savingsPercentage = Math.round((yearlySavings / totalMonthlyForYear) * 100);
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md p-0">
+        <DialogContent className="sm:max-w-md">
           <ScrollArea className="max-h-[90vh]">
             <div className="p-6">
               <DialogHeader className="text-center items-center mb-6">
@@ -151,9 +156,19 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
                   </button>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center space-y-2">
+                  {selectedPlan === 'Anual' && (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm text-muted-foreground line-through">
+                        De R$ {totalMonthlyForYear.toFixed(2).replace('.', ',')}
+                      </span>
+                      <Badge className="bg-amber-500/20 text-amber-600 font-bold">
+                        Economize {savingsPercentage}%
+                      </Badge>
+                    </div>
+                  )}
                   <p className="text-4xl font-bold">
-                    R$ {plans[selectedPlan].price}
+                    R$ {plans[selectedPlan].price.toFixed(2).replace('.', ',')}
                     <span className="text-base font-medium text-muted-foreground"> / {plans[selectedPlan].period}</span>
                   </p>
                 </div>
@@ -173,7 +188,7 @@ export function SubscriptionDialog({ user, isOpen, setIsOpen }: SubscriptionDial
             </div>
           </ScrollArea>
           
-          <DialogFooter className="p-6 pt-0 mt-4 bg-background">
+          <DialogFooter className="p-6 pt-0 mt-4 bg-background sticky bottom-0">
             <Button onClick={handlePayment} size="lg" className="w-full">
               Assinar Plano
             </Button>
