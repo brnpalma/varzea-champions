@@ -161,7 +161,7 @@ export default function PlayersPage() {
         <CardHeader className="text-center">
           <div className="w-full text-center">
             <CardTitle className="text-2xl">
-              Jogadores do grupo
+              Jogadores do grupo ({players.length})
               <span className="block text-primary font-bold mt-1">{user?.groupName || ""}</span>
             </CardTitle>
           </div>
