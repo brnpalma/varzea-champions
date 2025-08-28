@@ -1,14 +1,12 @@
 
 "use client";
 
-import { useState } from "react";
 import { User, UserType } from "@/hooks/use-auth";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
-import { Star, Crown } from "lucide-react";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "../ui/button";
-import { SubscriptionDialog } from "./subscription-dialog";
+import { SubscriptionButton } from "../subscription-button";
 
 interface ProfileHeaderProps {
     user: User;
@@ -16,7 +14,6 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ user }: ProfileHeaderProps) {
     const currentUserRating = user.rating || 1;
-    const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
     const isManager = user.userType === UserType.GESTOR_GRUPO || user.userType === UserType.GESTOR_QUADRA;
 
     return (
@@ -48,20 +45,10 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                 </div>
             </div>
             {isManager && !user.isSubscriber && (
-                <div className="pt-2 text-center">
-                    <Button 
-                      onClick={() => setIsSubscriptionDialogOpen(true)} 
-                      className="w-full max-w-xs bg-amber-500 text-black hover:bg-amber-500/90"
-                    >
-                        <Crown className="mr-2 h-4 w-4" />
-                        Seja Assinante
-                    </Button>
+                <div className="pt-4 text-center">
+                    <SubscriptionButton />
                 </div>
             )}
-             <SubscriptionDialog
-                isOpen={isSubscriptionDialogOpen}
-                setIsOpen={setIsSubscriptionDialogOpen}
-            />
         </CardHeader>
     );
 }
