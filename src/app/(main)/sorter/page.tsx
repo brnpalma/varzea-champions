@@ -67,13 +67,9 @@ export default function SorterPage() {
         });
         const updatedPlayers = await Promise.all(playerPromises);
 
-        const { teams: sortedTeams, leftovers } = performBalancedSort(updatedPlayers, playersPerTeamConfig);
+        const { teams: sortedTeams } = performBalancedSort(updatedPlayers, playersPerTeamConfig);
         
-        if (leftovers.length > 0) {
-            setTeams([...sortedTeams, leftovers]);
-        } else {
-            setTeams(sortedTeams);
-        }
+        setTeams(sortedTeams);
 
     } catch (error) {
        console.error("Error sorting teams:", error);
@@ -187,8 +183,9 @@ export default function SorterPage() {
               if(team.length === 0) return null;
               
               const teamSum = team.reduce((sum, p) => sum + (p.rating || 1), 0);
-              const totalTeams = Math.floor(confirmedPlayersCount / playersPerTeamConfig);
-              const isLeftoverTeam = index >= totalTeams && teams.length > totalTeams;
+              const totalPlayers = teams.flat().length;
+              const numFullTeams = Math.floor(totalPlayers / playersPerTeamConfig);
+              const isLeftoverTeam = index >= numFullTeams;
 
               const title = isLeftoverTeam ? "Próximos" : `Time ${String.fromCharCode(65 + index)}`;
 
@@ -196,11 +193,9 @@ export default function SorterPage() {
                 <Card key={index}>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{title}</CardTitle>
-                     {!isLeftoverTeam && (
-                        <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
-                           {teamSum} <Star className="h-4 w-4 fill-current"/>
-                        </div>
-                     )}
+                    <div className="flex items-center gap-1 text-sm font-bold text-amber-500">
+                        {teamSum} <Star className="h-4 w-4 fill-current"/>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {renderPlayerList(team)}

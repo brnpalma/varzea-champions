@@ -4,11 +4,11 @@
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, runTransaction } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { User } from "@/components/auth-provider";
-import { formatDateToId } from "@/lib/game-utils";
+import { User, GroupSettings } from "@/components/auth-provider";
+import { formatDateToId, getActiveOrNextGame, GameInfo } from "@/lib/game-utils";
 import { useToast } from "@/hooks/use-toast";
 
-export function usePostGame(user: User | null, nextGameDate: Date | null) {
+export function usePostGame(user: User | null, groupSettings: GroupSettings | null, nextGameDate: Date | null) {
   const { toast } = useToast();
   const [goalsSubmitted, setGoalsSubmitted] = useState(false);
   const [goalsCardState, setGoalsCardState] = useState({ visible: false, enabled: false, message: "Aguarde o fim da partida para registrar seus gols." });
@@ -40,18 +40,25 @@ export function usePostGame(user: User | null, nextGameDate: Date | null) {
 
   // Effect to update the state of the post-game card
   useEffect(() => {
-    if (!nextGameDate) {
+     if (!groupSettings?.gameDays || !nextGameDate) {
+      setGoalsCardState({ visible: false, enabled: false, message: "Nenhuma partida agendada." });
+      return;
+    }
+    
+    const gameInfo: GameInfo | null = getActiveOrNextGame(groupSettings.gameDays);
+
+    if (!gameInfo) {
       setGoalsCardState({ visible: false, enabled: false, message: "Nenhuma partida agendada." });
       return;
     }
     
     const now = new Date();
-    const gameHasPassed = now > nextGameDate;
-    const gracePeriodEnd = new Date(nextGameDate.getTime() + 24 * 60 * 60 * 1000);
-    const isWithinGracePeriod = now > nextGameDate && now < gracePeriodEnd;
+    const gameHasPassed = now > gameInfo.endDate;
+    const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
+    const isWithinGracePeriod = now > gameInfo.endDate && now < gracePeriodEnd;
 
     let cardEnabled = false;
-    let cardVisible = true; // Card is always visible now
+    let cardVisible = true;
     let message = "Aguarde o fim da partida para registrar seus gols.";
 
     if (gameHasPassed) {
@@ -69,11 +76,15 @@ export function usePostGame(user: User | null, nextGameDate: Date | null) {
         }
     } else {
          cardEnabled = false;
+         // Check if the game is happening right now
+         if (now > gameInfo.startDate && now < gameInfo.endDate) {
+           message = "Partida em andamento...";
+         }
     }
     
     setGoalsCardState({ visible: cardVisible, enabled: cardEnabled, message });
 
-  }, [nextGameDate, goalsSubmitted]);
+  }, [nextGameDate, goalsSubmitted, groupSettings]);
 
 
   const handleSaveGoals = async (newGoals: number) => {
@@ -81,8 +92,8 @@ export function usePostGame(user: User | null, nextGameDate: Date | null) {
       toast({ variant: "destructive", title: "Erro", description: "Dados do usuário ou do jogo não encontrados." });
       return;
     }
-
-    if (new Date() < nextGameDate) {
+     const gameInfo: GameInfo | null = groupSettings?.gameDays ? getActiveOrNextGame(groupSettings.gameDays) : null;
+    if (!gameInfo || new Date() < gameInfo.startDate) {
        toast({
         variant: "destructive",
         title: "Aguarde",

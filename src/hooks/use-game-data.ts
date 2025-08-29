@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { doc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { User, GroupSettings, PlayerSubscriptionType } from "@/components/auth-provider";
-import { getActiveOrNextGameDate, formatDateToId } from "@/lib/game-utils";
+import { getActiveOrNextGame, GameInfo } from "@/lib/game-utils";
 import { useToast } from "@/hooks/use-toast";
 
 export function useGameData(user: User | null, groupSettings: GroupSettings | null) {
@@ -30,14 +30,15 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     
     setIsGameDateLoading(true);
     if (groupSettings.gameDays) {
-      const gameDate = getActiveOrNextGameDate(groupSettings.gameDays);
-      setNextGameDate(gameDate);
+      const gameInfo: GameInfo | null = getActiveOrNextGame(groupSettings.gameDays);
+      
+      setNextGameDate(gameInfo ? gameInfo.startDate : null);
 
-      if (gameDate) {
+      if (gameInfo) {
         const now = new Date();
-        const gameHasPassed = now > gameDate;
-        const gracePeriodEnd = new Date(gameDate.getTime() + 24 * 60 * 60 * 1000);
-        const isWithinGracePeriod = now > gameDate && now < gracePeriodEnd;
+        const gameHasPassed = now > gameInfo.endDate;
+        const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
+        const isWithinGracePeriod = now > gameInfo.endDate && now < gracePeriodEnd;
         
         setIsGameFinished(gameHasPassed);
         setIsConfirmationLocked(gameHasPassed && !isWithinGracePeriod);
@@ -47,6 +48,14 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     }
     setIsGameDateLoading(false);
   }, [user?.groupId, groupSettings]);
+
+  const formatDateToId = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = (`0${d.getMonth() + 1}`).slice(-2);
+    const day = (`0${d.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
+  }
 
   // Effect to fetch confirmed players for the next game
   useEffect(() => {

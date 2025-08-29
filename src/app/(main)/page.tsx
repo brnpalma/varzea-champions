@@ -35,7 +35,7 @@ export default function HomePage() {
   const {
     goalsCardState,
     handleSaveGoals
-  } = usePostGame(user, nextGameDate);
+  } = usePostGame(user, groupSettings, nextGameDate);
 
   const { 
     equipmentManager, 
