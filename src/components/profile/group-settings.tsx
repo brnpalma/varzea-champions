@@ -27,6 +27,7 @@ const daysOfWeek = [
 interface GameDaySetting {
     selected: boolean;
     time: string;
+    endTime: string;
 }
 
 interface GroupSettingsProps {
@@ -39,7 +40,7 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
     const [settings, setSettings] = useState<{
         gameDays: Record<string, GameDaySetting>;
     }>({
-        gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '' }]))
+        gameDays: Object.fromEntries(daysOfWeek.map(day => [day.id, { selected: false, time: '', endTime: '' }]))
     });
     const [groupName, setGroupName] = useState("");
     const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
@@ -70,7 +71,7 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
             const loadedSettings = groupSettings.gameDays;
             const mergedGameDays: Record<string, GameDaySetting> = {};
             daysOfWeek.forEach(day => {
-                mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '' };
+                mergedGameDays[day.id] = loadedSettings[day.id] || { selected: false, time: '', endTime: '' };
             });
             setSettings({ gameDays: mergedGameDays });
           }
@@ -99,14 +100,14 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
         }));
     };
 
-    const handleTimeChange = (dayId: string, value: string) => {
+    const handleTimeChange = (dayId: string, field: 'time' | 'endTime', value: string) => {
         setSettings(prev => ({
             ...prev,
             gameDays: {
                 ...prev.gameDays,
                 [dayId]: {
                     ...prev.gameDays[dayId],
-                    time: value
+                    [field]: value
                 }
             }
         }));
@@ -126,11 +127,19 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
     
         for (const day of daysOfWeek) {
             const setting = settings.gameDays[day.id];
-            if (setting.selected && !setting.time) {
+            if (setting.selected && (!setting.time || !setting.endTime)) {
                 toast({
                     variant: "destructive",
                     title: "Campo Obrigatório",
-                    description: `Por favor, defina um horário para ${day.label}.`,
+                    description: `Por favor, defina um horário de início e fim para ${day.label}.`,
+                });
+                return;
+            }
+             if (setting.selected && setting.time >= setting.endTime) {
+                toast({
+                    variant: "destructive",
+                    title: "Horário Inválido",
+                    description: `Em ${day.label}, o horário de fim deve ser maior que o de início.`,
                 });
                 return;
             }
@@ -287,8 +296,8 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
                                 <p className="text-sm text-muted-foreground mb-4">Selecione os dias e horários dos jogos.</p>
                                 <div className="space-y-4">
                                     {daysOfWeek.map((day) => (
-                                        <div key={day.id} className="flex flex-row items-center justify-between">
-                                            <div className="flex items-center space-x-2">
+                                        <div key={day.id} className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                                            <div className="flex items-center space-x-2 w-full sm:w-auto">
                                                 <Checkbox
                                                     id={day.id}
                                                     checked={!!settings.gameDays[day.id]?.selected}
@@ -297,14 +306,23 @@ export function GroupSettings({ user, groupSettings }: GroupSettingsProps) {
                                                 <Label htmlFor={day.id} className="font-normal cursor-pointer min-w-[100px]">{day.label}</Label>
                                             </div>
                                             {settings.gameDays[day.id]?.selected && (
-                                                <div className="w-auto">
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
                                                     <Input
-                                                        id={`time-${day.id}`}
+                                                        id={`time-inicio-${day.id}`}
                                                         type="time"
                                                         step="1800" // 30 minutos em segundos
                                                         value={settings.gameDays[day.id]?.time || ''}
-                                                        onChange={(e) => handleTimeChange(day.id, e.target.value)}
-                                                        className="w-32 sm:w-40"
+                                                        onChange={(e) => handleTimeChange(day.id, 'time', e.target.value)}
+                                                        className="w-full"
+                                                    />
+                                                     <span className="text-muted-foreground">-</span>
+                                                     <Input
+                                                        id={`time-fim-${day.id}`}
+                                                        type="time"
+                                                        step="1800"
+                                                        value={settings.gameDays[day.id]?.endTime || ''}
+                                                        onChange={(e) => handleTimeChange(day.id, 'endTime', e.target.value)}
+                                                        className="w-full"
                                                     />
                                                 </div>
                                             )}

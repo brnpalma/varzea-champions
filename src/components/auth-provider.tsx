@@ -39,7 +39,7 @@ export interface User extends FirebaseAuthUser, UserProfile {}
 export interface GroupSettings {
     name?: string;
     playersPerTeam?: number;
-    gameDays?: Record<string, any>;
+    gameDays?: Record<string, { selected: boolean; time: string; endTime: string; }>;
     valorMensalidade?: number;
     valorAvulso?: number;
     chavePix?: string;

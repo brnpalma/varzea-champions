@@ -3,13 +3,13 @@
   "name": "Meu Grupo",
   "playersPerTeam": 5,
   "gameDays": {
-    "segunda": { "selected": false, "time": "" },
-    "terca": { "selected": false, "time": "" },
-    "quarta": { "selected": false, "time": "" },
-    "quinta": { "selected": false, "time": "" },
-    "sexta": { "selected": false, "time": "" },
-    "sabado": { "selected": false, "time": "" },
-    "domingo": { "selected": false, "time": "" }
+    "segunda": { "selected": false, "time": "", "endTime": "" },
+    "terca": { "selected": false, "time": "", "endTime": "" },
+    "quarta": { "selected": false, "time": "", "endTime": "" },
+    "quinta": { "selected": false, "time": "", "endTime": "" },
+    "sexta": { "selected": false, "time": "", "endTime": "" },
+    "sabado": { "selected": false, "time": "", "endTime": "" },
+    "domingo": { "selected": false, "time": "", "endTime": "" }
   },
   "valorMensalidade": null,
   "valorAvulso": null,
