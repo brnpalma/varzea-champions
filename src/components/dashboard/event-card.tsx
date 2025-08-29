@@ -20,6 +20,7 @@ interface EventCardProps {
     isConfirmationLocked: boolean;
     onPresenceClick: (status: 'confirmed' | 'declined') => void;
     confirmedPlayers: User[];
+    confirmedPlayersCount: number;
     isFetchingPlayers: boolean;
     isManager: boolean | undefined;
 }
@@ -34,6 +35,7 @@ export function EventCard({
     isConfirmationLocked,
     onPresenceClick,
     confirmedPlayers,
+    confirmedPlayersCount,
     isFetchingPlayers,
     isManager
 }: EventCardProps) {
@@ -119,6 +121,7 @@ export function EventCard({
                 <div className="flex flex-col items-center justify-center gap-4 pt-2">
                     <ConfirmedPlayersDialog 
                         confirmedPlayers={confirmedPlayers}
+                        confirmedPlayersCount={confirmedPlayersCount}
                         isFetchingPlayers={isFetchingPlayers}
                     />
                     {isManager && (

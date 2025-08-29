@@ -16,10 +16,11 @@ import { UserAvatar } from "./user-avatar";
 
 interface ConfirmedPlayersDialogProps {
   confirmedPlayers: User[];
+  confirmedPlayersCount: number;
   isFetchingPlayers: boolean;
 }
 
-export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: ConfirmedPlayersDialogProps) {
+export function ConfirmedPlayersDialog({ confirmedPlayers, confirmedPlayersCount, isFetchingPlayers }: ConfirmedPlayersDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -33,14 +34,14 @@ export function ConfirmedPlayersDialog({ confirmedPlayers, isFetchingPlayers }: 
             "Carregando..."
           ) : (
             <>
-              {confirmedPlayers.length} Jogadores Confirmados
+              {confirmedPlayersCount} Jogadores Confirmados
             </>
           )}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Jogadores Confirmados ({confirmedPlayers.length})</DialogTitle>
+          <DialogTitle>Jogadores Confirmados ({confirmedPlayersCount})</DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto pr-2">
           {isFetchingPlayers ? (

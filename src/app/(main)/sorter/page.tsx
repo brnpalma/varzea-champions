@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, User } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { Dices, Shuffle, Star, Info, LogIn } from "lucide-react";
-import { collection, query, where, doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { UserAvatar } from "@/components/user-avatar";
@@ -14,72 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { SorterConfirmationDialog } from "@/components/sorter-confirmation-dialog";
 import { performBalancedSort } from "@/lib/sorter";
-
-// Duplicated from home page, consider moving to a shared utility file
-interface GameDaySetting {
-  selected: boolean;
-  time: string;
-}
-
-const dayOfWeekMap: Record<string, number> = {
-  domingo: 0,
-  segunda: 1,
-  terca: 2,
-  quarta: 3,
-  quinta: 4,
-  sexta: 5,
-  sabado: 6,
-};
-
-function getNextGameDate(gameDays: Record<string, GameDaySetting>): Date | null {
-  if (!gameDays || Object.keys(gameDays).length === 0) return null;
-
-  const now = new Date();
-  let nextGameDate: Date | null = null;
-
-  for (let i = 0; i < 7; i++) {
-    const checkingDate = new Date(now);
-    checkingDate.setDate(now.getDate() + i);
-    const dayOfWeek = checkingDate.getDay();
-    const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
-    if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
-      const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
-      const gameTime = new Date(checkingDate);
-      gameTime.setHours(hours, minutes, 0, 0);
-      if (gameTime > now) {
-        if (!nextGameDate || gameTime < nextGameDate) {
-          nextGameDate = gameTime;
-        }
-      }
-    }
-  }
-  if (!nextGameDate) {
-     for (let i = 7; i < 14; i++) {
-        const checkingDate = new Date(now);
-        checkingDate.setDate(now.getDate() + i);
-        const dayOfWeek = checkingDate.getDay();
-        const dayId = Object.keys(dayOfWeekMap).find(key => dayOfWeekMap[key] === dayOfWeek);
-        if (dayId && gameDays[dayId] && gameDays[dayId]?.selected && gameDays[dayId]?.time) {
-          const [hours, minutes] = gameDays[dayId].time.split(':').map(Number);
-          const gameTime = new Date(checkingDate);
-          gameTime.setHours(hours, minutes, 0, 0);
-           if (!nextGameDate || gameTime < nextGameDate) {
-              nextGameDate = gameTime;
-           }
-        }
-    }
-  }
-  return nextGameDate;
-}
-
-const formatDateToId = (date: Date): string => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = (`0${d.getMonth() + 1}`).slice(-2);
-    const day = (`0${d.getDate()}`).slice(-2);
-    return `${year}-${month}-${day}`;
-}
-
+import { useGameData } from "@/hooks/use-game-data";
+import { User } from "@/hooks/use-auth";
 
 export default function SorterPage() {
   const { user, loading: authLoading, groupSettings } = useAuth();
@@ -87,53 +23,15 @@ export default function SorterPage() {
   
   const [isSorting, setIsSorting] = useState(false);
   const [teams, setTeams] = useState<User[][]>([]);
-  const [confirmedPlayersCount, setConfirmedPlayersCount] = useState(0);
-  const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
-  const [nextGameDate, setNextGameDate] = useState<Date | null>(null);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
+  
+  const {
+    nextGameDate,
+    confirmedPlayersCount,
+    isFetchingPlayers,
+  } = useGameData(user, groupSettings);
 
   const playersPerTeamConfig = groupSettings?.playersPerTeam || 5;
-
-  const fetchGameSettingsAndDate = useCallback(async () => {
-    if (groupSettings?.gameDays) {
-        const gameDate = getNextGameDate(groupSettings.gameDays);
-        setNextGameDate(gameDate);
-        return gameDate;
-    }
-    setNextGameDate(null);
-    return null;
-  }, [groupSettings]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    
-    setIsFetchingPlayers(true);
-    fetchGameSettingsAndDate().then(gameDate => {
-        if (!gameDate || !user?.groupId) {
-            setConfirmedPlayersCount(0);
-            setIsFetchingPlayers(false);
-            return;
-        }
-
-        const gameId = formatDateToId(gameDate);
-        const attendeesQuery = query(
-            collection(firestore, `groups/${user.groupId}/games/${gameId}/attendees`),
-            where("status", "==", "confirmed")
-        );
-        
-        const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
-            setConfirmedPlayersCount(snapshot.size);
-            setIsFetchingPlayers(false);
-        }, (error) => {
-             // Don't show toast, just update state
-             setConfirmedPlayersCount(0);
-             setIsFetchingPlayers(false);
-        });
-
-        return () => unsubscribe();
-    });
-
-  }, [user?.groupId, authLoading, fetchGameSettingsAndDate]);
 
 
   const handleSort = async (finalPlayerList: User[]) => {

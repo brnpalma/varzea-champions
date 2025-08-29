@@ -26,6 +26,7 @@ export default function HomePage() {
     isConfirmationLocked,
     confirmedStatus,
     confirmedPlayers,
+    confirmedPlayersCount,
     isFetchingPlayers,
     isSubmitting,
     handlePresenceClick
@@ -93,6 +94,7 @@ export default function HomePage() {
                 isConfirmationLocked={isConfirmationLocked}
                 onPresenceClick={handlePresenceClick}
                 confirmedPlayers={confirmedPlayers}
+                confirmedPlayersCount={confirmedPlayersCount}
                 isFetchingPlayers={isFetchingPlayers}
                 isManager={isManager}
             />

@@ -17,6 +17,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   
   const [confirmedStatus, setConfirmedStatus] = useState<'confirmed' | 'declined' | null>(null);
   const [confirmedPlayers, setConfirmedPlayers] = useState<User[]>([]);
+  const [confirmedPlayersCount, setConfirmedPlayersCount] = useState(0);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -51,6 +52,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   useEffect(() => {
     if (!nextGameDate || !user?.groupId) {
         setConfirmedPlayers([]);
+        setConfirmedPlayersCount(0);
         setIsFetchingPlayers(false);
         return;
     }
@@ -65,10 +67,12 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     const unsubscribe = onSnapshot(attendeesQuery, (snapshot) => {
         const playersData = snapshot.docs.map(doc => doc.data() as User);
         setConfirmedPlayers(playersData);
+        setConfirmedPlayersCount(snapshot.size);
         setIsFetchingPlayers(false);
     }, (error) => {
       console.error("Error fetching confirmed players:", error);
       setConfirmedPlayers([]);
+      setConfirmedPlayersCount(0);
       setIsFetchingPlayers(false);
     });
 
@@ -169,6 +173,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     isConfirmationLocked,
     confirmedStatus,
     confirmedPlayers,
+    confirmedPlayersCount,
     isFetchingPlayers,
     isSubmitting,
     handlePresenceClick,
