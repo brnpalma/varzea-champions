@@ -167,15 +167,18 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     
     setIsSubmitting(true);
     const oldStatus = confirmedStatus;
-    setConfirmedStatus(status); // Optimistic update
-
+    
+    // Set the status optimistically. This will immediately disable the correct button.
+    setConfirmedStatus(status); 
+    
     const attendeeDocRef = doc(firestore, `groups/${user.groupId}/jogadoresConfirmados`, user.uid);
     
     try {
       if (status === 'declined') {
-        // If declining, we just delete the document to keep the collection clean.
+        // If declining, we just delete the document. The listener will then set status to null.
         await deleteDoc(attendeeDocRef);
       } else {
+        // If confirming, we set the document.
         await setDoc(attendeeDocRef, {
             status: status,
             confirmedAt: new Date().toISOString(),
@@ -197,7 +200,8 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
             title: "Erro ao registrar",
             description: "Houve um problema ao salvar sua resposta.",
         });
-        setConfirmedStatus(oldStatus); // Revert optimistic update
+        // On error, revert the optimistic update to the previous state.
+        setConfirmedStatus(oldStatus);
     } finally {
         setIsSubmitting(false);
     }
