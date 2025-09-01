@@ -90,16 +90,20 @@ export function usePostGame(user: User | null, groupSettings: GroupSettings | nu
 
     try {
         await runTransaction(firestore, async (transaction) => {
+            // READ operations first
             const confirmedDoc = await transaction.get(confirmedDocRef);
+            const userDoc = await transaction.get(userDocRef);
+
+            // Validation after reads
             if (!confirmedDoc.exists()) {
                 throw new Error("Você precisa ter confirmado presença para registrar gols.");
             }
 
-            // Mark goals as submitted in the confirmed player doc
+            // WRITE operations last
+            // 1. Mark goals as submitted in the confirmed player doc
             transaction.set(confirmedDocRef, { goals: newGoals }, { merge: true });
 
-            // Update total goals in user's main profile document
-            const userDoc = await transaction.get(userDocRef);
+            // 2. Update total goals in user's main profile document
             const currentTotalGoals = userDoc.data()?.totalGoals || 0;
             transaction.update(userDocRef, { totalGoals: currentTotalGoals + newGoals });
         });
