@@ -59,17 +59,22 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
         const now = new Date();
         const gameHasPassed = now > gameInfo.endDate;
         const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
-
+        
         setIsGameFinished(gameHasPassed);
         setIsConfirmationLocked(now > gracePeriodEnd);
 
-        // Logic to clear confirmed players for the *next* game cycle.
         const currentGameId = formatDateToId(gameInfo.startDate);
-        if (lastClearedGameIdRef.current !== currentGameId && !gameHasPassed) {
+
+        // Logic to clear confirmed players for the *next* game cycle.
+        // It should only clear when the grace period of the *last* game has ended
+        // and we are starting a *new* game confirmation cycle.
+        if (lastClearedGameIdRef.current !== currentGameId && now > gracePeriodEnd) {
           clearConfirmedPlayers(user.groupId);
           lastClearedGameIdRef.current = currentGameId;
+        } else if (!lastClearedGameIdRef.current) {
+           // On initial load, set the ref to the current game to avoid accidental clearing
+           lastClearedGameIdRef.current = currentGameId;
         }
-
       }
     } else {
       setNextGameDate(null);
