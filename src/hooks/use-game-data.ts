@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, setDoc, collection, query, where, onSnapshot, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { User, GroupSettings, PlayerSubscriptionType } from "@/components/auth-provider";
-import { getActiveOrNextGame, GameInfo } from "@/lib/game-utils";
+import { getActiveOrNextGame, GameInfo, formatDateToId } from "@/lib/game-utils";
 import { useToast } from "@/hooks/use-toast";
 
 export function useGameData(user: User | null, groupSettings: GroupSettings | null) {
@@ -20,6 +20,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   const [confirmedPlayersCount, setConfirmedPlayersCount] = useState(0);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastClearedGameIdRef = useRef<string | null>(null);
   
   const clearConfirmedPlayers = useCallback(async (groupId: string) => {
     try {
@@ -52,22 +53,21 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     setIsGameDateLoading(true);
     if (groupSettings.gameDays) {
       const gameInfo: GameInfo | null = getActiveOrNextGame(groupSettings.gameDays);
-      const previousGameFinished = isGameFinished;
-
       setNextGameDate(gameInfo ? gameInfo.startDate : null);
 
       if (gameInfo) {
         const now = new Date();
         const gameHasPassed = now > gameInfo.endDate;
         const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
-        const isWithinGracePeriod = now > gameInfo.endDate && now < gracePeriodEnd;
-        
-        setIsGameFinished(gameHasPassed);
-        setIsConfirmationLocked(gameHasPassed && !isWithinGracePeriod);
 
-        // Se o estado mudou de "não finalizado" para "finalizado", limpa a lista.
-        if (!previousGameFinished && gameHasPassed) {
+        setIsGameFinished(gameHasPassed);
+        setIsConfirmationLocked(now > gracePeriodEnd);
+
+        // Logic to clear confirmed players for the *next* game cycle.
+        const currentGameId = formatDateToId(gameInfo.startDate);
+        if (lastClearedGameIdRef.current !== currentGameId && !gameHasPassed) {
           clearConfirmedPlayers(user.groupId);
+          lastClearedGameIdRef.current = currentGameId;
         }
 
       }
@@ -75,7 +75,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
       setNextGameDate(null);
     }
     setIsGameDateLoading(false);
-  }, [user?.groupId, groupSettings, isGameFinished, clearConfirmedPlayers]);
+  }, [user?.groupId, groupSettings, clearConfirmedPlayers]);
 
   useEffect(() => {
     if (!user?.groupId) {
@@ -83,13 +83,6 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
         setConfirmedPlayersCount(0);
         setIsFetchingPlayers(false);
         return;
-    }
-
-    if (isGameFinished) {
-      setConfirmedPlayers([]);
-      setConfirmedPlayersCount(0);
-      setIsFetchingPlayers(false);
-      return;
     }
 
     setIsFetchingPlayers(true);
@@ -111,7 +104,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     });
 
     return () => unsubscribe();
-  }, [user?.groupId, isGameFinished]);
+  }, [user?.groupId]);
 
   useEffect(() => {
     if (!user?.uid || !user?.groupId) {
@@ -137,11 +130,11 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
 
 
   const handlePresenceClick = async (status: 'confirmed' | 'declined') => {
-    if (!user || !user.groupId || !nextGameDate || isGameFinished) {
+    if (!user || !user.groupId || !nextGameDate || isConfirmationLocked) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: isGameFinished ? "Este jogo já foi encerrado." : "Não foi possível registrar sua presença.",
+        description: isConfirmationLocked ? "O período de confirmação para este jogo já encerrou." : "Não foi possível registrar sua presença.",
       });
       return;
     }
@@ -152,7 +145,6 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
             title: "Tempo Esgotado",
             description: "O horário para confirmar presença neste jogo já passou.",
         });
-        setIsConfirmationLocked(true);
         return;
     }
 
