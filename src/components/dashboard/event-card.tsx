@@ -119,11 +119,13 @@ export function EventCard({
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <div className="flex flex-col items-center justify-center gap-4 pt-2">
-                    <ConfirmedPlayersDialog 
-                        confirmedPlayers={confirmedPlayers}
-                        confirmedPlayersCount={confirmedPlayersCount}
-                        isFetchingPlayers={isFetchingPlayers}
-                    />
+                    {!isGameFinished && (
+                        <ConfirmedPlayersDialog 
+                            confirmedPlayers={confirmedPlayers}
+                            confirmedPlayersCount={confirmedPlayersCount}
+                            isFetchingPlayers={isFetchingPlayers}
+                        />
+                    )}
                     {isManager && (
                         <InviteButton user={user} size="lg" />
                     )}
