@@ -106,6 +106,9 @@ export function EventCard({
                             <Button 
                                 onClick={() => onPresenceClick('declined')} 
                                 variant={confirmedStatus === 'declined' || confirmedStatus === null ? 'secondary' : 'destructive'}
+                                className={cn(
+                                    (confirmedStatus === 'declined' || confirmedStatus === null) && "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                )}
                                 disabled={isSubmitting || !nextGameDate || confirmedStatus === 'declined' || confirmedStatus === null || isConfirmationLocked}
                             >
                                 <X className="mr-2 h-4 w-4" /> Não
@@ -116,7 +119,7 @@ export function EventCard({
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <div className="flex flex-col items-center justify-center gap-4 pt-2">
-                    {!isGameFinished && (
+                    {!isGameFinished && confirmedPlayersCount > 0 && (
                         <ConfirmedPlayersDialog 
                             confirmedPlayers={confirmedPlayers}
                             confirmedPlayersCount={confirmedPlayersCount}
