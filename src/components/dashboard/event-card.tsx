@@ -109,7 +109,7 @@ export function EventCard({
                                  className={cn(
                                     confirmedStatus === 'declined' && "bg-secondary text-secondary-foreground hover:bg-secondary"
                                 )}
-                                disabled={isSubmitting || !nextGameDate || confirmedStatus === 'declined' || isConfirmationLocked}
+                                disabled={isSubmitting || !nextGameDate || confirmedStatus === 'declined' || confirmedStatus === null || isConfirmationLocked}
                             >
                                 <X className="mr-2 h-4 w-4" /> Não
                             </Button>
