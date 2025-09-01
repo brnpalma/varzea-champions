@@ -105,10 +105,7 @@ export function EventCard({
                             </Button>
                             <Button 
                                 onClick={() => onPresenceClick('declined')} 
-                                variant="destructive"
-                                 className={cn(
-                                    confirmedStatus === 'declined' && "bg-secondary text-secondary-foreground hover:bg-secondary"
-                                )}
+                                variant={confirmedStatus === 'declined' || confirmedStatus === null ? 'secondary' : 'destructive'}
                                 disabled={isSubmitting || !nextGameDate || confirmedStatus === 'declined' || confirmedStatus === null || isConfirmationLocked}
                             >
                                 <X className="mr-2 h-4 w-4" /> Não
