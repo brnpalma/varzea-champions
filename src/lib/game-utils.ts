@@ -65,8 +65,10 @@ export function getActiveOrNextGame(gameDays: Record<string, GameDaySetting>): G
             const nextGame = allGameInfos.find(g => g.startDate > now);
             if (nextGame && nextGame.startDate < gracePeriodEnd) {
                 // If the next game starts before the grace period of the last one ends,
-                // prioritize showing the upcoming game.
-                continue; 
+                // we still want to show the one in the grace period for post-game actions.
+                // However, the main useGameData hook will prioritize the next game for confirmations.
+                // This function will just return the most recent valid game context.
+                return gameInfo;
             }
             return gameInfo; // Otherwise, we're still in the "post-game" phase of this one.
         }
