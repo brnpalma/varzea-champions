@@ -59,7 +59,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
 
   // Effect to fetch confirmed players for the next game
   useEffect(() => {
-    if (!nextGameDate || !user?.groupId) {
+    if (!nextGameDate || !user?.groupId || isGameFinished) {
         setConfirmedPlayers([]);
         setConfirmedPlayersCount(0);
         setIsFetchingPlayers(false);
@@ -86,7 +86,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     });
 
     return () => unsubscribe();
-  }, [nextGameDate, user?.groupId]);
+  }, [nextGameDate, user?.groupId, isGameFinished]);
 
   // Effect to fetch the current user's confirmation status
   useEffect(() => {
