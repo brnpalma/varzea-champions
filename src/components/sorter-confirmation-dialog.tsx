@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { User } from "@/hooks/use-auth";
 import { firestore } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FootballSpinner } from "./ui/football-spinner";
 import { UserAvatar } from "./user-avatar";
 import { ScrollArea } from "./ui/scroll-area";
@@ -30,76 +30,66 @@ interface SorterConfirmationDialogProps {
   nextGameDate: Date | null;
 }
 
-const formatDateToId = (date: Date): string => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = (`0${d.getMonth() + 1}`).slice(-2);
-    const day = (`0${d.getDate()}`).slice(-2);
-    return `${year}-${month}-${day}`;
-}
-
 export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId, nextGameDate }: SorterConfirmationDialogProps) {
   const [allPlayers, setAllPlayers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [playerStatus, setPlayerStatus] = useState<Record<string, boolean>>({});
-  const [isUpdating, setIsUpdating] = useState<string | null>(null); // Track UID of player being updated
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isOpen || !groupId) return;
 
     setIsLoading(true);
+    // First, get all players of the group
     const playersQuery = query(
       collection(firestore, 'users'),
       where('groupId', '==', groupId)
     );
 
-    const unsubscribe = onSnapshot(playersQuery, (snapshot) => {
+    const unsubscribePlayers = onSnapshot(playersQuery, (snapshot) => {
       const playersData = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id }) as User);
       setAllPlayers(playersData.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')));
       
-      if (nextGameDate) {
-        const gameId = formatDateToId(nextGameDate);
-        const attendeesQuery = query(
-          collection(firestore, `groups/${groupId}/games/${gameId}/attendees`),
-          where("status", "==", "confirmed")
-        );
-        
-        const unsubAttendees = onSnapshot(attendeesQuery, (attendeesSnapshot) => {
-            const confirmedIds = new Set(attendeesSnapshot.docs.map(doc => doc.id));
-            const initialStatus: Record<string, boolean> = {};
-            playersData.forEach(p => {
-                initialStatus[p.uid] = confirmedIds.has(p.uid);
-            });
-            setPlayerStatus(initialStatus);
-            setIsLoading(false);
-        }, (error) => {
-             console.error("Error fetching attendees:", error);
-             setIsLoading(false);
-        });
-        return () => unsubAttendees();
-      } else {
-        setIsLoading(false);
-      }
+      // Then, get the confirmed players for the next game
+      const confirmedQuery = query(
+        collection(firestore, `groups/${groupId}/jogadoresConfirmados`),
+        where("status", "==", "confirmed")
+      );
+      
+      const unsubscribeConfirmed = onSnapshot(confirmedQuery, (confirmedSnapshot) => {
+          const confirmedIds = new Set(confirmedSnapshot.docs.map(doc => doc.id));
+          const initialStatus: Record<string, boolean> = {};
+          playersData.forEach(p => {
+              initialStatus[p.uid] = confirmedIds.has(p.uid);
+          });
+          setPlayerStatus(initialStatus);
+          setIsLoading(false);
+      }, (error) => {
+           console.error("Error fetching confirmed players:", error);
+           setIsLoading(false);
+      });
+      
+      return () => unsubscribeConfirmed();
     }, (error) => {
       console.error("Error fetching all players:", error);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [isOpen, groupId, nextGameDate]);
+    return () => unsubscribePlayers();
+  }, [isOpen, groupId]);
 
   const { confirmed, notConfirmed } = useMemo(() => {
-    const confirmed: User[] = [];
-    const notConfirmed: User[] = [];
+    const confirmedList: User[] = [];
+    const notConfirmedList: User[] = [];
     allPlayers.forEach(player => {
       if (playerStatus[player.uid]) {
-        confirmed.push(player);
+        confirmedList.push(player);
       } else {
-        notConfirmed.push(player);
+        notConfirmedList.push(player);
       }
     });
-    return { confirmed, notConfirmed };
+    return { confirmed: confirmedList, notConfirmed: notConfirmedList };
   }, [allPlayers, playerStatus]);
 
   const handleStatusChange = async (player: User, newStatus: boolean) => {
@@ -112,17 +102,20 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
     // Optimistic update
     setPlayerStatus(prev => ({ ...prev, [player.uid]: newStatus }));
 
-    const gameId = formatDateToId(nextGameDate);
-    const attendeeDocRef = doc(firestore, `groups/${groupId}/games/${gameId}/attendees`, player.uid);
+    const confirmedDocRef = doc(firestore, `groups/${groupId}/jogadoresConfirmados`, player.uid);
 
     try {
-        await setDoc(attendeeDocRef, {
-            status: newStatus ? 'confirmed' : 'declined',
+      if (newStatus) {
+        await setDoc(confirmedDocRef, {
+            status: 'confirmed',
             confirmedAt: new Date().toISOString(),
             displayName: player.displayName,
             photoURL: player.photoURL,
             uid: player.uid,
         }, { merge: true });
+      } else {
+        await deleteDoc(confirmedDocRef);
+      }
     } catch (error) {
         console.error("Error updating presence:", error);
         toast({ variant: "destructive", title: "Erro ao atualizar", description: `Não foi possível alterar a presença de ${player.displayName}.`});
@@ -150,7 +143,7 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
           </div>
           <div className="w-auto">
             <Switch
-              checked={playerStatus[player.uid]}
+              checked={playerStatus[player.uid] ?? false}
               onCheckedChange={(checked) => handleStatusChange(player, checked)}
               disabled={isUpdating === player.uid}
               aria-label={`Presença de ${player.displayName}`}
@@ -212,4 +205,3 @@ export function SorterConfirmationDialog({ isOpen, setIsOpen, onConfirm, groupId
     </Dialog>
   );
 }
-

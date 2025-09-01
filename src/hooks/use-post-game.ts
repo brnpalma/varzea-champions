@@ -20,13 +20,15 @@ export function usePostGame(user: User | null, groupSettings: GroupSettings | nu
       return;
     }
 
+    // Since goals are tied to a game, we still need a gameId.
     const gameId = formatDateToId(nextGameDate);
-    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    const gameGoalsDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
     
-    const unsubscribe = onSnapshot(attendeeDocRef, (docSnap) => {
+    const unsubscribe = onSnapshot(gameGoalsDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setGoalsSubmitted(data.goals !== null && data.goals !== undefined);
+        // Check if goals is a number and not null/undefined
+        setGoalsSubmitted(typeof data.goals === 'number');
       } else {
         setGoalsSubmitted(false);
       }
@@ -72,6 +74,7 @@ export function usePostGame(user: User | null, groupSettings: GroupSettings | nu
             }
         } else {
             cardEnabled = false;
+            cardVisible = false; // Hide card if grace period is over
             message = "O período para registrar gols encerrou.";
         }
     } else {
@@ -93,35 +96,36 @@ export function usePostGame(user: User | null, groupSettings: GroupSettings | nu
       return;
     }
      const gameInfo: GameInfo | null = groupSettings?.gameDays ? getActiveOrNextGame(groupSettings.gameDays) : null;
-    if (!gameInfo || new Date() < gameInfo.startDate) {
+    if (!gameInfo || new Date() < gameInfo.endDate) {
        toast({
         variant: "destructive",
         title: "Aguarde",
-        description: "Você só pode registrar gols após o início da partida.",
+        description: "Você só pode registrar gols após o fim da partida.",
       });
       return;
     }
 
     const gameId = formatDateToId(nextGameDate);
-    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    const gameGoalsDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
     const userDocRef = doc(firestore, "users", user.uid);
 
     try {
       await runTransaction(firestore, async (transaction) => {
-        const attendeeDoc = await transaction.get(attendeeDocRef);
+        const gameGoalsDoc = await transaction.get(gameGoalsDocRef);
         const userDoc = await transaction.get(userDocRef);
 
         if (!userDoc.exists()) {
           throw new Error("Documento do usuário não encontrado!");
         }
 
-        const oldGoals = attendeeDoc.data()?.goals || 0;
+        const oldGoals = gameGoalsDoc.data()?.goals || 0;
         const goalsDifference = newGoals - oldGoals;
         
         const currentTotalGoals = userDoc.data()?.totalGoals || 0;
         const newTotalGoals = currentTotalGoals + goalsDifference;
         
-        transaction.set(attendeeDocRef, { goals: newGoals }, { merge: true });
+        // We are creating a document in a collection that might not exist, which is fine.
+        transaction.set(gameGoalsDocRef, { goals: newGoals, uid: user.uid }, { merge: true });
         transaction.update(userDocRef, { totalGoals: newTotalGoals });
       });
 

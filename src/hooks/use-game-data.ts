@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { doc, setDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, onSnapshot, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { User, GroupSettings, PlayerSubscriptionType } from "@/components/auth-provider";
 import { getActiveOrNextGame, GameInfo } from "@/lib/game-utils";
@@ -21,17 +21,39 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Effect to determine the next game date and its state
+  const clearConfirmedPlayers = useCallback(async (groupId: string) => {
+    try {
+      const confirmedPlayersRef = collection(firestore, `groups/${groupId}/jogadoresConfirmados`);
+      const snapshot = await getDocs(confirmedPlayersRef);
+      if (snapshot.empty) return;
+
+      const batch = writeBatch(firestore);
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log("Lista de jogadores confirmados foi limpa.");
+    } catch (error) {
+      console.error("Erro ao limpar lista de confirmados:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro de Sistema",
+        description: "Não foi possível limpar a lista de presença anterior."
+      });
+    }
+  }, [toast]);
+  
   useEffect(() => {
     if (!user?.groupId || !groupSettings) {
       setIsGameDateLoading(false);
       return;
     }
-    
+
     setIsGameDateLoading(true);
     if (groupSettings.gameDays) {
       const gameInfo: GameInfo | null = getActiveOrNextGame(groupSettings.gameDays);
-      
+      const previousGameFinished = isGameFinished;
+
       setNextGameDate(gameInfo ? gameInfo.startDate : null);
 
       if (gameInfo) {
@@ -42,34 +64,37 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
         
         setIsGameFinished(gameHasPassed);
         setIsConfirmationLocked(gameHasPassed && !isWithinGracePeriod);
+
+        // Se o estado mudou de "não finalizado" para "finalizado", limpa a lista.
+        if (!previousGameFinished && gameHasPassed) {
+          clearConfirmedPlayers(user.groupId);
+        }
+
       }
     } else {
       setNextGameDate(null);
     }
     setIsGameDateLoading(false);
-  }, [user?.groupId, groupSettings]);
+  }, [user?.groupId, groupSettings, isGameFinished, clearConfirmedPlayers]);
 
-  const formatDateToId = (date: Date): string => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = (`0${d.getMonth() + 1}`).slice(-2);
-    const day = (`0${d.getDate()}`).slice(-2);
-    return `${year}-${month}-${day}`;
-  }
-
-  // Effect to fetch confirmed players for the next game
   useEffect(() => {
-    if (!nextGameDate || !user?.groupId || isGameFinished) {
+    if (!user?.groupId) {
         setConfirmedPlayers([]);
         setConfirmedPlayersCount(0);
         setIsFetchingPlayers(false);
         return;
     }
 
+    if (isGameFinished) {
+      setConfirmedPlayers([]);
+      setConfirmedPlayersCount(0);
+      setIsFetchingPlayers(false);
+      return;
+    }
+
     setIsFetchingPlayers(true);
-    const gameId = formatDateToId(nextGameDate);
     const attendeesQuery = query(
-        collection(firestore, `groups/${user.groupId}/games/${gameId}/attendees`),
+        collection(firestore, `groups/${user.groupId}/jogadoresConfirmados`),
         where("status", "==", "confirmed")
     );
     
@@ -86,17 +111,15 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     });
 
     return () => unsubscribe();
-  }, [nextGameDate, user?.groupId, isGameFinished]);
+  }, [user?.groupId, isGameFinished]);
 
-  // Effect to fetch the current user's confirmation status
   useEffect(() => {
-    if (!nextGameDate || !user?.uid || !user?.groupId) {
+    if (!user?.uid || !user?.groupId) {
         setConfirmedStatus(null);
         return;
     }
 
-    const gameId = formatDateToId(nextGameDate);
-    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/jogadoresConfirmados`, user.uid);
     
     const unsubscribe = onSnapshot(attendeeDocRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -110,7 +133,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     });
 
     return () => unsubscribe();
-  }, [nextGameDate, user?.uid, user?.groupId]);
+  }, [user?.uid, user?.groupId]);
 
 
   const handlePresenceClick = async (status: 'confirmed' | 'declined') => {
@@ -146,10 +169,13 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     const oldStatus = confirmedStatus;
     setConfirmedStatus(status); // Optimistic update
 
-    const gameId = formatDateToId(nextGameDate);
-    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/games/${gameId}/attendees`, user.uid);
+    const attendeeDocRef = doc(firestore, `groups/${user.groupId}/jogadoresConfirmados`, user.uid);
     
     try {
+      if (status === 'declined') {
+        // If declining, we just delete the document to keep the collection clean.
+        await deleteDoc(attendeeDocRef);
+      } else {
         await setDoc(attendeeDocRef, {
             status: status,
             confirmedAt: new Date().toISOString(),
@@ -157,11 +183,13 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
             photoURL: user.photoURL,
             uid: user.uid,
         }, { merge: true });
-        toast({
-            variant: "success",
-            title: "Presença Registrada!",
-            description: `Sua presença foi ${status === 'confirmed' ? 'confirmada' : 'recusada'} com sucesso.`,
-        });
+      }
+
+      toast({
+          variant: "success",
+          title: "Presença Registrada!",
+          description: `Sua presença foi ${status === 'confirmed' ? 'confirmada' : 'recusada'} com sucesso.`,
+      });
     } catch (error) {
         console.error("Error setting presence:", error);
         toast({
