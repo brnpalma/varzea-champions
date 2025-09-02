@@ -14,7 +14,7 @@ const features = [
   {
     icon: <Users className="h-8 w-8 text-primary" />,
     title: "Cadastro de Jogadores",
-    description: "Mantenha uma lista atualizada de todos os membros do seu grupo, com foto, nome e avaliação.",
+    description: "Convide jogadores com um link. Eles mesmos se cadastram com foto e nome, mantendo sua lista sempre atualizada.",
   },
   {
     icon: <Dices className="h-8 w-8 text-primary" />,
