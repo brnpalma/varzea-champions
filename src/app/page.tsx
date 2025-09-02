@@ -10,12 +10,13 @@ const features = [
     icon: <Home className="h-8 w-8 text-primary" />,
     title: "Gestão de Partidas",
     description: "Organize seus jogos, defina datas, horários e acompanhe a confirmação de presença em tempo real.",
-    image: "/prints/1presenca.png",
+    images: ["/prints/1presenca.png"],
   },
   {
     icon: <Users className="h-8 w-8 text-primary" />,
     title: "Gestão de Jogadores",
     description: "Clique para copiar, compartilhe e pronto: os jogadores realizam seu próprio cadastro, e você pode ajustar a lista editando ou removendo quando necessário.",
+    images: ["/prints/2linkJogadores.png", "/prints/5JogadoresEditar.png"],
   },
   {
     icon: <Dices className="h-8 w-8 text-primary" />,
@@ -93,15 +94,18 @@ export default function LandingPage() {
                   </CardHeader>
                   <CardContent className="text-center flex-1 flex flex-col">
                     <p className="text-muted-foreground">{feature.description}</p>
-                    {feature.image && (
-                       <div className="mt-4 flex-1 flex items-end">
-                        <Image
-                          src={feature.image}
-                          alt={`Print da funcionalidade ${feature.title}`}
-                          width={400}
-                          height={250}
-                          className="rounded-md object-contain"
-                        />
+                    {feature.images && (
+                       <div className="mt-4 flex-1 flex flex-col items-end justify-end gap-2">
+                        {feature.images.map((imageSrc) => (
+                          <Image
+                            key={imageSrc}
+                            src={imageSrc}
+                            alt={`Print da funcionalidade ${feature.title}`}
+                            width={400}
+                            height={250}
+                            className="rounded-md object-contain"
+                          />
+                        ))}
                       </div>
                     )}
                   </CardContent>
