@@ -40,6 +40,7 @@ const features = [
     icon: <Star className="h-8 w-8 text-primary" />,
     title: "Avaliação de Jogadores",
     description: "Defina o nível de cada jogador com um sistema de estrelas, usado para equilibrar as equipes.",
+    images: ["/prints/6editarEstrelas.png"],
   },
 ];
 
