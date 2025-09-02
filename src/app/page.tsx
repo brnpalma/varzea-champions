@@ -10,6 +10,7 @@ const features = [
     icon: <Home className="h-8 w-8 text-primary" />,
     title: "Gestão de Partidas",
     description: "Organize seus jogos, defina datas, horários e acompanhe a confirmação de presença em tempo real.",
+    image: "/prints/1presenca.png",
   },
   {
     icon: <Users className="h-8 w-8 text-primary" />,
@@ -85,13 +86,24 @@ export default function LandingPage() {
             </div>
             <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {features.map((feature) => (
-                <Card key={feature.title} className="shadow-lg hover:shadow-xl transition-shadow">
+                <Card key={feature.title} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
                   <CardHeader className="flex flex-col items-center text-center">
                     {feature.icon}
                     <CardTitle className="mt-4">{feature.title}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-center">
+                  <CardContent className="text-center flex-1 flex flex-col">
                     <p className="text-muted-foreground">{feature.description}</p>
+                    {feature.image && (
+                       <div className="mt-4 flex-1 flex items-end">
+                        <Image
+                          src={feature.image}
+                          alt={`Print da funcionalidade ${feature.title}`}
+                          width={400}
+                          height={250}
+                          className="rounded-md object-contain"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
