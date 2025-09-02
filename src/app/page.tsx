@@ -18,7 +18,7 @@ function RedirectPageContent() {
         router.replace('/inicio');
       } else {
         // If user is not logged in, redirect to the public landing page
-        router.replace('/home');
+        router.replace('/landing');
       }
     }
   }, [user, loading, router]);
