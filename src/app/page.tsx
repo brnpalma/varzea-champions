@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { FootballSpinner } from '@/components/ui/football-spinner';
 import { AuthProvider } from '@/components/auth-provider';
-import { MainLayout } from '@/components/main-layout';
 
 function RedirectPageContent() {
   const { user, loading } = useAuth();
@@ -36,9 +35,7 @@ function RedirectPageContent() {
 export default function RedirectPage() {
   return (
      <AuthProvider>
-      <MainLayout hideNav={true}>
         <RedirectPageContent />
-      </MainLayout>
     </AuthProvider>
   )
 }
