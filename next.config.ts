@@ -28,6 +28,8 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    // Forçar a recarga de imagens estáticas no modo de desenvolvimento
+    unoptimized: process.env.NODE_ENV === 'development',
   },
   async redirects() {
     return [
