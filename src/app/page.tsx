@@ -13,8 +13,8 @@ const features = [
   },
   {
     icon: <Users className="h-8 w-8 text-primary" />,
-    title: "Cadastro de Jogadores",
-    description: "Convide jogadores com um link. Eles mesmos se cadastram com foto e nome, mantendo sua lista sempre atualizada.",
+    title: "Gestão de Jogadores",
+    description: "Clique para copiar, compartilhe e pronto: os jogadores realizam seu próprio cadastro, e você pode ajustar a lista editando ou removendo quando necessário.",
   },
   {
     icon: <Dices className="h-8 w-8 text-primary" />,
