@@ -29,8 +29,7 @@ const features = [
     icon: <Trophy className="h-8 w-8 text-primary" />,
     title: "Ranking e Artilharia",
     description: "Motive seus jogadores com um ranking de artilheiros e de melhores avaliados da temporada.",
-    images: ["/prints/4Ranking1.png", "/prints/4Ranking2.png"],
-    imageLayout: 'row',
+    images: ["/prints/ranking.png"],
   },
   {
     icon: <ShieldCheck className="h-8 w-8 text-primary" />,
