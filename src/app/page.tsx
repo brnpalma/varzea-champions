@@ -22,6 +22,8 @@ const features = [
     icon: <Dices className="h-8 w-8 text-primary" />,
     title: "Sorteador Inteligente",
     description: "Crie times equilibrados com um clique, baseado na avaliação (estrelas) de cada jogador.",
+    images: ["/prints/3sortA.png", "/prints/3sortB.png"],
+    imageLayout: 'row',
   },
   {
     icon: <Trophy className="h-8 w-8 text-primary" />,
@@ -95,14 +97,16 @@ export default function LandingPage() {
                   <CardContent className="text-center flex-1 flex flex-col">
                     <p className="text-muted-foreground">{feature.description}</p>
                     {feature.images && (
-                       <div className="mt-4 flex-1 flex flex-col items-end justify-end gap-2">
+                       <div className={`mt-4 flex-1 flex items-end justify-center gap-2 ${
+                         (feature as any).imageLayout === 'row' ? 'flex-row' : 'flex-col'
+                       }`}>
                         {feature.images.map((imageSrc) => (
                           <Image
                             key={imageSrc}
                             src={imageSrc}
                             alt={`Print da funcionalidade ${feature.title}`}
-                            width={400}
-                            height={250}
+                            width={(feature as any).imageLayout === 'row' ? 180 : 400}
+                            height={(feature as any).imageLayout === 'row' ? 300 : 250}
                             className="rounded-md object-contain"
                           />
                         ))}
