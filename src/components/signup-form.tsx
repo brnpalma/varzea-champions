@@ -260,7 +260,7 @@ function SignupFormComponent() {
         sessionStorage.removeItem('invite_group_id');
       }
 
-      router.push('/');
+      router.push('/inicio');
       
     } catch (error: any) {
       console.error("Signup Error:", error);

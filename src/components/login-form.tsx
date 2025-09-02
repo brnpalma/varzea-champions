@@ -52,7 +52,7 @@ export function LoginForm() {
     setIsLoading("email");
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/');
+      router.push('/inicio');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -69,7 +69,7 @@ export function LoginForm() {
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
-      router.push('/');
+      router.push('/inicio');
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         setIsLoading(false);

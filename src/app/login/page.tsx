@@ -28,7 +28,7 @@ function LoginPageContent() {
   useEffect(() => {
     // If the auth state is loaded and a user exists, they shouldn't be on the login page.
     if (!loading && user) {
-      router.push('/');
+      router.push('/inicio');
     }
   }, [user, loading, router]);
 

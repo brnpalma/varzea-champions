@@ -52,7 +52,7 @@ export function BottomNav() {
   };
   
   const navItems = [
-    { href: "/", label: "Início", icon: Home },
+    { href: "/inicio", label: "Início", icon: Home },
     { href: "/sorter", label: "Sorteador", icon: Dices },
     { href: "/ranking", label: "Ranking", icon: Trophy, colorClass: "text-amber-500" },
     { href: "/players", label: "Jogadores", icon: Users },
@@ -114,7 +114,7 @@ export function BottomNav() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-card border-r fixed h-full z-50">
         <div className="p-6 border-b">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/inicio" className="flex items-center gap-3">
             <Image src="/logo-transp.png" alt="Várzea Champions Logo" width={60} height={60} />
             <h1 className="text-xl font-bold text-foreground">Várzea Champions</h1>
           </Link>
