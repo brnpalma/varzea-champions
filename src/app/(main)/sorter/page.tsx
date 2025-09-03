@@ -151,12 +151,6 @@ export default function SorterPage() {
                  )}
               </div>
             </div>
-             {!isFetchingPlayers && confirmedPlayersCount === 0 && user?.groupId && (
-                <div className="flex items-center text-sm text-muted-foreground mt-4 text-center">
-                    <Info className="h-4 w-4 mr-2 shrink-0" />
-                    <span>Nenhuma partida agendada ou nenhum jogador confirmado.</span>
-                </div>
-            )}
           </CardContent>
         </Card>
 
