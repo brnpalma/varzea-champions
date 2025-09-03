@@ -30,7 +30,7 @@ interface Payment {
   paymentDate: {
     seconds: number;
     nanoseconds: number;
-  };
+  } | null; // Can be null temporarily
   type: 'Mensal' | 'Avulso';
 }
 
@@ -170,9 +170,9 @@ export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: Pay
                     <li key={payment.id} className="flex items-center justify-between p-3">
                         <div>
                             <p className="font-medium">
-                                {new Date(payment.paymentDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                                {payment.paymentDate ? new Date(payment.paymentDate.seconds * 1000).toLocaleDateString('pt-BR', {
                                     day: '2-digit', month: '2-digit', year: 'numeric'
-                                })}
+                                }) : 'Processando...'}
                             </p>
                              <Badge variant={payment.type === 'Mensal' ? "default" : "secondary"}>{payment.type}</Badge>
                         </div>
