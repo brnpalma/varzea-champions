@@ -53,8 +53,9 @@ export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: Pay
     if (!isOpen) return;
     
     setIsLoading(true);
+    const collectionPath = `groups/${groupId}/payments`;
     const paymentsQuery = query(
-      collection(firestore, `groups/${groupId}/payments`),
+      collection(firestore, collectionPath),
       where("userId", "==", player.uid),
       orderBy("paymentDate", "desc")
     );
@@ -63,14 +64,24 @@ export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: Pay
       const paymentsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Payment[];
       setPayments(paymentsData);
       setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching payments:", error);
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os pagamentos." });
+    }, (error: any) => {
+       if (error.code === 'permission-denied') {
+        console.error(
+            "--- ERRO DE PERMISSÃO DO FIRESTORE ---",
+            "\nCaminho da coleção:", collectionPath,
+            "\nConsulta:", `onde 'userId' == '${player.uid}'`,
+            "\nDetalhes do Erro:", error.message,
+            "\nVerifique suas regras em 'firestore.rules' para garantir que o usuário autenticado tenha permissão de 'read' (list) neste caminho."
+        );
+      } else {
+        console.error("Erro ao buscar pagamentos:", error);
+      }
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os pagamentos. Verifique o console para mais detalhes." });
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isOpen, groupId, player.uid, toast]);
+  }, [isOpen, groupId, player.uid, toast, player.displayName]);
   
   const handleAddPayment = async () => {
     const paymentAmount = parseFloat(amount);
@@ -80,8 +91,9 @@ export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: Pay
     }
 
     setIsAddingPayment(true);
+    const collectionPath = `groups/${groupId}/payments`;
     try {
-      await addDoc(collection(firestore, `groups/${groupId}/payments`), {
+      await addDoc(collection(firestore, collectionPath), {
         userId: player.uid,
         amount: paymentAmount,
         type: paymentType,
@@ -90,9 +102,19 @@ export function PaymentHistoryDialog({ player, groupId, isOpen, setIsOpen }: Pay
       toast({ variant: "success", title: "Pagamento Registrado!", description: "O novo pagamento foi adicionado com sucesso." });
       setAmount(""); // Reset form
       setPaymentType("Mensal");
-    } catch (error) {
-      console.error("Error adding payment:", error);
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível registrar o pagamento." });
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
+        console.error(
+            "--- ERRO DE PERMISSÃO DO FIRESTORE ---",
+            "\nCaminho da coleção:", collectionPath,
+            "\nAção:", "create",
+            "\nDetalhes do Erro:", error.message,
+            "\nVerifique suas regras em 'firestore.rules' para garantir que o usuário autenticado tenha permissão de 'create' neste caminho."
+        );
+      } else {
+        console.error("Erro ao adicionar pagamento:", error);
+      }
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível registrar o pagamento. Verifique o console para mais detalhes." });
     } finally {
       setIsAddingPayment(false);
     }
