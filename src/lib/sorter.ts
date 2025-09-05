@@ -12,13 +12,16 @@ const shuffleArray = (array: any[]) => {
 const getTeamSum = (team: User[]) => team.reduce((sum, p) => sum + (p.rating || 1), 0);
 
 export const performBalancedSort = (players: User[], playersPerTeam: number): { teams: User[][]} => {
-    if (players.length === 0) {
+    if (players.length === 0 || playersPerTeam <= 0) {
         return { teams: [] };
     }
 
-    // Treat "leftovers" as a team from the start
-    const numTeams = Math.ceil(players.length / playersPerTeam);
-    let teams: User[][] = Array.from({ length: numTeams }, () => []);
+    const numFullTeams = Math.floor(players.length / playersPerTeam);
+    const numLeftoverPlayers = players.length % playersPerTeam;
+    const hasLeftoverTeam = numLeftoverPlayers > 0;
+    const totalTeams = numFullTeams + (hasLeftoverTeam ? 1 : 0);
+
+    let teams: User[][] = Array.from({ length: totalTeams }, () => []);
     
     const playersByRating: Record<number, User[]> = {};
     players.forEach(p => {
@@ -27,41 +30,41 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
         playersByRating[rating].push(p);
     });
     
-    // Shuffle players within each rating tier
+    // Shuffle players within each rating tier to add randomness
     Object.values(playersByRating).forEach(tier => shuffleArray(tier));
 
+    // Get all players sorted by rating descending to ensure top players are distributed first
     let allPlayersTiered = Object.entries(playersByRating)
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .flatMap(([, playersInTier]) => playersInTier);
     
-    // Snake Draft to distribute players
-    let playerIndex = 0;
-    let forward = true;
-    while(playerIndex < allPlayersTiered.length) {
-        if(forward) {
-            for(let i = 0; i < numTeams && playerIndex < allPlayersTiered.length; i++) {
-                teams[i].push(allPlayersTiered[playerIndex++]);
-            }
-        } else {
-            for(let i = numTeams - 1; i >= 0 && playerIndex < allPlayersTiered.length; i--) {
-                teams[i].push(allPlayersTiered[playerIndex++]);
-            }
-        }
-        forward = !forward;
+    // Distribute players into teams, filling full teams first
+    for (let i = 0; i < numFullTeams; i++) {
+        teams[i] = allPlayersTiered.splice(0, playersPerTeam);
+    }
+    
+    // Add remaining players to the leftover team
+    if (hasLeftoverTeam) {
+        teams[numFullTeams] = allPlayersTiered;
     }
 
-    // Fine-Tuning Swaps for star sum balance
-    for (let pass = 0; pass < 5; pass++) {
-        for (let i = 0; i < teams.length; i++) {
-            for (let j = i + 1; j < teams.length; j++) {
-                const teamA = teams[i];
-                const teamB = teams[j];
+    // Balance the full teams by swapping players
+    const fullTeams = teams.slice(0, numFullTeams);
+    const leftoverTeam = hasLeftoverTeam ? teams[numFullTeams] : [];
+
+    // Fine-Tuning Swaps for star sum balance only among full teams
+    for (let pass = 0; pass < 5; pass++) { // Multiple passes for better balance
+        for (let i = 0; i < fullTeams.length; i++) {
+            for (let j = i + 1; j < fullTeams.length; j++) {
+                const teamA = fullTeams[i];
+                const teamB = fullTeams[j];
                 const sumA = getTeamSum(teamA);
                 const sumB = getTeamSum(teamB);
                 const initialDiff = Math.abs(sumA - sumB);
 
                 let bestSwap: { pA_idx: number, pB_idx: number, newDiff: number } | null = null;
                 
+                // Find the best swap between teamA and teamB
                 for (let pA_idx = 0; pA_idx < teamA.length; pA_idx++) {
                     for (let pB_idx = 0; pB_idx < teamB.length; pB_idx++) {
                         const playerA = teamA[pA_idx];
@@ -77,6 +80,7 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
                     }
                 }
                 
+                // Perform the best swap found
                 if (bestSwap) {
                     const temp = teamA[bestSwap.pA_idx];
                     teamA[bestSwap.pA_idx] = teamB[bestSwap.pB_idx];
@@ -86,8 +90,11 @@ export const performBalancedSort = (players: User[], playersPerTeam: number): { 
         }
     }
     
-    // Final shuffle for presentation
-    teams.forEach(team => shuffleArray(team));
+    // Final shuffle for presentation within each team
+    fullTeams.forEach(team => shuffleArray(team));
+    if(hasLeftoverTeam) shuffleArray(leftoverTeam);
 
-    return { teams };
+    const finalTeams = [...fullTeams, ...(hasLeftoverTeam ? [leftoverTeam] : [])];
+
+    return { teams: finalTeams };
 };
