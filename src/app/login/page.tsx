@@ -26,11 +26,12 @@ function LoginPageContent() {
   const groupId = searchParams.get('group_id');
 
   useEffect(() => {
-    // If the auth state is loaded and a user exists, they shouldn't be on the login page.
-    if (!loading && user) {
+    // If auth state is loaded, a user exists, AND they are not trying to complete their profile,
+    // then they shouldn't be on the login page.
+    if (!loading && user && !isCompletingProfile) {
       router.push('/inicio');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isCompletingProfile]);
 
   const finalAuthMode = isCompletingProfile ? "signup" : authMode;
 
@@ -47,8 +48,8 @@ function LoginPageContent() {
     return finalAuthMode === 'login' ? 'Faça login na sua conta para continuar.' : 'Insira seus dados abaixo para começar.';
   }
 
-  // If we are still loading the auth state, or if we are about to redirect, show a spinner.
-  if (loading || user) {
+  // Show a spinner while loading auth state, or if a logged-in user (who doesn't need to complete profile) is about to be redirected.
+  if (loading || (user && !isCompletingProfile)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <FootballSpinner />
