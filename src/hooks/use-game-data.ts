@@ -63,17 +63,19 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
         setIsGameFinished(gameHasPassed);
         setIsConfirmationLocked(now > gracePeriodEnd);
 
-        const currentGameId = formatDateToId(gameInfo.startDate);
-
-        // Logic to clear confirmed players for the *next* game cycle.
-        // It should only clear when the grace period of the *last* game has ended
-        // and we are starting a *new* game confirmation cycle.
-        if (lastClearedGameIdRef.current !== currentGameId && now > gracePeriodEnd) {
+        const gameId = formatDateToId(gameInfo.startDate);
+        
+        if (now > gracePeriodEnd && lastClearedGameIdRef.current !== gameId) {
           clearConfirmedPlayers(user.groupId);
-          lastClearedGameIdRef.current = currentGameId;
-        } else if (!lastClearedGameIdRef.current) {
-           // On initial load, set the ref to the current game to avoid accidental clearing
-           lastClearedGameIdRef.current = currentGameId;
+          lastClearedGameIdRef.current = gameId;
+        } else if (lastClearedGameIdRef.current === null) {
+          // On first load, if we are not in a grace period, set the ref to avoid clearing
+          // This prevents clearing on first load if the last game was long ago
+           if (now < gracePeriodEnd) {
+             // If we are in the grace period of a game on load, don't mark it as cleared yet
+           } else {
+             lastClearedGameIdRef.current = gameId;
+           }
         }
       }
     } else {
