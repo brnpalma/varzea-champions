@@ -6,13 +6,13 @@ import { doc, collection, query, where, getDocs, writeBatch } from "firebase/fir
 import { firestore } from "@/lib/firebase";
 import { User, GroupSettings } from "@/components/auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { formatDateToId } from "@/lib/game-utils";
+import { getActiveOrNextGame, GameInfo } from "@/lib/game-utils";
 
 export function useEquipmentManager(user: User | null, groupSettings: GroupSettings | null, nextGameDate: Date | null) {
   const { toast } = useToast();
   const [equipmentManager, setEquipmentManager] = useState<{ next: User | null }>({ next: null });
   const [isLoadingManager, setIsLoadingManager] = useState(false);
-  const previousGameDateRef = useRef<string | null>(null);
+  const lastRotatedGameIdRef = useRef<string | null>(null);
 
   const fetchEquipmentManager = useCallback(async () => {
     if (!groupSettings?.enableEquipmentManager || !user?.groupId) {
@@ -65,7 +65,8 @@ export function useEquipmentManager(user: User | null, groupSettings: GroupSetti
 
         let currentManager = allPlayers.find(p => !p.lavouColete);
         if (!currentManager) {
-            currentManager = allPlayers[allPlayers.length - 1];
+            // Se todos já lavaram, o último da lista (antes de resetar) é o 'current'
+            currentManager = allPlayers[allPlayers.length - 1]; 
         }
 
         if (!currentManager) return;
@@ -74,10 +75,12 @@ export function useEquipmentManager(user: User | null, groupSettings: GroupSetti
         
         const currentManagerRef = doc(firestore, 'users', currentManager.uid);
         batch.update(currentManagerRef, { lavouColete: true });
+        
+        // Verifica se TODOS os jogadores (exceto o atual que acabamos de marcar) já lavaram
+        const allHaveWashed = allPlayers.every(p => p.lavouColete || p.uid === currentManager.uid);
 
-        const remainingPlayers = allPlayers.filter(p => !p.lavouColete && p.uid !== currentManager.uid);
-
-        if (remainingPlayers.length === 0) {
+        if (allHaveWashed) {
+            // Se todos já lavaram, reseta o status de todos (exceto o que acabou de lavar)
             allPlayers.forEach(player => {
                 if (player.uid !== currentManager.uid) {
                   const playerRef = doc(firestore, 'users', player.uid);
@@ -107,18 +110,27 @@ export function useEquipmentManager(user: User | null, groupSettings: GroupSetti
     fetchEquipmentManager();
   }, [fetchEquipmentManager]);
 
-  useEffect(() => {
-    const currentGameId = nextGameDate ? formatDateToId(nextGameDate) : null;
+ useEffect(() => {
+    if (!groupSettings?.gameDays || !user?.groupId) return;
+
+    const gameInfo: GameInfo | null = getActiveOrNextGame(groupSettings.gameDays);
+    if (!gameInfo) return;
+
+    const now = new Date();
+    const gameHasPassed = now > gameInfo.endDate;
+    const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
+    const gameId = `${gameInfo.startDate.getFullYear()}-${gameInfo.startDate.getMonth()}-${gameInfo.startDate.getDate()}`;
     
-    if (previousGameDateRef.current && currentGameId && previousGameDateRef.current !== currentGameId) {
-        const previousDate = new Date(previousGameDateRef.current);
-        const now = new Date();
-        if (nextGameDate && previousDate < now && nextGameDate > now) {
-          updateEquipmentManagerRotation();
-        }
+    // Se o período de graça terminou e ainda não rotacionamos para este jogo
+    if (now > gracePeriodEnd && lastRotatedGameIdRef.current !== gameId) {
+        updateEquipmentManagerRotation();
+        lastRotatedGameIdRef.current = gameId; // Marca que a rotação para este jogo foi feita
+    } else if (lastRotatedGameIdRef.current === null && !gameHasPassed) {
+        // Na primeira vez que carrega, se o jogo ainda não passou, define a referência para evitar rotações indevidas
+        lastRotatedGameIdRef.current = gameId;
     }
-    previousGameDateRef.current = currentGameId;
-  }, [nextGameDate, updateEquipmentManagerRotation]);
+
+  }, [groupSettings, nextGameDate, updateEquipmentManagerRotation, user?.groupId]);
 
   return {
     equipmentManager,
