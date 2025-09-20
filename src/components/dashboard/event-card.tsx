@@ -24,6 +24,7 @@ interface EventCardProps {
     isFetchingPlayers: boolean;
     isManager: boolean | undefined;
     showClearButton: boolean;
+    isClearButtonEnabled: boolean;
     onClearConfirmedPlayers: () => void;
 }
 
@@ -41,6 +42,7 @@ export function EventCard({
     isFetchingPlayers,
     isManager,
     showClearButton,
+    isClearButtonEnabled,
     onClearConfirmedPlayers
 }: EventCardProps) {
     const formatNextGameDate = (date: Date | null) => {
@@ -128,6 +130,7 @@ export function EventCard({
                             variant="destructive"
                             size="lg"
                             onClick={onClearConfirmedPlayers}
+                            disabled={!isClearButtonEnabled}
                             className="w-full sm:w-auto"
                         >
                             <Trash2 className="mr-2 h-5 w-5" />

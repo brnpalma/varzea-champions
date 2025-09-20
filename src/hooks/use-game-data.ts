@@ -22,6 +22,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [showClearButton, setShowClearButton] = useState(false);
+  const [isClearButtonEnabled, setIsClearButtonEnabled] = useState(false);
 
   const clearConfirmedPlayers = useCallback(async (groupId: string) => {
     try {
@@ -70,8 +71,12 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
         setIsConfirmationLocked(now > gracePeriodEnd);
 
         const isManager = user.userType === UserType.GESTOR_GRUPO;
-        const shouldShowClearButton = isManager && (now > gracePeriodEnd) && confirmedPlayersCount > 0;
-        setShowClearButton(shouldShowClearButton);
+        setShowClearButton(isManager && confirmedPlayersCount > 0);
+        setIsClearButtonEnabled(isManager && now > gameInfo.endDate);
+        
+      } else {
+        setShowClearButton(false);
+        setIsClearButtonEnabled(false);
       }
     } else {
       setNextGameDate(null);
@@ -218,6 +223,7 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     isFetchingPlayers,
     isSubmitting,
     showClearButton,
+    isClearButtonEnabled,
     handlePresenceClick,
     handleClearConfirmedPlayers,
   };
