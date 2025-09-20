@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { Dices, Shuffle, Star, Info, LogIn } from "lucide-react";
+import { Dices, Shuffle, Star, Info, LogIn, Trash2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { FootballSpinner } from "@/components/ui/football-spinner";
@@ -29,6 +29,9 @@ export default function SorterPage() {
     nextGameDate,
     confirmedPlayersCount,
     isFetchingPlayers,
+    showClearButton,
+    isClearButtonEnabled,
+    handleClearConfirmedPlayers,
   } = useGameData(user, groupSettings);
 
   const playersPerTeamConfig = groupSettings?.playersPerTeam || 5;
@@ -143,14 +146,27 @@ export default function SorterPage() {
                 Sortear Times
               </Button>
 
-              <div className="flex items-center justify-center text-muted-foreground font-medium">
+              {showClearButton && (
+                  <Button
+                      variant="destructive"
+                      size="lg"
+                      onClick={handleClearConfirmedPlayers}
+                      disabled={!isClearButtonEnabled}
+                      className="w-full sm:w-auto"
+                  >
+                      <Trash2 className="mr-2 h-5 w-5" />
+                      Limpar Lista
+                  </Button>
+              )}
+
+            </div>
+             <div className="flex items-center justify-center text-muted-foreground font-medium mt-2">
                  {isFetchingPlayers ? (
                     <FootballSpinner />
                  ) : (
                     <span>{confirmedPlayersCount} Jogadores Confirmados</span>
                  )}
               </div>
-            </div>
           </CardContent>
         </Card>
 

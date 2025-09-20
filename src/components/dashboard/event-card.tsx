@@ -125,18 +125,6 @@ export function EventCard({
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <div className="flex flex-col items-center justify-center gap-4 pt-2">
-                    {showClearButton && (
-                        <Button
-                            variant="destructive"
-                            size="lg"
-                            onClick={onClearConfirmedPlayers}
-                            disabled={!isClearButtonEnabled}
-                            className="w-full sm:w-auto"
-                        >
-                            <Trash2 className="mr-2 h-5 w-5" />
-                            Limpar Lista
-                        </Button>
-                    )}
                     {!isGameFinished && confirmedPlayersCount > 0 && (
                         <ConfirmedPlayersDialog 
                             confirmedPlayers={confirmedPlayers}
@@ -148,7 +136,7 @@ export function EventCard({
                         <InviteButton user={user} size="lg" />
                     )}
                 </div>
-                 {isGameFinished && !showClearButton && (
+                 {isGameFinished && (
                      <p className="text-sm text-center text-muted-foreground pt-4">
                         A confirmação para este jogo foi encerrada.
                     </p>
