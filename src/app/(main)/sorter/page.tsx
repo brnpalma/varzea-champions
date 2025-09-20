@@ -27,6 +27,7 @@ export default function SorterPage() {
   
   const {
     nextGameDate,
+    confirmedPlayers,
     confirmedPlayersCount,
     isFetchingPlayers,
     showClearButton,
@@ -140,33 +141,31 @@ export default function SorterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-             <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
-              <Button size="lg" onClick={handleOpenConfirmationDialog} disabled={isSorting || !user?.groupId} className="w-full sm:w-auto">
-                <Shuffle className="mr-2 h-5 w-5" />
-                Sortear Times
-              </Button>
+            <Button size="lg" onClick={handleOpenConfirmationDialog} disabled={isSorting || !user?.groupId} className="w-full sm:w-auto">
+              <Shuffle className="mr-2 h-5 w-5" />
+              Sortear Times
+            </Button>
+            
+            <div className="flex flex-col items-center justify-center text-muted-foreground font-medium mt-2 gap-4">
+                {isFetchingPlayers ? (
+                  <FootballSpinner />
+                ) : (
+                  <span>{confirmedPlayersCount} Jogadores Confirmados</span>
+                )}
 
-              {showClearButton && (
-                  <Button
-                      variant="destructive"
-                      size="lg"
-                      onClick={handleClearConfirmedPlayers}
-                      disabled={!isClearButtonEnabled}
-                      className="w-full sm:w-auto"
-                  >
-                      <Trash2 className="mr-2 h-5 w-5" />
-                      Limpar Lista
-                  </Button>
-              )}
-
+                {showClearButton && (
+                    <Button
+                        variant="destructive"
+                        size="lg"
+                        onClick={handleClearConfirmedPlayers}
+                        disabled={!isClearButtonEnabled}
+                        className="w-full sm:w-auto"
+                    >
+                        <Trash2 className="mr-2 h-5 w-5" />
+                        Limpar Lista
+                    </Button>
+                )}
             </div>
-             <div className="flex items-center justify-center text-muted-foreground font-medium mt-2">
-                 {isFetchingPlayers ? (
-                    <FootballSpinner />
-                 ) : (
-                    <span>{confirmedPlayersCount} Jogadores Confirmados</span>
-                 )}
-              </div>
           </CardContent>
         </Card>
 
@@ -181,6 +180,7 @@ export default function SorterPage() {
                 isOpen={isConfirmationDialogOpen}
                 setIsOpen={setIsConfirmationDialogOpen}
                 onConfirm={handleSort}
+                confirmedPlayers={confirmedPlayers}
                 groupId={user.groupId}
                 nextGameDate={nextGameDate}
             />
