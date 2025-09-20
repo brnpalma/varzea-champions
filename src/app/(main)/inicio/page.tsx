@@ -29,7 +29,9 @@ export default function HomePage() {
     confirmedPlayersCount,
     isFetchingPlayers,
     isSubmitting,
-    handlePresenceClick
+    showClearButton,
+    handlePresenceClick,
+    handleClearConfirmedPlayers,
   } = useGameData(user, groupSettings);
 
   const {
@@ -97,6 +99,8 @@ export default function HomePage() {
                 confirmedPlayersCount={confirmedPlayersCount}
                 isFetchingPlayers={isFetchingPlayers}
                 isManager={isManager}
+                showClearButton={showClearButton}
+                onClearConfirmedPlayers={handleClearConfirmedPlayers}
             />
         </div>
         

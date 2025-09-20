@@ -4,7 +4,7 @@
 import { User } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Check, X, CheckCircle } from "lucide-react";
+import { Calendar, Check, X, CheckCircle, Trash2 } from "lucide-react";
 import { FootballSpinner } from "@/components/ui/football-spinner";
 import { ConfirmedPlayersDialog } from "@/components/confirmed-players-dialog";
 import { InviteButton } from "../invite-button";
@@ -23,6 +23,8 @@ interface EventCardProps {
     confirmedPlayersCount: number;
     isFetchingPlayers: boolean;
     isManager: boolean | undefined;
+    showClearButton: boolean;
+    onClearConfirmedPlayers: () => void;
 }
 
 export function EventCard({
@@ -37,7 +39,9 @@ export function EventCard({
     confirmedPlayers,
     confirmedPlayersCount,
     isFetchingPlayers,
-    isManager
+    isManager,
+    showClearButton,
+    onClearConfirmedPlayers
 }: EventCardProps) {
     const formatNextGameDate = (date: Date | null) => {
         if (!date) {
@@ -119,6 +123,17 @@ export function EventCard({
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <div className="flex flex-col items-center justify-center gap-4 pt-2">
+                    {showClearButton && (
+                        <Button
+                            variant="destructive"
+                            size="lg"
+                            onClick={onClearConfirmedPlayers}
+                            className="w-full sm:w-auto"
+                        >
+                            <Trash2 className="mr-2 h-5 w-5" />
+                            Limpar Lista
+                        </Button>
+                    )}
                     {!isGameFinished && confirmedPlayersCount > 0 && (
                         <ConfirmedPlayersDialog 
                             confirmedPlayers={confirmedPlayers}
@@ -130,7 +145,7 @@ export function EventCard({
                         <InviteButton user={user} size="lg" />
                     )}
                 </div>
-                 {isGameFinished && (
+                 {isGameFinished && !showClearButton && (
                      <p className="text-sm text-center text-muted-foreground pt-4">
                         A confirmação para este jogo foi encerrada.
                     </p>

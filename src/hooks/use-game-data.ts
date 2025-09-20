@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, setDoc, collection, query, where, onSnapshot, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { User, GroupSettings, PlayerSubscriptionType } from "@/components/auth-provider";
+import { User, GroupSettings, PlayerSubscriptionType, UserType } from "@/components/auth-provider";
 import { getActiveOrNextGame, GameInfo, formatDateToId } from "@/lib/game-utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,8 +20,9 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
   const [confirmedPlayersCount, setConfirmedPlayersCount] = useState(0);
   const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const lastClearedGameIdRef = useRef<string | null>(null);
   
+  const [showClearButton, setShowClearButton] = useState(false);
+
   const clearConfirmedPlayers = useCallback(async (groupId: string) => {
     try {
       const confirmedPlayersRef = collection(firestore, `groups/${groupId}/jogadoresConfirmados`);
@@ -34,6 +35,12 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
       });
       await batch.commit();
       console.log("Lista de jogadores confirmados foi limpa.");
+      setShowClearButton(false); // Hide button after clearing
+       toast({
+        variant: "success",
+        title: "Lista Limpa!",
+        description: "A lista de presença foi zerada para o próximo jogo."
+      });
     } catch (error) {
       console.error("Erro ao limpar lista de confirmados:", error);
       toast({
@@ -57,32 +64,20 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
 
       if (gameInfo) {
         const now = new Date();
-        const gameHasPassed = now > gameInfo.endDate;
         const gracePeriodEnd = new Date(gameInfo.endDate.getTime() + 24 * 60 * 60 * 1000);
         
-        setIsGameFinished(gameHasPassed);
+        setIsGameFinished(now > gameInfo.endDate);
         setIsConfirmationLocked(now > gracePeriodEnd);
 
-        const gameId = formatDateToId(gameInfo.startDate);
-        
-        if (now > gracePeriodEnd && lastClearedGameIdRef.current !== gameId) {
-          clearConfirmedPlayers(user.groupId);
-          lastClearedGameIdRef.current = gameId;
-        } else if (lastClearedGameIdRef.current === null) {
-          // On first load, if we are not in a grace period, set the ref to avoid clearing
-          // This prevents clearing on first load if the last game was long ago
-           if (now < gracePeriodEnd) {
-             // If we are in the grace period of a game on load, don't mark it as cleared yet
-           } else {
-             lastClearedGameIdRef.current = gameId;
-           }
-        }
+        const isManager = user.userType === UserType.GESTOR_GRUPO;
+        const shouldShowClearButton = isManager && (now > gracePeriodEnd) && confirmedPlayersCount > 0;
+        setShowClearButton(shouldShowClearButton);
       }
     } else {
       setNextGameDate(null);
     }
     setIsGameDateLoading(false);
-  }, [user?.groupId, groupSettings, clearConfirmedPlayers]);
+  }, [user, groupSettings, confirmedPlayersCount]);
 
   useEffect(() => {
     if (!user?.groupId) {
@@ -206,6 +201,12 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     }
   };
 
+  const handleClearConfirmedPlayers = () => {
+    if (user?.groupId) {
+      clearConfirmedPlayers(user.groupId);
+    }
+  };
+
   return {
     nextGameDate,
     isGameDateLoading,
@@ -216,6 +217,8 @@ export function useGameData(user: User | null, groupSettings: GroupSettings | nu
     confirmedPlayersCount,
     isFetchingPlayers,
     isSubmitting,
+    showClearButton,
     handlePresenceClick,
+    handleClearConfirmedPlayers,
   };
 }
